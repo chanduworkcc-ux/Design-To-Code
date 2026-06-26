@@ -1,0 +1,50 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "VWsc2jXPYXO-X1ch2Ovff"
+uri = "file://artifacts/mobile/assets/images/icon.png"
+type = "image"
+title = "xyloCarts-icon"
+
+[[generated]]
+id = "sXyYmJbBbO_aImvNUAtqb"
+uri = "file://artifacts/mobile/assets/images/banner.png"
+type = "image"
+title = "summer-collection-banner"
+
+[[generated]]
+id = "wqlPU8AXAt2MRN8W854-z"
+uri = "file://artifacts/mobile/assets/images/shirt.png"
+type = "image"
+title = "linen-shirt"
+
+[[generated]]
+id = "HujU5IM3O-Md2HA7NXuyr"
+uri = "file://artifacts/mobile/assets/images/earbuds.png"
+type = "image"
+title = "wireless-earbuds"
+
+[[generated]]
+id = "jLXxON7IdyaSMK44ZmNDC"
+uri = "file://artifacts/mobile/assets/images/book.png"
+type = "image"
+title = "atomic-habits-book"
+
+[[generated]]
+id = "6dY9KWQgWeFzjt-_0WRtJ"
+uri = "file://artifacts/mobile/assets/images/smartwatch.png"
+type = "image"
+title = "smart-watch"
+
+[[generated]]
+id = "v79cc98lHyIhkbuMBl_XZ"
+uri = "file://artifacts/mobile/assets/images/yogamat.png"
+type = "image"
+title = "yoga-mat"
+
+[[generated]]
+id = "cnY6esQ5PHOyjWsfDy9TO"
+uri = "file://artifacts/mobile/assets/images/chocolate.png"
+type = "image"
+title = "dark-chocolate"
