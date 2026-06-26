@@ -1,1 +1,4 @@
 - [Zod import in api-server](zod-import.md) — use `"zod"` not `"zod/v4"`: esbuild can't resolve v4 exports map
+- [Admin access pattern](admin-access.md) — admin login calls real /auth/login, checks role client-side; _layout.tsx guards routes; API uses authMiddleware+adminMiddleware
+- [Expo Router path literals](expo-router-paths.md) — use "/(tabs)" not "/(tabs)/" (trailing slash is a TypeScript error with expo-router typed routes)
+- [expo-application API names](expo-application-api.md) — use Application.applicationId only; getIosIdForVendorAsync/getAndroidId are async, avoid in sync context

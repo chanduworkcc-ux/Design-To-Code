@@ -22,6 +22,7 @@ interface NavItem {
   id: string;
   route?: string;
   badge?: number;
+  comingSoon?: boolean;
 }
 
 interface Stats {
@@ -90,23 +91,22 @@ export default function AdminDashboardScreen() {
     { icon: "grid", label: "Dashboard", id: "dashboard" },
     { icon: "bar-chart-2", label: "Analytics", id: "analytics", route: "/admin/analytics" },
     { icon: "users", label: "Users", id: "users", route: "/admin/users", badge: stats?.onlineNow },
-    { icon: "package", label: "Products", id: "products" },
+    { icon: "package", label: "Products", id: "products", route: "/admin/products" },
     { icon: "shopping-bag", label: "Orders", id: "orders", route: "/admin/orders", badge: stats?.pendingOrders },
     { icon: "life-buoy", label: "Support Tickets", id: "support", route: "/admin/tickets", badge: stats?.openTickets },
-    { icon: "share-2", label: "Referrals", id: "referrals" },
-    { icon: "download", label: "Withdrawals", id: "withdrawals", badge: stats?.pendingWithdrawals },
-    { icon: "book-open", label: "Token Ledger", id: "ledger" },
-    { icon: "tag", label: "Coupons", id: "coupons" },
-    { icon: "credit-card", label: "Payment Logs", id: "payments" },
+    { icon: "share-2", label: "Referrals", id: "referrals", comingSoon: true },
+    { icon: "download", label: "Withdrawals", id: "withdrawals", route: "/admin/withdrawals", badge: stats?.pendingWithdrawals },
+    { icon: "tag", label: "Coupons", id: "coupons", route: "/admin/coupons" },
+    { icon: "image", label: "Banners", id: "banners", route: "/admin/banners" },
+    { icon: "bell", label: "Notifications", id: "notifications", route: "/admin/notifications" },
     { icon: "activity", label: "Activity Logs", id: "activity", route: "/admin/activity" },
-    { icon: "shield", label: "Security", id: "security" },
-    { icon: "bell", label: "Notifications", id: "notifications" },
     { icon: "settings", label: "Settings", id: "settings", route: "/admin/settings" },
   ];
 
   function handleNavPress(item: NavItem) {
     setActiveNav(item.id);
     closeDrawer();
+    if (item.comingSoon) return;
     if (item.route) {
       setTimeout(() => router.push(item.route as any), 240);
     }
@@ -120,7 +120,7 @@ export default function AdminDashboardScreen() {
     { label: "Open Tickets", key: "openTickets", icon: "message-square", color: "#EF4444", bg: "#FEF2F2" },
     { label: "Shipped", key: "shippedOrders", icon: "truck", color: "#3B82F6", bg: "#EFF6FF" },
     { label: "Delivered", key: "deliveredOrders", icon: "check-circle", color: "#10B981", bg: "#ECFDF5" },
-    { label: "Banned Users", key: "bannedUsers", icon: "user-x", color: "#EF4444", bg: "#FEF2F2" },
+    { label: "Withdrawals", key: "pendingWithdrawals", icon: "download", color: "#F59E0B", bg: "#FFFBEB" },
   ];
 
   return (
@@ -159,12 +159,14 @@ export default function AdminDashboardScreen() {
         </View>
 
         {/* Quick Action Buttons */}
-        <View style={styles.quickRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickRow}>
           {[
             { label: "Analytics", icon: "bar-chart-2", route: "/admin/analytics", color: "#2563EB", bg: "#EFF6FF" },
             { label: "Users", icon: "users", route: "/admin/users", color: "#10B981", bg: "#ECFDF5" },
             { label: "Orders", icon: "shopping-bag", route: "/admin/orders", color: "#8B5CF6", bg: "#F5F3FF" },
-            { label: "Tickets", icon: "life-buoy", route: "/admin/tickets", color: "#EF4444", bg: "#FEF2F2" },
+            { label: "Products", icon: "package", route: "/admin/products", color: "#F97316", bg: "#FFF7ED" },
+            { label: "Banners", icon: "image", route: "/admin/banners", color: "#3B82F6", bg: "#EFF6FF" },
+            { label: "Notifs", icon: "bell", route: "/admin/notifications", color: "#EF4444", bg: "#FEF2F2" },
           ].map((q) => (
             <Pressable
               key={q.label}
@@ -175,7 +177,7 @@ export default function AdminDashboardScreen() {
               <Text style={[styles.quickLabel, { color: q.color }]}>{q.label}</Text>
             </Pressable>
           ))}
-        </View>
+        </ScrollView>
 
         {loading ? (
           <View style={styles.loadingBox}>
@@ -229,7 +231,7 @@ export default function AdminDashboardScreen() {
                         <Text style={styles.orderIdText}>#{o.id.slice(0, 8).toUpperCase()}</Text>
                         <Text style={[styles.orderStatus, { color }]}>{o.status.toUpperCase()}</Text>
                       </View>
-                      <Text style={styles.orderTotal}>₹{o.total?.toFixed(2)}</Text>
+                      <Text style={styles.orderTotal}>₹{Number(o.total ?? 0).toFixed(2)}</Text>
                     </View>
                   );
                 })}
@@ -237,7 +239,7 @@ export default function AdminDashboardScreen() {
             )}
           </View>
 
-          {/* Open Tickets Alert */}
+          {/* Alerts */}
           {(stats?.openTickets ?? 0) > 0 && (
             <Pressable style={[styles.alertCard, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]} onPress={() => router.push("/admin/tickets")}>
               <Feather name="alert-circle" size={20} color="#EF4444" />
@@ -247,17 +249,37 @@ export default function AdminDashboardScreen() {
               </View>
             </Pressable>
           )}
-
-          {/* Pending Withdrawals Alert */}
           {(stats?.pendingWithdrawals ?? 0) > 0 && (
-            <View style={[styles.alertCard, { backgroundColor: "#FFFBEB", borderColor: "#FDE68A" }]}>
+            <Pressable style={[styles.alertCard, { backgroundColor: "#FFFBEB", borderColor: "#FDE68A" }]} onPress={() => router.push("/admin/withdrawals")}>
               <Feather name="download" size={20} color="#F59E0B" />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.alertTitle, { color: "#92400E" }]}>{stats?.pendingWithdrawals} pending withdrawal(s)</Text>
-                <Text style={[styles.alertSub, { color: "#B45309" }]}>Requires admin approval</Text>
+                <Text style={[styles.alertSub, { color: "#B45309" }]}>Tap to review and approve →</Text>
               </View>
-            </View>
+            </Pressable>
           )}
+
+          {/* Quick Nav Grid */}
+          <View style={[styles.section, { backgroundColor: "#fff", borderColor: "#E5EAF8" }]}>
+            <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>Quick Navigation</Text>
+            <View style={styles.quickNavGrid}>
+              {[
+                { icon: "package", label: "Products", route: "/admin/products", color: "#F97316", bg: "#FFF7ED" },
+                { icon: "tag", label: "Coupons", route: "/admin/coupons", color: "#8B5CF6", bg: "#F5F3FF" },
+                { icon: "download", label: "Withdrawals", route: "/admin/withdrawals", color: "#F59E0B", bg: "#FFFBEB" },
+                { icon: "image", label: "Banners", route: "/admin/banners", color: "#3B82F6", bg: "#EFF6FF" },
+                { icon: "bell", label: "Notifications", route: "/admin/notifications", color: "#EF4444", bg: "#FEF2F2" },
+                { icon: "settings", label: "Settings", route: "/admin/settings", color: "#6B7280", bg: "#F3F4F6" },
+              ].map((item) => (
+                <Pressable key={item.label} style={[styles.quickNavItem, { backgroundColor: item.bg }]} onPress={() => router.push(item.route as any)}>
+                  <View style={[styles.quickNavIcon, { backgroundColor: item.color + "20" }]}>
+                    <Feather name={item.icon as any} size={22} color={item.color} />
+                  </View>
+                  <Text style={[styles.quickNavLabel, { color: item.color }]}>{item.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
 
           {/* Settings shortcut */}
           <Pressable
@@ -323,7 +345,8 @@ export default function AdminDashboardScreen() {
                     <Text style={styles.navBadgeText}>{item.badge}</Text>
                   </View>
                 )}
-                {item.route && <Feather name="chevron-right" size={14} color="#D1D5DB" style={{ marginLeft: "auto" }} />}
+                {item.comingSoon && <Text style={styles.soonTag}>SOON</Text>}
+                {item.route && !item.comingSoon && <Feather name="chevron-right" size={14} color="#D1D5DB" style={{ marginLeft: "auto" }} />}
               </TouchableOpacity>
             );
           })}
@@ -352,8 +375,8 @@ const styles = StyleSheet.create({
   pageHeader: { gap: 4 },
   pageTitle: { fontSize: 26, fontFamily: "Inter_700Bold", color: "#0F1740" },
   pageSubtitle: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#6B7280" },
-  quickRow: { flexDirection: "row", gap: 10 },
-  quickBtn: { flex: 1, alignItems: "center", paddingVertical: 14, borderRadius: 14, borderWidth: 1, gap: 6 },
+  quickRow: { gap: 10, paddingRight: 4 },
+  quickBtn: { alignItems: "center", paddingVertical: 14, paddingHorizontal: 14, borderRadius: 14, borderWidth: 1, gap: 6, minWidth: 70 },
   quickLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
   loadingBox: { alignItems: "center", paddingVertical: 40, gap: 12 },
   loadingText: { color: "#6B7280", fontFamily: "Inter_500Medium", fontSize: 14 },
@@ -381,6 +404,10 @@ const styles = StyleSheet.create({
   alertTitle: { fontSize: 14, fontFamily: "Inter_700Bold" },
   alertSub: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
   settingsIcon: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center", marginRight: 4 },
+  quickNavGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  quickNavItem: { width: "30%", borderRadius: 12, padding: 12, alignItems: "center", gap: 8 },
+  quickNavIcon: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  quickNavLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", textAlign: "center" },
   overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.4)", zIndex: 10 },
   drawer: { position: "absolute", left: 0, top: 0, bottom: 0, width: 280, backgroundColor: "#fff", zIndex: 20, shadowColor: "#000", shadowOffset: { width: 4, height: 0 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 20 },
   drawerHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: "#E5EAF8", marginBottom: 8 },
@@ -394,6 +421,7 @@ const styles = StyleSheet.create({
   navLabel: { fontSize: 14, flex: 1 },
   navBadge: { backgroundColor: "#EF4444", borderRadius: 10, minWidth: 20, height: 20, alignItems: "center", justifyContent: "center", paddingHorizontal: 5 },
   navBadgeText: { color: "#fff", fontSize: 11, fontFamily: "Inter_700Bold" },
+  soonTag: { fontSize: 9, fontFamily: "Inter_700Bold", color: "#9CA3AF", backgroundColor: "#F3F4F6", paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4 },
   drawerSignOut: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 22, paddingVertical: 16, borderTopWidth: 1, borderTopColor: "#E5EAF8" },
   drawerSignOutText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#EF4444" },
 });

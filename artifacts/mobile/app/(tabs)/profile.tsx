@@ -102,8 +102,10 @@ export default function ProfileScreen() {
         {/* Stats */}
         <View style={[styles.statsRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.statItem}>
-            <Text style={[styles.statNum, { color: colors.text }]}>12</Text>
-            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Orders</Text>
+            <Pressable onPress={() => router.push("/orders")}>
+              <Text style={[styles.statNum, { color: colors.text }]}>View</Text>
+              <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Orders</Text>
+            </Pressable>
           </View>
           <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
           <View style={styles.statItem}>
@@ -145,11 +147,11 @@ export default function ProfileScreen() {
         {/* Orders Section */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>ORDERS</Text>
         <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <MenuItem icon="package" label="Order History" onPress={() => handleMenuPress("Order History")} />
+          <MenuItem icon="package" label="Order History" onPress={() => router.push("/orders")} />
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <MenuItem icon="refresh-cw" label="Returns & Refunds" onPress={() => handleMenuPress("Returns & Refunds")} />
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <MenuItem icon="truck" label="Track Orders" onPress={() => handleMenuPress("Track Orders")} />
+          <MenuItem icon="truck" label="Track Orders" onPress={() => router.push("/orders")} />
         </View>
 
         {/* Preferences Section */}

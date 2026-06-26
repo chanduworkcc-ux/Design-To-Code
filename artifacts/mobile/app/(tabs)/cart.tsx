@@ -36,7 +36,7 @@ export default function CartScreen() {
             </Text>
             <Pressable
               style={[styles.startBtn, { backgroundColor: colors.primary }]}
-              onPress={() => router.push("/(tabs)/")}
+              onPress={() => router.push("/(tabs)")}
             >
               <Text style={[styles.startBtnText, { color: "#fff" }]}>Start Shopping</Text>
             </Pressable>

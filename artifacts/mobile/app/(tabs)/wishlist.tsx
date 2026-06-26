@@ -36,7 +36,7 @@ export default function WishlistScreen() {
             </Text>
             <Pressable
               style={[styles.shopBtn, { backgroundColor: colors.primary }]}
-              onPress={() => router.push("/(tabs)/")}
+              onPress={() => router.push("/(tabs)")}
             >
               <Text style={[styles.shopBtnText, { color: colors.primaryForeground }]}>
                 Browse Products

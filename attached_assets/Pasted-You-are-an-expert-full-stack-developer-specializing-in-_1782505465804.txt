@@ -1,0 +1,56 @@
+You are an expert full-stack developer specializing in real-time mobile and web applications, state management, and strict e-commerce business logic. 
+
+Your task is to comprehensively refactor and fix both the User and Admin applications based on the following strict requirements. Ensure all features work properly, bugs are eliminated, and data synchronizes perfectly in real-time.
+
+---
+
+### 1. GENERAL & REAL-TIME SYNCHRONIZATION
+* **Real-Time Data Sync:** Establish robust real-time listeners (e.g., Firebase Firestore, WebSockets, or Supabase Realtime) between the Admin and User apps. Any changes made in the Admin panel must reflect instantly in the User app without requiring a manual refresh.
+* **Device & Account Restrictions:** 
+  * Enforce a strict "One Device, One Account" policy. Bind the user session to their unique device ID. Log out previous sessions if a new login occurs.
+  * Implement "One Mobile Number, One Account" verification logic.
+
+---
+
+### 2. CART & ORDER BUSINESS LOGIC (ANTI-HOARDING)
+* **Quantity Limits:** Restrict purchases strictly. A user can only buy exactly ONE unit of ONE item per order. Block any ability to increase quantities or add multiple different items to a single cart.
+* **Order Frequency:** A user can only place an order for an item one time. Prevent unlimited or duplicate orders.
+* **Cart UI & Functionality Fixes:** 
+  * Fix all broken cart operations (adding, viewing, and clearing).
+  * Redesign the Cart UI to be clean, modern, and intuitive.
+  * Remove all quantity counters (+/- buttons) from the Cart UI completely.
+
+---
+
+### 3. CURRENCY CONVERSION
+* **Indian Currency (INR):** Convert all pricing display metrics across the entire User application to Indian Rupees (₹). 
+* Ensure proper formatting using the Indian Numbering System (e.g., ₹1,23,450.00).
+
+---
+
+### 4. USER INTERFACE & ACCESSIBILITY FIXES
+* **Banner Screen Fix:** Repair the onboarding/hero banner screen. The "Continue" button is currently missing or failing to render. Fix the layout logic so the "Continue" button is always visible, clickable, and correctly routes the user to the next screen.
+* **Speech/Voice Feature:** Fix the broken Text-to-Speech (TTS) or Speech-to-Text (STT) functionality. Ensure microphone permissions, audio streams, and voice recognition/playback buttons function flawlessly across all devices.
+* **General UI Polish:** Audit all buttons and interactive elements across both apps to ensure they have correct click handlers, active states, and responsive feedback.
+
+---
+
+### 5. ADMIN SECTION FIXES
+* **Save Button Fix:** The "Save" button across various admin forms is broken and fails to commit data. Fix the form submission handlers, validation logic, and backend API/database write calls to ensure data saves reliably every time.
+* **Category Management:** Allow the Admin to edit categories and permanently delete/remove categories. When a category is deleted by the admin, it must be instantly removed from the User application in real-time.
+
+---
+
+### 6. LEGAL POLICIES & TERMS (HARDCODED)
+Embed the following legally binding text and policies clearly within the User application (Sign-up screen, Checkout screen, and a dedicated 'Policies' menu):
+
+* **Strict E-Commerce Terms & Conditions:**
+  * "Strict No-Return, No-Refund, and No-Exchange Policy: All sales are final. Under no circumstances will items be eligible for return, refund, or exchange once an order is placed."
+  * "Limitation of Quantity: Users are strictly restricted to purchasing a maximum quantity of one (1) unit of a single item per transaction. Duplicate or automated bulk ordering is strictly prohibited."
+* **Privacy Policy:** Include standard clauses detailing secure handling of user mobile numbers, device IDs, and transactional data. State explicitly that data is collected solely for account verification and order fulfillment.
+* **Public/General Policies:** Outline user eligibility, compliant app usage, and the platform's right to terminate accounts violating the one-device or one-account policy.
+
+---
+
+### OUTPUT EXPECTATION
+Provide clean, production-ready, and well-commented code blocks fixing these specific modules. Ensure state management (Redux, Zustand, Context API, or native state) handling is flawless.

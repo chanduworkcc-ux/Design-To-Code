@@ -41,7 +41,7 @@ export default function RegisterScreen() {
     setError("");
     try {
       await register({ name: name.trim(), email: email.trim().toLowerCase(), password, referralCode: referralCode.trim() || undefined });
-      router.replace("/(tabs)/");
+      router.replace("/(tabs)");
     } catch (e: any) {
       setError(e.message ?? "Registration failed");
     } finally {

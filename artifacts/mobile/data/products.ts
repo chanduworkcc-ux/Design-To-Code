@@ -1,4 +1,4 @@
-export type Category = "All" | "Clothing" | "Electronics" | "Books" | "Home" | "Beauty";
+export type Category = "All" | "Clothing" | "Electronics" | "Books" | "Home" | "Beauty" | "Sports" | "Food" | "Other";
 
 export interface Product {
   id: string;
@@ -8,7 +8,13 @@ export interface Product {
   originalPrice?: number;
   discount?: number;
   rating: number;
-  image: any;
+  /** Local require() image — used for static/seed products */
+  image?: any;
+  /** Remote URL — used for API products */
+  imageUrl?: string | null;
+  description?: string | null;
+  stock?: number;
+  isActive?: boolean;
   featured?: boolean;
 }
 
@@ -17,8 +23,8 @@ export const products: Product[] = [
     id: "1",
     name: "Classic Linen Shirt",
     category: "Clothing",
-    price: 49.99,
-    originalPrice: 80.99,
+    price: 3999,
+    originalPrice: 6499,
     discount: 38,
     rating: 4.7,
     image: require("../assets/images/shirt.png"),
@@ -28,7 +34,7 @@ export const products: Product[] = [
     id: "2",
     name: "Wireless Earbuds Pro",
     category: "Electronics",
-    price: 89.99,
+    price: 7499,
     rating: 4.5,
     image: require("../assets/images/earbuds.png"),
     featured: true,
@@ -37,7 +43,7 @@ export const products: Product[] = [
     id: "3",
     name: "Atomic Habits",
     category: "Books",
-    price: 16.99,
+    price: 399,
     rating: 4.9,
     image: require("../assets/images/book.png"),
     featured: true,
@@ -46,8 +52,8 @@ export const products: Product[] = [
     id: "4",
     name: "Smart Watch Series X",
     category: "Electronics",
-    price: 249.99,
-    originalPrice: 299.99,
+    price: 19999,
+    originalPrice: 24999,
     discount: 17,
     rating: 4.6,
     image: require("../assets/images/smartwatch.png"),
@@ -56,7 +62,7 @@ export const products: Product[] = [
     id: "5",
     name: "Yoga Mat Premium",
     category: "Home",
-    price: 34.99,
+    price: 2499,
     rating: 4.3,
     image: require("../assets/images/yogamat.png"),
   },
@@ -64,10 +70,10 @@ export const products: Product[] = [
     id: "6",
     name: "Dark Chocolate Premium",
     category: "Beauty",
-    price: 12.99,
+    price: 899,
     rating: 4.8,
     image: require("../assets/images/chocolate.png"),
   },
 ];
 
-export const categories: Category[] = ["All", "Clothing", "Electronics", "Books", "Home", "Beauty"];
+export const categories: Category[] = ["All", "Clothing", "Electronics", "Books", "Home", "Beauty", "Sports", "Food", "Other"];

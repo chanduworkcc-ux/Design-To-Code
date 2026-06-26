@@ -13,6 +13,12 @@ router.get("/products", async (_req, res) => {
   res.json({ products });
 });
 
+// Admin: all products including inactive
+router.get("/admin/products", authMiddleware, adminMiddleware, async (_req, res) => {
+  const products = await db.select().from(productsTable);
+  res.json({ products });
+});
+
 router.get("/products/:id", async (req, res) => {
   const products = await db.select().from(productsTable).where(eq(productsTable.id, req.params.id));
   if (!products.length) { res.status(404).json({ error: "Product not found" }); return; }

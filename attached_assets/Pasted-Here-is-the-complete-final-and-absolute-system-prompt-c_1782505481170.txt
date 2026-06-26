@@ -1,0 +1,114 @@
+Here is the complete, final, and absolute system prompt containing every single requirement you listed, combined into one massive, master instruction blueprint.
+You can copy and paste this text directly into Replit AI Agent to generate the entire application at once.
+------------------------------
+## MASTER SYSTEM INSTRUCTION: FULL-STACK APPLICATION WITH ADVANCED ADMINISTRATIVE ENGINE## 1. Core Architecture, Real-Time State, & Database Sync
+Build a highly secure, fully responsive full-stack application split into a User Portal and an Admin Control Panel. Use Firebase (Authentication, Firestore, Cloud Functions, and Realtime Database) for all backend services, real-time logging, and transactional states.
+
+* Zero-Silent-Errors Directive: Implement comprehensive try-catch wrappers, explicit UI validation states, and descriptive fallback error elements for every single button click, form submission, toggle change, or routing operation.
+* Real-Time Sync Engine: Use Firestore onSnapshot listeners to establish a live data sync between Admin configuration states and User application behavior. All UI views must update dynamically without requiring page refreshes.
+* Order ID Generation Formula: All generated invoices must be sequential, strictly structured, and prefixed exactly as: 2026-01-XXXX (e.g., 2026-01-0001, 2026-01-0002).
+
+------------------------------
+## 2. Advanced Security, Fraud Mitigation, & Device Locking
+
+* One Device, One Account Policy: Programmatically capture a unique device hardware fingerprint (using Canvas fingerprinting or a robust device info library) along with the user's current IP address upon registration and login.
+* Registration/Login Blocking: Store these unique hardware signatures in a centralized device_registry collection. If an active device signature attempts to register a new account, or log into an alternate profile, block execution completely, reject the session, and display a "Device Blocked: Multi-Account Violation" warning.
+* Strict Identity Check: Only one mobile number, one email account, one device footprint, and one account per individual user are permitted.
+* Admin Control Bans: Provide the Admin with two distinct permanent termination vectors from the Admin panel:
+* Account Ban: Revokes Firebase Auth access tokens immediately and marks the user's database status as banned.
+   * Device Footprint Ban: Blacklists the target device fingerprint and IP address globally inside Firestore rules, permanently locking that hardware out of the registration or login screens.
+* Temporary Suspension Engine: Admin can suspend any user for a specific duration (e.g., a custom number of days set by a text/number field). When a suspended user authenticates, show a locked, full-screen countdown screen displaying the remaining days, hours, and minutes until access is restored.
+
+------------------------------
+## 3. Real-Time Heartbeats, Audit Logs, & Analytics
+
+* Online/Offline Pulse Tracking: Integrate the Firebase Realtime Database .info/connected status network.
+* When a user connects, set /status/{uid} = { state: 'online', last_changed: serverTimestamp() }.
+   * On disconnect (onDisconnect()), flip the value to 'offline'.
+   * The Admin dashboard user management view must listen to this endpoint in real time and render a dynamic green badge for Online users and a grey badge for Offline users.
+* Live User Analytics & System Logs: Every interactive action performed by a user (e.g., placing an order, viewing a page, updating profile options, generating a referral link, triggering a payout request) must write a structured event object into a global customer_logs collection.
+* Log Parameters: Each log must capture timestamp, user_id, action_type, ip_address, device_fingerprint, and payload_details. The Admin panel must feature a live scrolling monitor of these analytical logs.
+
+------------------------------
+## 4. 3D Animation UI/UX Architecture
+
+* 3D Framework integration: Integrate Three.js (via React Three Fiber, native HTML5 canvases, or webgl elements) or canvas-driven Framer Motion 3D throughout the entire layout of both user and admin applications.
+* Custom 3D Loader Canvas: Completely eliminate traditional flat CSS loading wheels or spinners. Replace them with an interactive, fluid, custom 3D geometric loading animation that blocks the UI and animates smoothly during authentication requests, data updates, and page transitions.
+* 3D User Experience: Apply responsive 3D animations and fluid hover/click dynamics to the cards, menus, and buttons across the entire user environment.
+* Dynamic Welcome Layout: The header layer of the User Dashboard must explicitly contain an animated greeting frame displaying: "Welcome, [Customer Name]!" fetching the name dynamically from the authenticated user record.
+* Flawless Customer Profile Section: Every option menu row within the user configuration must be 100% interactive and functional:
+* Language Selector: Dynamically changes the local application string dictionary across all screens (supporting multi-language capabilities).
+   * Appearance Toggles: Smooth transitions between Light Mode, Dark Mode, and Custom Themes.
+   * Customer Support Navigation: Seamless directional routing to the user's ticket desk.
+   * Notifications and Buttons: All buttons in this profile component must be operational, running without bugs, and triggering their respective visual state alerts.
+
+------------------------------
+## 5. Firebase OTP Authentication & Admin Gatekeeper Toggles
+
+* Minimized Onboarding Fields: If a new customer arrives at the application, the sign-up structure must request only four entry items: Full Name, Mobile Number, WhatsApp Number, and Email ID. No extra clutter.
+* Real-Time OTP Verification Engine: Upon submitting the signup form, pass the email parameter through a secure Firebase Cloud Function connected to an email delivery broker (e.g., Nodemailer/SendGrid).
+* Generate a secure 6-digit verification OTP valid for 5 minutes.
+   * Block invalid or temporary email domains. Only real, verified emails can pass.
+* Admin Registration Gatekeeper Rules:
+* Auto-Accept Mode: If toggled ON by Admin, users are immediately granted application entry upon successful real-time OTP validation.
+   * Manual Approval Mode: If toggled ON by Admin, the user is rerouted to a temporary dashboard lock screen stating "Account Pending Admin Approval". The user remains locked out until the Admin reviews their registration log and manually switches their status to Approved.
+* Global Auth Bypass Switch (Kill Switch): Admin can toggle the entire Auth & Signup system requirements ON or OFF from the Admin panel via a dedicated on/off switch.
+* When toggled ON, all old members must fill out login details, and new users must complete the sign-up workflow.
+   * When toggled OFF, login/signup systems are entirely hidden, and users bypass the authentication restrictions directly.
+
+------------------------------
+## 6. Real-Time Ticketing & Live Support Desk
+
+* Ticket Inception: Users can instantiate support requests containing an issue category and problem descriptions via a "Raise Ticket" section.
+* Real-Time Interactive Messaging Workspace: Clicking into an open ticket opens a chat interface syncing instantly via a sub-collection database listener. Users can chat directly with administration.
+* Ticket Action Framework: Admin and users can reply to messages instantly. Admin retains administrative command buttons to toggle the ticket status state and manage resolutions:
+* Open / Reply: Live active conversation.
+   * Resolved: Flagged as answered; input field temporarily locked unless re-opened by admin.
+   * Closed: Permanently closed archive; thread read-only.
+
+------------------------------
+## 7. Strict Store Velocity Control & Purchase Systems
+
+* Absolute Quantity Constraint: Users are restricted to One Item, One Quantity per order. Implement a hard frontend and backend database rule check to block users from selecting multiple quantities or stacking additional items within a single cart transaction.
+* Rolling Purchase Cooldown Lock: Once an order is logged under a user ID, a global cooldown timer is applied to their profile. They cannot place another order until the timer clears.
+* Dynamic Cooldown Management: Admin can configure this rolling time lock duration from their dashboard dynamically (e.g., 2 hours, 3 hours, or a full 24-hour block). During this lockout window, any checkout attempt is systematically rejected.
+* Store Status Toggle: Admin can turn the entire purchasing system ON (Accepting Orders) or OFF (Non-Accepting Orders) via an admin toggle. If turned OFF, all storefront purchase actions, buttons, and checkout gateways dynamically replace their UI with an inactive status layout.
+
+------------------------------
+## 8. Multi-Coin Engine, Balances, & Advanced Coupons
+
+* Fiat Wallet Control: Admin can manually add or adjust a user's absolute wallet balance from their account dashboard profile.
+* Multi-Coin Distribution Matrix: Admin has a specialized ledger view to mint and allocate unique, different custom token coins into specific customer wallets.
+* Advanced Coupon Matrix Rules: Admin can generate coupons with granular configurations:
+* Expiry Limit Validation: Admin can modify coupon validation timelines using an interactive date-time picker.
+   * Public Coupons: Instantly rendered on a public discovery dashboard screen for all users to browse and copy.
+   * Private/Specialized Coupons: Hidden from general discovery; accessible exclusively to specific, designated user database IDs.
+   * New User Coupons: Programmatically visible only to user profiles whose registration dates fall within an admin-defined onboarding window.
+
+------------------------------
+## 9. Referral Network & Automated UPI Payout Workflow
+
+* Referral State Management: Admin can Start, Stop, or Turn Off the referral program completely at any time.
+* Referral Tokenomics Settings:
+* Default Earning Structure: 1 Successful Referral = 100 Coins.
+   * Conversion Metrics: 1,000 Coins = ₹10 INR (Indian Currency).
+   * Minimum Payout Floor: Default is 1,000 Coins.
+   * Admin Variable Panel: Admin can dynamically alter the referral coin reward amount, the minimum withdrawal threshold coin limit, and track the unique user referral code strings.
+* Referral Analytics Tracking: Users can see their referral count and active earnings. Admin can audit the complete referral link path, tracing exactly what users are doing, real-time users, the precise registering user, their hardware fingerprint, and their recorded registration IP address to prevent farming.
+* UPI Withdrawal Workflow & Milestone Timeline UI:
+* Users meeting the minimum coin limit can input their destination UPI ID and request a payout from the withdrawal section inside the referral interface.
+   * A clean, interactive vertical Milestone Progress Tracking Component must render inside the User's Withdrawal Section.
+   * This component must update in real time based on Admin status updates, tracking four distinct lifecycle events:
+   1. Withdrawal Created: Timestamps when the request was initiated along with the user's UPI ID target. Displays creation date and time.
+      2. Admin Accepted: Visual checkmark showing the Admin checked, authorized, and accepted the request.
+      3. Processing / Reverting: Shows if the payment is currently being processed or reverted by the admin dashboard.
+      4. Delivered: The final completion stage, confirming funds have successfully cleared and been delivered.
+   
+------------------------------
+## 🚀 Replit Execution Rule
+
+* Ensure all buttons across the entire User and Admin apps are explicitly tied to functional code logic.
+* Ensure no placeholder text or empty logic blocks remain.
+* Compile all parts to run natively with stable packages using Vite + React, Tailwind CSS, and Firebase v10+ Web SDK. Proceed with full application generation.
+
+

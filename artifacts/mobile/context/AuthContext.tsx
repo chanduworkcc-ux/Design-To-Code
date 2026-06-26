@@ -18,7 +18,7 @@ interface AuthContextType {
   user: AuthUser | null;
   token: string | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<AuthUser>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -35,17 +35,8 @@ interface RegisterData {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 function getDeviceUuid(): string {
-  if (Platform.OS === "ios" && Application.iosIdForVendorAsync) {
-    return `ios-${Application.applicationId ?? "app"}-${Date.now()}`;
-  }
-  if (Platform.OS === "android") {
-    return Application.androidId ?? `android-${Date.now()}`;
-  }
-  const stored = localStorage.getItem("xyloscart_device_uuid");
-  if (stored) return stored;
-  const newId = `web-${Math.random().toString(36).slice(2)}-${Date.now()}`;
-  localStorage.setItem("xyloscart_device_uuid", newId);
-  return newId;
+  const prefix = Platform.OS === "ios" ? "ios" : Platform.OS === "android" ? "android" : "web";
+  return `${prefix}-${Application.applicationId ?? "app"}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -85,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return fetch(`${BASE_URL}${path}`, { ...options, headers });
   }
 
-  async function login(email: string, password: string) {
+  async function login(email: string, password: string): Promise<AuthUser> {
     const res = await fetch(`${BASE_URL}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -96,6 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.setItem("auth_token", data.token);
     setToken(data.token);
     setUser(data.user);
+    return data.user as AuthUser;
   }
 
   async function register(formData: RegisterData) {

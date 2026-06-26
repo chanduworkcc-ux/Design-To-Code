@@ -37,11 +37,24 @@ export function ProductCard({ product, style }: ProductCardProps) {
     }
   }
 
+  // Resolve image source: prefer local require(), fall back to imageUrl string, then placeholder icon
+  const imageSource: any = product.image
+    ? product.image
+    : product.imageUrl
+    ? { uri: product.imageUrl }
+    : null;
+
   return (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }, style]}>
-      <View style={styles.imageContainer}>
-        <Image source={product.image} style={styles.image} resizeMode="cover" />
-        {product.discount && (
+      <View style={[styles.imageContainer, { backgroundColor: colors.secondary }]}>
+        {imageSource ? (
+          <Image source={imageSource} style={styles.image} resizeMode="cover" />
+        ) : (
+          <View style={styles.imagePlaceholder}>
+            <Feather name="package" size={36} color={colors.mutedForeground} />
+          </View>
+        )}
+        {product.discount && product.discount > 0 && (
           <View style={[styles.discountBadge, { backgroundColor: colors.orange }]}>
             <Text style={styles.discountText}>-{product.discount}%</Text>
           </View>
@@ -70,13 +83,20 @@ export function ProductCard({ product, style }: ProductCardProps) {
         <View style={styles.ratingRow}>
           <Feather name="star" size={12} color={colors.orange} />
           <Text style={[styles.rating, { color: colors.mutedForeground }]}>
-            {" "}{product.rating}
+            {" "}{Number(product.rating).toFixed(1)}
           </Text>
         </View>
         <View style={styles.priceRow}>
-          <Text style={[styles.price, { color: colors.text }]}>
-            ${product.price.toFixed(2)}
-          </Text>
+          <View>
+            <Text style={[styles.price, { color: colors.text }]}>
+              ₹{Number(product.price).toFixed(0)}
+            </Text>
+            {product.originalPrice && product.originalPrice > product.price && (
+              <Text style={[styles.originalPrice, { color: colors.mutedForeground }]}>
+                ₹{Number(product.originalPrice).toFixed(0)}
+              </Text>
+            )}
+          </View>
           <Pressable
             onPress={handleAddToCart}
             style={[
@@ -106,11 +126,16 @@ const styles = StyleSheet.create({
   imageContainer: {
     position: "relative",
     height: 140,
-    backgroundColor: "#F5F7FF",
   },
   image: {
     width: "100%",
     height: "100%",
+  },
+  imagePlaceholder: {
+    width: "100%",
+    height: "100%",
+    alignItems: "center",
+    justifyContent: "center",
   },
   discountBadge: {
     position: "absolute",
@@ -167,6 +192,11 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 16,
     fontFamily: "Inter_700Bold",
+  },
+  originalPrice: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    textDecorationLine: "line-through",
   },
   addBtn: {
     width: 32,

@@ -1,55 +1,118 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  FlatList,
-  Image,
+  ActivityIndicator,
+  Dimensions,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
+  Animated,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ProductCard } from "@/components/ProductCard";
 import { useApp } from "@/context/AppContext";
-import { Category, categories, products } from "@/data/products";
+import { Category, categories, products as staticProducts } from "@/data/products";
 import { useColors } from "@/hooks/useColors";
+import { useAuth } from "@/context/AuthContext";
+import { Product } from "@/data/products";
+
+const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const BANNER_WIDTH = SCREEN_WIDTH - 32;
+
+interface ApiBanner {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  bgColor: string;
+  textColor: string;
+  ctaText: string;
+  imageUrl: string | null;
+  isActive: boolean;
+  sortOrder: number;
+}
 
 export default function ShopScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { cartCount } = useApp();
+  const { token } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<Category>("All");
-  const [searchText, setSearchText] = useState("");
-
-  const featured = products.filter((p) => p.featured);
-  const filtered =
-    selectedCategory === "All"
-      ? products
-      : products.filter((p) => p.category === selectedCategory);
-
+  const [products, setProducts] = useState<Product[]>(staticProducts);
+  const [banners, setBanners] = useState<ApiBanner[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [bannerIdx, setBannerIdx] = useState(0);
+  const bannerScrollRef = useRef<ScrollView>(null);
+  const bannerTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
+
+  useEffect(() => { fetchData(); }, []);
+
+  async function fetchData() {
+    await Promise.all([fetchProducts(), fetchBanners()]);
+  }
+
+  async function fetchProducts() {
+    try {
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const res = await fetch(`${BASE_URL}/products`, { headers });
+      if (res.ok) {
+        const d = await res.json();
+        if (d.products && d.products.length > 0) {
+          setProducts(d.products);
+        }
+      }
+    } catch {}
+    setLoadingProducts(false);
+  }
+
+  async function fetchBanners() {
+    try {
+      const res = await fetch(`${BASE_URL}/banners`);
+      if (res.ok) {
+        const d = await res.json();
+        setBanners(d.banners ?? []);
+      }
+    } catch {}
+  }
+
+  // Auto-scroll banners
+  useEffect(() => {
+    if (banners.length <= 1) return;
+    bannerTimer.current = setInterval(() => {
+      setBannerIdx((prev) => {
+        const next = (prev + 1) % banners.length;
+        bannerScrollRef.current?.scrollTo({ x: next * BANNER_WIDTH, animated: true });
+        return next;
+      });
+    }, 4000);
+    return () => { if (bannerTimer.current) clearInterval(bannerTimer.current); };
+  }, [banners.length]);
+
+  const featured = products.filter((p) => (p as any).featured ?? false).slice(0, 6);
+  const filtered = selectedCategory === "All"
+    ? products
+    : products.filter((p) => p.category.toLowerCase() === selectedCategory.toLowerCase());
+
+  const uniqueCategories: Category[] = ["All", ...Array.from(new Set(products.map((p) => p.category as Category)))];
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.scroll,
-          { paddingTop: topPadding + 12, paddingBottom: 100 },
-        ]}
+        contentContainerStyle={[styles.scroll, { paddingTop: topPadding + 12, paddingBottom: 100 }]}
       >
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={[styles.welcomeText, { color: colors.mutedForeground }]}>
-              Welcome back
-            </Text>
+            <Text style={[styles.welcomeText, { color: colors.mutedForeground }]}>Welcome to</Text>
             <Text style={[styles.brandName, { color: colors.text }]}>XyloCart</Text>
           </View>
           <Pressable
@@ -71,67 +134,106 @@ export default function ShopScreen() {
           onPress={() => router.push("/(tabs)/search")}
         >
           <Feather name="search" size={18} color={colors.mutedForeground} />
-          <Text style={[styles.searchPlaceholder, { color: colors.mutedForeground }]}>
-            Search products...
-          </Text>
+          <Text style={[styles.searchPlaceholder, { color: colors.mutedForeground }]}>Search products...</Text>
         </Pressable>
 
-        {/* Banner */}
-        <View style={styles.bannerContainer}>
-          <View style={[styles.bannerLeft, { backgroundColor: "#2563EB" }]}>
-            <Text style={styles.bannerTag}>NEW ARRIVALS</Text>
-            <Text style={styles.bannerTitle}>Summer Collection{"\n"}2026</Text>
-            <Pressable style={styles.shopNowBtn}>
-              <Text style={styles.shopNowText}>Shop Now</Text>
-            </Pressable>
+        {/* Banners */}
+        {banners.length > 0 ? (
+          <View style={[styles.bannerWrapper, { marginBottom: 20 }]}>
+            <ScrollView
+              ref={bannerScrollRef}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              snapToInterval={BANNER_WIDTH}
+              decelerationRate="fast"
+              onMomentumScrollEnd={(e) => {
+                const newIdx = Math.round(e.nativeEvent.contentOffset.x / BANNER_WIDTH);
+                setBannerIdx(newIdx);
+              }}
+              contentContainerStyle={{ gap: 0 }}
+            >
+              {banners.map((banner) => (
+                <View key={banner.id} style={[styles.apiBanner, { backgroundColor: banner.bgColor, width: BANNER_WIDTH }]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.bannerTitle, { color: banner.textColor }]}>{banner.title}</Text>
+                    {banner.subtitle && (
+                      <Text style={[styles.bannerSubtitle, { color: banner.textColor + "CC" }]}>{banner.subtitle}</Text>
+                    )}
+                    <Pressable style={[styles.shopNowBtn, { borderColor: banner.textColor + "60" }]}>
+                      <Text style={[styles.shopNowText, { color: banner.textColor }]}>{banner.ctaText}</Text>
+                    </Pressable>
+                  </View>
+                  <View style={[styles.bannerIconBox, { backgroundColor: banner.textColor + "20" }]}>
+                    <Feather name="shopping-bag" size={32} color={banner.textColor} />
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+            {banners.length > 1 && (
+              <View style={styles.bannerDots}>
+                {banners.map((_, i) => (
+                  <View
+                    key={i}
+                    style={[styles.dot, { backgroundColor: i === bannerIdx ? colors.primary : colors.border, width: i === bannerIdx ? 16 : 6 }]}
+                  />
+                ))}
+              </View>
+            )}
           </View>
-          <View style={[styles.bannerRight, { backgroundColor: "#FEF9EC" }]}>
-            <View style={styles.categoryGrid}>
-              <View style={[styles.categoryItem, { backgroundColor: "#E8F5E9" }]}>
-                <Feather name="monitor" size={22} color="#2563EB" />
-                <Text style={styles.categoryItemText}>Electronics</Text>
-              </View>
-              <View style={[styles.categoryItem, { backgroundColor: "#F3F0FF" }]}>
-                <Feather name="home" size={22} color="#7C3AED" />
-                <Text style={styles.categoryItemText}>Home Goods</Text>
-              </View>
-              <View style={[styles.categoryItem, { backgroundColor: "#EFF6FF" }]}>
-                <Feather name="home" size={22} color="#3B82F6" />
-                <Text style={styles.categoryItemText}>Home Goods</Text>
+        ) : (
+          /* Fallback static banner */
+          <View style={styles.bannerContainer}>
+            <View style={[styles.bannerLeft, { backgroundColor: "#2563EB" }]}>
+              <Text style={styles.bannerTag}>NEW ARRIVALS</Text>
+              <Text style={styles.bannerTitle2}>Summer Collection{"\n"}2026</Text>
+              <Pressable style={styles.shopNowBtnStatic}>
+                <Text style={styles.shopNowTextStatic}>Shop Now</Text>
+              </Pressable>
+            </View>
+            <View style={[styles.bannerRight, { backgroundColor: "#FEF9EC" }]}>
+              <View style={styles.categoryGrid}>
+                {[
+                  { icon: "monitor", color: "#2563EB", bg: "#E8F5E9", label: "Electronics" },
+                  { icon: "home", color: "#7C3AED", bg: "#F3F0FF", label: "Home Goods" },
+                  { icon: "tag", color: "#3B82F6", bg: "#EFF6FF", label: "Offers" },
+                ].map((item) => (
+                  <View key={item.icon} style={[styles.categoryItem, { backgroundColor: item.bg }]}>
+                    <Feather name={item.icon as any} size={22} color={item.color} />
+                    <Text style={styles.categoryItemText}>{item.label}</Text>
+                  </View>
+                ))}
               </View>
             </View>
           </View>
-        </View>
+        )}
 
         {/* Featured Section */}
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Featured</Text>
-          <Pressable>
-            <Text style={[styles.seeAll, { color: colors.primary }]}>See all</Text>
-          </Pressable>
-        </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.featuredList}
-        >
-          {featured.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </ScrollView>
+        {featured.length > 0 && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Featured</Text>
+              <Pressable>
+                <Text style={[styles.seeAll, { color: colors.primary }]}>See all</Text>
+              </Pressable>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredList}>
+              {featured.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </ScrollView>
+          </>
+        )}
 
-        {/* All Products Section */}
-        <Text style={[styles.sectionTitle, { color: colors.text, marginHorizontal: 16, marginTop: 20 }]}>
-          All Products
-        </Text>
+        {/* All Products */}
+        <View style={[styles.sectionHeader, { marginTop: featured.length > 0 ? 20 : 0 }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>All Products</Text>
+          {loadingProducts && <ActivityIndicator size="small" color={colors.primary} />}
+        </View>
 
         {/* Category Chips */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chips}
-        >
-          {categories.map((cat) => (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+          {uniqueCategories.map((cat) => (
             <Pressable
               key={cat}
               onPress={() => {
@@ -146,12 +248,7 @@ export default function ShopScreen() {
                 },
               ]}
             >
-              <Text
-                style={[
-                  styles.chipText,
-                  { color: selectedCategory === cat ? colors.primaryForeground : colors.text },
-                ]}
-              >
+              <Text style={[styles.chipText, { color: selectedCategory === cat ? colors.primaryForeground : colors.text }]}>
                 {cat}
               </Text>
             </Pressable>
@@ -159,15 +256,18 @@ export default function ShopScreen() {
         </ScrollView>
 
         {/* Product Grid */}
-        <View style={styles.grid}>
-          {filtered.map((product, i) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              style={{ width: "47%" }}
-            />
-          ))}
-        </View>
+        {filtered.length === 0 ? (
+          <View style={{ alignItems: "center", paddingVertical: 32, gap: 8 }}>
+            <Feather name="package" size={40} color={colors.mutedForeground} />
+            <Text style={[{ color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>No products in this category</Text>
+          </View>
+        ) : (
+          <View style={styles.grid}>
+            {filtered.map((product) => (
+              <ProductCard key={product.id} product={product} style={{ width: "47%" }} />
+            ))}
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -176,127 +276,39 @@ export default function ShopScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { paddingHorizontal: 16 },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
   welcomeText: { fontSize: 13, fontFamily: "Inter_400Regular" },
   brandName: { fontSize: 26, fontFamily: "Inter_700Bold" },
-  cartBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    position: "relative",
-  },
-  cartBadge: {
-    position: "absolute",
-    top: -4,
-    right: -4,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  cartBtn: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", borderWidth: 1, position: "relative" },
+  cartBadge: { position: "absolute", top: -4, right: -4, width: 18, height: 18, borderRadius: 9, alignItems: "center", justifyContent: "center" },
   cartBadgeText: { color: "#fff", fontSize: 10, fontFamily: "Inter_700Bold" },
-  searchBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    borderRadius: 24,
-    borderWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 16,
-  },
+  searchBar: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 24, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 16 },
   searchPlaceholder: { fontSize: 14, fontFamily: "Inter_400Regular" },
-  bannerContainer: {
-    flexDirection: "row",
-    borderRadius: 16,
-    overflow: "hidden",
-    marginBottom: 20,
-    height: 150,
-  },
-  bannerLeft: {
-    flex: 1.2,
-    padding: 16,
-    justifyContent: "space-between",
-  },
-  bannerTag: {
-    color: "rgba(255,255,255,0.8)",
-    fontSize: 10,
-    fontFamily: "Inter_600SemiBold",
-    letterSpacing: 1,
-  },
-  bannerTitle: {
-    color: "#fff",
-    fontSize: 18,
-    fontFamily: "Inter_700Bold",
-    lineHeight: 24,
-  },
-  shopNowBtn: {
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    alignSelf: "flex-start",
-  },
-  shopNowText: {
-    color: "#2563EB",
-    fontSize: 12,
-    fontFamily: "Inter_600SemiBold",
-  },
-  bannerRight: {
-    flex: 0.8,
-    padding: 8,
-    justifyContent: "center",
-  },
-  categoryGrid: {
-    flexWrap: "wrap",
-    flexDirection: "row",
-    gap: 6,
-    justifyContent: "center",
-  },
-  categoryItem: {
-    width: 64,
-    height: 64,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
-  },
-  categoryItemText: {
-    fontSize: 8,
-    fontFamily: "Inter_500Medium",
-    color: "#374151",
-    textAlign: "center",
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
+  bannerWrapper: { borderRadius: 16, overflow: "hidden" },
+  apiBanner: { height: 140, flexDirection: "row", alignItems: "center", padding: 18, gap: 12, borderRadius: 16 },
+  bannerTitle: { fontSize: 18, fontFamily: "Inter_700Bold", marginBottom: 4 },
+  bannerSubtitle: { fontSize: 12, fontFamily: "Inter_400Regular", marginBottom: 10 },
+  shopNowBtn: { alignSelf: "flex-start", paddingHorizontal: 14, paddingVertical: 6, borderWidth: 1, borderRadius: 20 },
+  shopNowText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  bannerIconBox: { width: 70, height: 70, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  bannerDots: { flexDirection: "row", justifyContent: "center", gap: 6, marginTop: 10 },
+  dot: { height: 6, borderRadius: 3, backgroundColor: "#E5EAF8" },
+  bannerContainer: { flexDirection: "row", borderRadius: 16, overflow: "hidden", marginBottom: 20, height: 150 },
+  bannerLeft: { flex: 1.2, padding: 16, justifyContent: "space-between" },
+  bannerTag: { color: "rgba(255,255,255,0.8)", fontSize: 10, fontFamily: "Inter_600SemiBold", letterSpacing: 1 },
+  bannerTitle2: { color: "#fff", fontSize: 18, fontFamily: "Inter_700Bold", lineHeight: 24 },
+  shopNowBtnStatic: { backgroundColor: "#fff", borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6, alignSelf: "flex-start" },
+  shopNowTextStatic: { color: "#2563EB", fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  bannerRight: { flex: 0.8, padding: 8, justifyContent: "center" },
+  categoryGrid: { flexWrap: "wrap", flexDirection: "row", gap: 6, justifyContent: "center" },
+  categoryItem: { width: 64, height: 64, borderRadius: 10, alignItems: "center", justifyContent: "center", gap: 4 },
+  categoryItemText: { fontSize: 8, fontFamily: "Inter_500Medium", color: "#374151", textAlign: "center" },
+  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
   sectionTitle: { fontSize: 20, fontFamily: "Inter_700Bold" },
   seeAll: { fontSize: 14, fontFamily: "Inter_500Medium" },
   featuredList: { gap: 12, paddingRight: 16 },
   chips: { gap: 8, paddingBottom: 12, paddingRight: 16 },
-  chip: {
-    borderRadius: 20,
-    borderWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
+  chip: { borderRadius: 20, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 8 },
   chipText: { fontSize: 13, fontFamily: "Inter_500Medium" },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-    justifyContent: "space-between",
-  },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 12, justifyContent: "space-between" },
 });

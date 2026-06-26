@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -13,15 +13,14 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
-
-const ADMIN_EMAIL = "admin@gmail.com";
-const ADMIN_PASSWORD = "123456";
 
 export default function AdminLoginScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { login, logout } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -50,15 +49,20 @@ export default function AdminLoginScreen() {
   async function handleLogin() {
     if (!validate()) return;
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setLoading(false);
-
-    if (email.trim().toLowerCase() === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+    try {
+      const user = await login(email.trim().toLowerCase(), password);
+      if (user.role !== "admin") {
+        // Logged in but not an admin — logout and show error
+        await logout();
+        setPasswordError("Access denied. This account does not have admin privileges.");
+        setLoading(false);
+        return;
+      }
       router.replace("/admin/dashboard");
-    } else {
-      setEmailError(" ");
-      setPasswordError("Invalid email or password. Please try again.");
+    } catch (err: any) {
+      setPasswordError(err.message ?? "Invalid credentials. Please try again.");
     }
+    setLoading(false);
   }
 
   return (
@@ -88,21 +92,19 @@ export default function AdminLoginScreen() {
             <Feather name="shield" size={32} color="#fff" />
           </View>
           <Text style={[styles.appName, { color: colors.text }]}>XyloCart</Text>
-          <Text style={[styles.adminLabel, { color: colors.mutedForeground }]}>
-            Admin Console
-          </Text>
+          <Text style={[styles.adminLabel, { color: colors.mutedForeground }]}>Admin Console</Text>
         </View>
 
         {/* Card */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>Admin Sign In</Text>
           <Text style={[styles.cardSubtitle, { color: colors.mutedForeground }]}>
-            Access the admin panel with your credentials
+            Access the admin panel with your administrator credentials
           </Text>
 
           {/* Email Field */}
           <View style={styles.fieldGroup}>
-            <Text style={[styles.label, { color: colors.text }]}>Gmail</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Email</Text>
             <View
               style={[
                 styles.inputWrapper,
@@ -115,7 +117,7 @@ export default function AdminLoginScreen() {
               <Feather name="mail" size={18} color={colors.mutedForeground} />
               <TextInput
                 style={[styles.input, { color: colors.text }]}
-                placeholder="admin@gmail.com"
+                placeholder="admin@xyloscart.com"
                 placeholderTextColor={colors.mutedForeground}
                 value={email}
                 onChangeText={(t) => { setEmail(t); setEmailError(""); }}
@@ -152,11 +154,7 @@ export default function AdminLoginScreen() {
                 autoCapitalize="none"
               />
               <Pressable onPress={() => setShowPassword((v) => !v)}>
-                <Feather
-                  name={showPassword ? "eye-off" : "eye"}
-                  size={18}
-                  color={colors.mutedForeground}
-                />
+                <Feather name={showPassword ? "eye-off" : "eye"} size={18} color={colors.mutedForeground} />
               </Pressable>
             </View>
             {!!passwordError && (
@@ -166,15 +164,12 @@ export default function AdminLoginScreen() {
 
           {/* Login Button */}
           <Pressable
-            style={[
-              styles.loginBtn,
-              { backgroundColor: loading ? colors.mutedForeground : colors.primary },
-            ]}
+            style={[styles.loginBtn, { backgroundColor: loading ? colors.mutedForeground : colors.primary }]}
             onPress={handleLogin}
             disabled={loading}
           >
             {loading ? (
-              <Text style={styles.loginBtnText}>Signing in...</Text>
+              <ActivityIndicator color="#fff" size="small" />
             ) : (
               <>
                 <Feather name="log-in" size={18} color="#fff" />
@@ -195,72 +190,20 @@ export default function AdminLoginScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { paddingHorizontal: 20, flexGrow: 1 },
-  backBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 32,
-  },
+  backBtn: { width: 42, height: 42, borderRadius: 12, borderWidth: 1, alignItems: "center", justifyContent: "center", marginBottom: 32 },
   logoArea: { alignItems: "center", marginBottom: 28, gap: 8 },
-  logoCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 4,
-  },
+  logoCircle: { width: 72, height: 72, borderRadius: 20, alignItems: "center", justifyContent: "center", marginBottom: 4 },
   appName: { fontSize: 26, fontFamily: "Inter_700Bold" },
   adminLabel: { fontSize: 14, fontFamily: "Inter_500Medium" },
-  card: {
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 24,
-    gap: 16,
-  },
+  card: { borderRadius: 20, borderWidth: 1, padding: 24, gap: 16 },
   cardTitle: { fontSize: 22, fontFamily: "Inter_700Bold" },
   cardSubtitle: { fontSize: 13, fontFamily: "Inter_400Regular", marginTop: -8 },
   fieldGroup: { gap: 6 },
   label: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
-  inputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-  },
-  input: {
-    flex: 1,
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    padding: 0,
-  },
-  errorText: {
-    color: "#EF4444",
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-    marginTop: 2,
-  },
-  loginBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    borderRadius: 14,
-    paddingVertical: 16,
-    marginTop: 4,
-  },
+  inputWrapper: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13 },
+  input: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", padding: 0 },
+  errorText: { color: "#EF4444", fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
+  loginBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, borderRadius: 14, paddingVertical: 16, marginTop: 4 },
   loginBtnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_600SemiBold" },
-  hint: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-    textAlign: "center",
-    marginTop: 20,
-    paddingHorizontal: 16,
-  },
+  hint: { fontSize: 12, fontFamily: "Inter_400Regular", textAlign: "center", marginTop: 20, paddingHorizontal: 16 },
 });

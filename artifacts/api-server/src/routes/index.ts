@@ -7,6 +7,7 @@ import walletRouter from "./wallet";
 import ticketsRouter from "./tickets";
 import couponsRouter from "./coupons";
 import adminRouter from "./admin";
+import bannersRouter from "./banners";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(walletRouter);
 router.use(ticketsRouter);
 router.use(couponsRouter);
 router.use(adminRouter);
+router.use(bannersRouter);
 
 export default router;
