@@ -1,6 +1,8 @@
 import { Feather } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React from "react";
 import {
+  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -34,10 +36,25 @@ function MenuItem({ icon, label, onPress }: MenuItemProps) {
 export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { cart, wishlist } = useApp();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
 
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
+
+  function handleMenuPress(label: string) {
+    if (Platform.OS !== "web") {
+      Alert.alert(label, `${label} screen coming soon.`);
+    }
+  }
+
+  function handleSignOut() {
+    if (Platform.OS === "web") return;
+    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Sign Out", style: "destructive", onPress: () => {} },
+    ]);
+  }
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -61,7 +78,10 @@ export default function ProfileScreen() {
               fxprime2006@gmail.com
             </Text>
           </View>
-          <Pressable style={[styles.editBtn, { borderColor: colors.border }]}>
+          <Pressable
+            style={[styles.editBtn, { borderColor: colors.border }]}
+            onPress={() => handleMenuPress("Edit Profile")}
+          >
             <Feather name="edit-2" size={16} color={colors.mutedForeground} />
           </Pressable>
         </View>
@@ -87,51 +107,57 @@ export default function ProfileScreen() {
         {/* Account Section */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>ACCOUNT</Text>
         <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <MenuItem icon="user" label="Personal Information" />
+          <MenuItem icon="user" label="Personal Information" onPress={() => handleMenuPress("Personal Information")} />
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <MenuItem icon="map-pin" label="Saved Addresses" />
+          <MenuItem icon="map-pin" label="Saved Addresses" onPress={() => handleMenuPress("Saved Addresses")} />
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <MenuItem icon="credit-card" label="Payment Methods" />
+          <MenuItem icon="credit-card" label="Payment Methods" onPress={() => handleMenuPress("Payment Methods")} />
         </View>
 
         {/* Orders Section */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>ORDERS</Text>
         <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <MenuItem icon="package" label="Order History" />
+          <MenuItem icon="package" label="Order History" onPress={() => handleMenuPress("Order History")} />
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <MenuItem icon="refresh-cw" label="Returns & Refunds" />
+          <MenuItem icon="refresh-cw" label="Returns & Refunds" onPress={() => handleMenuPress("Returns & Refunds")} />
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <MenuItem icon="truck" label="Track Orders" />
+          <MenuItem icon="truck" label="Track Orders" onPress={() => handleMenuPress("Track Orders")} />
         </View>
 
         {/* Preferences Section */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>PREFERENCES</Text>
         <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <MenuItem icon="bell" label="Notifications" />
+          <MenuItem icon="bell" label="Notifications" onPress={() => handleMenuPress("Notifications")} />
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <MenuItem icon="moon" label="Appearance" />
+          <MenuItem icon="moon" label="Appearance" onPress={() => handleMenuPress("Appearance")} />
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <MenuItem icon="globe" label="Language & Region" />
+          <MenuItem icon="globe" label="Language & Region" onPress={() => handleMenuPress("Language & Region")} />
         </View>
 
         {/* Support Section */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>SUPPORT</Text>
         <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <MenuItem icon="help-circle" label="Help Center" />
+          <MenuItem icon="help-circle" label="Help Center" onPress={() => handleMenuPress("Help Center")} />
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <MenuItem icon="message-circle" label="Contact Us" />
+          <MenuItem icon="message-circle" label="Contact Us" onPress={() => handleMenuPress("Contact Us")} />
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <MenuItem icon="star" label="Rate the App" />
+          <MenuItem icon="star" label="Rate the App" onPress={() => handleMenuPress("Rate the App")} />
         </View>
 
         {/* Admin Panel */}
-        <Pressable style={[styles.adminBtn, { backgroundColor: colors.primary }]}>
+        <Pressable
+          style={[styles.adminBtn, { backgroundColor: colors.primary }]}
+          onPress={() => router.push("/admin")}
+        >
           <Feather name="shield" size={18} color="#fff" />
           <Text style={styles.adminBtnText}>Admin Panel</Text>
         </Pressable>
 
         {/* Sign Out */}
-        <Pressable style={[styles.signOutBtn, { borderColor: colors.border, backgroundColor: colors.card }]}>
+        <Pressable
+          style={[styles.signOutBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
+          onPress={handleSignOut}
+        >
           <Feather name="log-out" size={18} color={colors.destructive} />
           <Text style={[styles.signOutText, { color: colors.destructive }]}>Sign Out</Text>
         </Pressable>

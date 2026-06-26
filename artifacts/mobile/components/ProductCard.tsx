@@ -20,11 +20,21 @@ interface ProductCardProps {
 
 export function ProductCard({ product, style }: ProductCardProps) {
   const colors = useColors();
-  const { addToCart, isInCart } = useApp();
+  const { addToCart, isInCart, addToWishlist, removeFromWishlist, isInWishlist } = useApp();
+  const inWishlist = isInWishlist(product.id);
 
   function handleAddToCart() {
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     addToCart(product);
+  }
+
+  function handleWishlist() {
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (inWishlist) {
+      removeFromWishlist(product.id);
+    } else {
+      addToWishlist(product);
+    }
   }
 
   return (
@@ -36,6 +46,19 @@ export function ProductCard({ product, style }: ProductCardProps) {
             <Text style={styles.discountText}>-{product.discount}%</Text>
           </View>
         )}
+        <Pressable
+          style={[
+            styles.wishlistBtn,
+            { backgroundColor: inWishlist ? "#FEE2E2" : "rgba(255,255,255,0.92)" },
+          ]}
+          onPress={handleWishlist}
+        >
+          <Feather
+            name="heart"
+            size={14}
+            color={inWishlist ? "#EF4444" : colors.mutedForeground}
+          />
+        </Pressable>
       </View>
       <View style={styles.info}>
         <Text style={[styles.category, { color: colors.primary }]}>
@@ -56,10 +79,13 @@ export function ProductCard({ product, style }: ProductCardProps) {
           </Text>
           <Pressable
             onPress={handleAddToCart}
-            style={[styles.addBtn, { backgroundColor: isInCart(product.id) ? colors.accent : colors.primary }]}
+            style={[
+              styles.addBtn,
+              { backgroundColor: isInCart(product.id) ? colors.accent : colors.primary },
+            ]}
           >
             <Feather
-              name="plus"
+              name={isInCart(product.id) ? "check" : "plus"}
               size={18}
               color={isInCart(product.id) ? colors.primary : colors.primaryForeground}
             />
@@ -98,6 +124,16 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 11,
     fontFamily: "Inter_700Bold",
+  },
+  wishlistBtn: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
   },
   info: {
     padding: 10,
