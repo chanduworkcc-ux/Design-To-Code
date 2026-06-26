@@ -56,6 +56,7 @@ export default function OrdersScreen() {
   const [filter, setFilter] = useState("all");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{ title: string; body: string; orderId: string } | null>(null);
   const topPadding = Platform.OS === "web" ? 0 : insets.top;
 
   useEffect(() => { fetchOrders(); }, []);
@@ -82,8 +83,13 @@ export default function OrdersScreen() {
         body: JSON.stringify({ status }),
       });
       if (res.ok) {
+        const data = await res.json();
         setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)));
         setExpandedId(null);
+        if (data.notification) {
+          setNotification({ ...data.notification, orderId });
+          setTimeout(() => setNotification(null), 8000);
+        }
       }
     } catch {}
     setUpdatingId(null);
@@ -106,6 +112,23 @@ export default function OrdersScreen() {
           <Feather name="refresh-cw" size={20} color="#2563EB" />
         </Pressable>
       </View>
+
+      {/* Notification preview — appears after each admin status update */}
+      {!!notification && (
+        <View style={styles.notifBanner}>
+          <View style={styles.notifIcon}>
+            <Feather name="bell" size={16} color="#fff" />
+          </View>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={styles.notifLabel}>Auto-Notification Dispatched to Customer</Text>
+            <Text style={styles.notifTitle}>{notification.title}</Text>
+            <Text style={styles.notifBody} numberOfLines={3}>{notification.body}</Text>
+          </View>
+          <Pressable onPress={() => setNotification(null)}>
+            <Feather name="x" size={16} color="#fff" />
+          </Pressable>
+        </View>
+      )}
 
       {/* Filter Tabs */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 52, backgroundColor: "#fff" }} contentContainerStyle={styles.filterRow}>
@@ -173,13 +196,13 @@ export default function OrdersScreen() {
                       <Text style={styles.metaLabel}>Pay Status: <Text style={styles.metaValue}>{order.paymentStatus}</Text></Text>
                     </View>
 
-                    {/* Linear pipeline — only show the single valid next action */}
+                    {/* Admin Full Override — advance pipeline OR cancel at any stage */}
                     {order.status !== "delivered" && order.status !== "cancelled" && (() => {
                       const next = getNextStatus(order.status);
                       const nextCfg = next ? STATUS_CONFIG[next] : null;
                       return (
                         <View style={{ gap: 8 }}>
-                          <Text style={styles.updateLabel}>Advance Order:</Text>
+                          <Text style={styles.updateLabel}>Admin Actions:</Text>
                           <View style={styles.statusButtons}>
                             {next && nextCfg && (
                               <Pressable
@@ -193,25 +216,16 @@ export default function OrdersScreen() {
                                 </Text>
                               </Pressable>
                             )}
-                            {/* Cancel only available while still pending */}
-                            {order.status === "pending" && (
-                              <Pressable
-                                style={[styles.statusBtn, { backgroundColor: "#FEF2F2", borderColor: "#EF4444", opacity: updatingId === order.id ? 0.5 : 1 }]}
-                                onPress={() => updateStatus(order.id, "cancelled")}
-                                disabled={updatingId === order.id}
-                              >
-                                <Feather name="x-circle" size={14} color="#EF4444" />
-                                <Text style={[styles.statusBtnText, { color: "#EF4444" }]}>Cancel Order</Text>
-                              </Pressable>
-                            )}
                           </View>
-                          {/* Lock notice for post-pending orders */}
-                          {order.status !== "pending" && (
-                            <View style={styles.lockNotice}>
-                              <Feather name="lock" size={12} color="#6B7280" />
-                              <Text style={styles.lockText}>Cancellation locked — order already accepted by admin.</Text>
-                            </View>
-                          )}
+                          {/* Admin cancel override — available at ANY active stage */}
+                          <Pressable
+                            style={[styles.statusBtn, { backgroundColor: "#FEF2F2", borderColor: "#EF4444", opacity: updatingId === order.id ? 0.5 : 1 }]}
+                            onPress={() => updateStatus(order.id, "cancelled")}
+                            disabled={updatingId === order.id}
+                          >
+                            <Feather name="x-circle" size={14} color="#EF4444" />
+                            <Text style={[styles.statusBtnText, { color: "#EF4444" }]}>Cancel Order (Admin Override)</Text>
+                          </Pressable>
                         </View>
                       );
                     })()}
@@ -265,4 +279,17 @@ const styles = StyleSheet.create({
   statusBtnText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
   lockNotice: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#F9FAFB", borderRadius: 8, padding: 10 },
   lockText: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#6B7280", flex: 1 },
+  notifBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    backgroundColor: "#1E3A5F",
+    padding: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#2563EB",
+  },
+  notifIcon: { width: 30, height: 30, borderRadius: 8, backgroundColor: "#2563EB", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 },
+  notifLabel: { fontSize: 9, fontFamily: "Inter_600SemiBold", color: "#93C5FD", letterSpacing: 0.6, textTransform: "uppercase" },
+  notifTitle: { fontSize: 13, fontFamily: "Inter_700Bold", color: "#fff", marginTop: 1 },
+  notifBody: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#CBD5E1", lineHeight: 16, marginTop: 2 },
 });

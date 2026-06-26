@@ -114,7 +114,6 @@ export default function OrdersScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>("all");
-  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [lastPolledAt, setLastPolledAt] = useState<Date | null>(null);
   const [isPolling, setIsPolling] = useState(false);
   const [changedIds, setChangedIds] = useState<Set<string>>(new Set());
@@ -211,25 +210,6 @@ export default function OrdersScreen() {
     setRefreshing(false);
   }
 
-  // Phase A: Only allowed when status === "pending"
-  // Phase B: Button is completely absent from DOM when status is confirmed+
-  async function handleCancelOrder(orderId: string) {
-    setCancellingId(orderId);
-    try {
-      const res = await apiRequest(`/orders/${orderId}/cancel`, { method: "POST" });
-      if (res.ok) {
-        setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status: "cancelled", updatedAt: new Date().toISOString() } : o));
-        setExpandedId(null);
-      } else {
-        const body = await res.json().catch(() => ({}));
-        const msg = body?.message ?? "Unable to cancel this order.";
-        alert(msg);
-      }
-    } catch {
-      alert("Network error. Please try again.");
-    }
-    setCancellingId(null);
-  }
 
   const filtered = filter === "all" ? orders : orders.filter((o) => o.status === filter);
 
@@ -459,25 +439,19 @@ export default function OrdersScreen() {
                         </View>
                       </View>
 
-                      {/* ── IRONCLAD ANTI-CANCELLATION RULE ──────────────────
-                           Phase A (pending): Button is VISIBLE & ACTIVE.
-                           Phase B (confirmed+): Element is COMPLETELY DESTROYED —
-                           not hidden, not disabled — entirely absent from the tree.
+                      {/* ── CUSTOMER CANCELLATION POLICY ─────────────────────
+                           Customers are strictly prohibited from cancelling
+                           orders at ANY stage. All cancellation authority
+                           belongs exclusively to the administration.
+                           Active orders show "Contact Support" instead.
                       ──────────────────────────────────────────────────────── */}
-                      {order.status === "pending" && (
+                      {order.status !== "delivered" && order.status !== "cancelled" && (
                         <Pressable
-                          style={[styles.cancelBtn, cancellingId === order.id && { opacity: 0.6 }]}
-                          onPress={() => handleCancelOrder(order.id)}
-                          disabled={cancellingId === order.id}
+                          style={styles.contactSupportBtn}
+                          onPress={() => router.push("/(tabs)/profile" as any)}
                         >
-                          {cancellingId === order.id ? (
-                            <ActivityIndicator size="small" color="#EF4444" />
-                          ) : (
-                            <Feather name="x-circle" size={15} color="#EF4444" />
-                          )}
-                          <Text style={styles.cancelBtnText}>
-                            {cancellingId === order.id ? "Cancelling…" : "Cancel Order"}
-                          </Text>
+                          <Feather name="headphones" size={15} color="#2563EB" />
+                          <Text style={styles.contactSupportText}>Contact Support</Text>
                         </Pressable>
                       )}
                     </View>
@@ -563,7 +537,7 @@ const styles = StyleSheet.create({
   metaKey: { fontSize: 10, fontFamily: "Inter_400Regular" },
   metaVal: { fontSize: 13, fontFamily: "Inter_700Bold" },
   metaDivider: { width: 1 },
-  cancelBtn: {
+  contactSupportBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -571,9 +545,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: "#EF4444",
-    backgroundColor: "#FEF2F2",
+    borderColor: "#2563EB",
+    backgroundColor: "#EFF6FF",
     marginTop: 4,
   },
-  cancelBtnText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#EF4444" },
+  contactSupportText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#2563EB" },
 });

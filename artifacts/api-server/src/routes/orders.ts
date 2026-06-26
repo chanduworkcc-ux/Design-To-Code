@@ -130,45 +130,15 @@ router.get("/orders/:id", authMiddleware, async (req: AuthRequest, res) => {
   res.json({ order: orders[0] });
 });
 
-// ─── Ironclad Anti-Cancellation Rule ─────────────────────────────────────────
-// Phase A: Cancellation ONLY permitted when status is "pending" (Order Created).
-// Phase B: The moment an admin moves the order to "confirmed" or beyond, this
-//          endpoint is permanently locked with 403 TRANSACTION_LOCKED.
-router.post("/orders/:id/cancel", authMiddleware, async (req: AuthRequest, res) => {
-  const orders = await db.select().from(ordersTable).where(eq(ordersTable.id, req.params.id));
-  if (!orders.length || orders[0].userId !== req.userId) {
-    res.status(404).json({ error: "Order not found" });
-    return;
-  }
-  const order = orders[0];
-
-  const LOCKED_STATUSES = ["confirmed", "shipped", "delivered"];
-  if (LOCKED_STATUSES.includes(order.status)) {
-    res.status(403).json({
-      error: "TRANSACTION_LOCKED",
-      message: "This order has already been processed and accepted by the administration. Cancellation is no longer permitted.",
-    });
-    return;
-  }
-
-  if (order.status === "cancelled") {
-    res.status(400).json({ error: "Order is already cancelled." });
-    return;
-  }
-
-  const [updated] = await db
-    .update(ordersTable)
-    .set({ status: "cancelled", updatedAt: new Date() })
-    .where(eq(ordersTable.id, order.id))
-    .returning();
-
-  // Restore stock when cancelled
-  await db
-    .update(productsTable)
-    .set({ stock: sql`${productsTable.stock} + 1` })
-    .where(eq(productsTable.id, order.productId));
-
-  res.json({ order: updated });
+// ─── Customer Cancellation: PERMANENTLY FORBIDDEN ────────────────────────────
+// Customers are strictly prohibited from cancelling orders at ANY stage.
+// All cancellation authority is exclusively reserved for administrators.
+// The customer UI replaces all cancel actions with "Contact Support".
+router.post("/orders/:id/cancel", authMiddleware, async (_req: AuthRequest, res) => {
+  res.status(403).json({
+    error: "CUSTOMER_CANCELLATION_FORBIDDEN",
+    message: "Order cancellation is not permitted from the customer interface. Please contact support if you need assistance with your order.",
+  });
 });
 
 router.get("/admin/orders", authMiddleware, adminMiddleware, async (_req, res) => {
@@ -176,9 +146,36 @@ router.get("/admin/orders", authMiddleware, adminMiddleware, async (_req, res) =
   res.json({ orders });
 });
 
-// Linear pipeline: pending → confirmed → shipped → delivered
-// Admin cannot skip stages or move backwards.
+// ─── Admin Order Status — Absolute Override ───────────────────────────────────
+// Admin has FULL CRUD authority over all orders at every stage.
+// Forward pipeline: pending → confirmed → shipped → delivered
+// Admin can also cancel ANY active order at any stage (full override).
+// Notification payload is returned for each transition so the mobile app can
+// display the appropriate in-app alert to the customer.
 const STATUS_PIPELINE = ["pending", "confirmed", "shipped", "delivered", "cancelled"];
+
+const NOTIFICATION_TEMPLATES: Record<string, { title: string; body: string }> = {
+  confirmed: {
+    title: "🎉 Order Confirmed!",
+    body: "Great news, {Customer_Name}! Your order #{Order_ID} has been approved and accepted by our team. We're now preparing your package for dispatch. Track real-time updates inside the app!",
+  },
+  shipped: {
+    title: "📦 Your Order Is On Its Way!",
+    body: "Exciting update, {Customer_Name}! Order #{Order_ID} has been shipped via {Courier_Name}. Tracking ID: {Tracking_Number}. Tap here to track your delivery live!",
+  },
+  tracking_updated: {
+    title: "🚚 Delivery Update",
+    body: "Hey {Customer_Name}, there's a new update on order #{Order_ID}: {Tracking_Update}. Stay tuned — your package is moving!",
+  },
+  delivered: {
+    title: "✅ Order Delivered!",
+    body: "Your order #{Order_ID} has been successfully delivered, {Customer_Name}. Thank you for shopping with us! We'd love your feedback.",
+  },
+  cancelled: {
+    title: "Order Cancelled",
+    body: "Hello {Customer_Name}, your order #{Order_ID} has been cancelled by our administration team. If a payment was made, your refund will be processed back to your wallet within the standard timeline. Contact support for any queries.",
+  },
+};
 
 router.put("/admin/orders/:id/status", authMiddleware, adminMiddleware, async (req, res) => {
   const { status, courierPartner, trackingNumber } = req.body;
@@ -193,26 +190,19 @@ router.put("/admin/orders/:id/status", authMiddleware, adminMiddleware, async (r
   const order = orders[0];
 
   if (order.status === "delivered" || order.status === "cancelled") {
-    res.status(400).json({ error: `Cannot update a ${order.status} order.` });
+    res.status(400).json({ error: `Order is already ${order.status}. No further updates are possible.` });
     return;
   }
 
   const currentIdx = STATUS_PIPELINE.indexOf(order.status);
   const newIdx = STATUS_PIPELINE.indexOf(status);
 
-  // Allow only forward progression (or cancel from pending)
-  if (status === "cancelled" && order.status !== "pending") {
-    res.status(403).json({
-      error: "TRANSACTION_LOCKED",
-      message: "Only pending orders can be cancelled. This order has already been accepted.",
-    });
-    return;
-  }
-
+  // Admin can cancel from any active stage (absolute override).
+  // For forward progression, enforce linear pipeline (no stage-skipping).
   if (status !== "cancelled" && newIdx !== currentIdx + 1) {
     res.status(400).json({
       error: "INVALID_TRANSITION",
-      message: `Cannot move order from '${order.status}' to '${status}'. Status must follow the pipeline: pending → confirmed → shipped → delivered.`,
+      message: `Cannot move order from '${order.status}' to '${status}'. Follow the pipeline: pending → confirmed → shipped → delivered.`,
     });
     return;
   }
@@ -227,7 +217,10 @@ router.put("/admin/orders/:id/status", authMiddleware, adminMiddleware, async (r
     .where(eq(ordersTable.id, req.params.id))
     .returning();
 
-  res.json({ order: updated });
+  // Return the notification template so the client can display the in-app alert
+  const notification = NOTIFICATION_TEMPLATES[status] ?? null;
+
+  res.json({ order: updated, notification });
 });
 
 export default router;
