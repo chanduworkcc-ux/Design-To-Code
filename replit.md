@@ -1,36 +1,52 @@
-# [Project name]
+# XyloCart
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A full-stack mobile shopping app built with Expo/React Native and an Express + PostgreSQL backend.
 
 ## Run & Operate
 
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/mobile run dev` — run the Expo mobile app
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `pnpm --filter @workspace/scripts run seed` — seed admin user + products
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
+- Mobile: Expo SDK 53, Expo Router, React Native
 - API: Express 5
 - DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- Auth: JWT (jsonwebtoken) + bcryptjs
+- Validation: Zod (v3 — import from `"zod"`, not `"zod/v4"`)
+- Build: esbuild (ESM bundle)
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/mobile/` — Expo React Native app (customer + admin)
+- `artifacts/api-server/` — Express 5 REST API
+- `lib/db/` — Drizzle ORM schema + migrations
+- `scripts/src/seed.ts` — seed script (admin user + 6 products)
+- `artifacts/mobile/context/AuthContext.tsx` — auth state + apiRequest helper
+- `artifacts/mobile/app/(auth)/` — login + register screens
+- `artifacts/mobile/app/(tabs)/` — Shop, Search, Wishlist, Cart, Profile
+- `artifacts/mobile/app/admin/` — Admin dashboard
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- All API routes under `/api` prefix; shared reverse proxy routes by path
+- Device UUID enforcement on registration: iOS (applicationId), Android (androidId), web (localStorage)
+- Single-item-per-order rule enforced server-side in `/api/orders`
+- Wallet uses coins (100 coins = ₹1); coins_per_inr seeded via system_config
+- Admin panel accessible from Profile tab; uses same JWT auth as customers (role check)
+- esbuild bundles API server as ESM; zod must be imported as `"zod"` (not `"zod/v4"`)
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- **Customer app**: Shop browse, search, wishlist, cart, profile with wallet balance
+- **Auth**: Register (with referral code) + login; guest browsing supported
+- **Admin panel**: Animated sidebar dashboard with 15 nav items; live stats from API
+- **Backend features**: Auth, wallet/coins, referrals, orders, support tickets, coupons, activity logs, system config
 
 ## User preferences
 
@@ -38,7 +54,11 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Import `zod` as `"zod"`, never `"zod/v4"` — esbuild cannot resolve the package.json exports map
+- `@workspace/api-zod` is listed in api-server deps but may be unused; safe to remove if causing issues
+- Mobile workflow uses `EXPO_PUBLIC_DOMAIN` env var to construct API base URL
+- Admin credentials for mobile admin panel login: `admin@gmail.com` / `123456` (hardcoded in `app/admin/index.tsx`)
+- API admin user seeded via `scripts/src/seed.ts`: `admin@xyloscart.com` / `admin123`
 
 ## Pointers
 

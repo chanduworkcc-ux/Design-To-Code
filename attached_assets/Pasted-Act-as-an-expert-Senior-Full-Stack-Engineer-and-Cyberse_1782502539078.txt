@@ -1,0 +1,61 @@
+Act as an expert Senior Full-Stack Engineer and Cybersecurity Architect. Generate a complete, production-ready implementation of a synchronized Admin Control Panel and Customer Application ecosystem. The system requires strict business logic, data sanitization, anti-fraud guardrails, and absolute dynamic control by the administrator.
+
+---
+
+### 1. CORE SYSTEM ARCHITECTURE & ENFORCEMENTS
+- **One Device, One Account:** Implement a registration system that captures a unique, hardware-bound 'device_uuid' from the customer app. If a registration request contains an existing 'device_uuid', reject it with a 400 Security Exception.
+- **Single-Item Cart Enforcement:** Restrict order placement logic to a maximum of one (1) item per order. If 'items.length != 1' at checkout, reject the request with an explicit error message.
+- **Dynamic Conversion Engine:** Implement a standard internal wallet system where 1000 coins = ₹10 INR (0.01 INR per coin). Admins must be able to change this exchange rate factor dynamically from the database.
+
+---
+
+### 2. REFERRAL & REWARD WALLET SUB-SYSTEM
+- **Dynamic Referral Logic:** New users signing up via a valid referral link award a configurable number of coins (Default: 100 coins) to the referrer.
+- **Admin Control Matrix:** Provide admin overrides to alter referral coin payouts dynamically or shut down the entire referral system globally with an instant toggle switch.
+- **Withdrawal Requests & Tracking:**
+  - Customers can request a payout by inputting their target UPI ID and a variable coin balance.
+  - The request state goes into 'PENDING'. The user-facing string must display: "Please wait until the admin will accept that soon. Okay?"
+  - Provide an Admin Approvals Module. Once approved, mark as 'APPROVED' and transition states. Customers must be able to track this state history in real time.
+
+---
+
+### 3. LIVE TICKETING & USER SUPPORT SYSTEM
+- **Customer Workspace:** Provide an interface for customers to raise support tickets with text descriptions and categories.
+- **Admin Resolve Engine:** Provide an interactive workflow where admins can pull open tickets, review them, post operational notes, mark tickets as 'RESOLVED', or permanently 'CLOSE' them.
+
+---
+
+### 4. DYNAMIC MARKETING COUPONS
+- **Dual-Scope Management:** Support both 'PUBLIC' (viewable by all) and 'PRIVATE' (targeted) coupon architectures.
+- **Cohort Targeting Filters:** Build operational filters that match and validate against targeted categories: 'ALL_USERS', 'NEW_USERS' (e.g., zero completed orders), and 'OLD_USERS'.
+
+---
+
+### 5. FINANCIAL PARAMETERS & PAYMENT LOG ENGINE
+- **Dynamic Fee Injection:** Order totals must be computed dynamically using operational variables controlled by the admin. Provide configuration lines for:
+  - Base Delivery Charges (Flat INR)
+  - Applicable Tax Percentages (%)
+  - Base Service Charges (Flat INR)
+  - Application Maintenance Charges (Flat INR)
+- **Payment Gateway Toggles:** Provide state toggles and encrypted string fields for 'Razorpay' and 'PhonePe' integration keys (Live Keys, Secret Keys, Merchant IDs).
+- **COD Master Switch:** Provide a global on/off toggle for Cash on Delivery (COD). When disabled, remove the option completely from customer application payment options.
+
+---
+
+### 6. REAL-TIME DATA ANALYSIS & ACTIVITY LOG AUDITING
+- **Intrusive Security Logger:** Intercept every customer request and save an audit trailing footprint into a database: User ID, Timestamp, Destination URL path, Remote IP Address, and Device Browser User Agent.
+- **Admin Anti-Fraud Matrix:** Provide dashboards to view user activity history logs. Give admins the ability to instantly 'BAN' a malicious identifier permanently or issue a temporary account 'SUSPENSION' with a distinct calendar expiry date.
+
+---
+
+### 7. CENTRAL STORE & ACCESS CONTROLS
+- **Authentication Toggle Switches:** Give admins a global toggle to turn Login/Registration 'ON' or 'OFF'. If 'OFF', the system bypasses registration gateways, allowing public guest browsing of the application catalog.
+- **Global Maintenance Engine:** Implement a central operational flag. If activated, lock down user routes and display a clean screen showing a configurable maintenance message and required application version update parameters.
+- **Targeted Push Notifications:** Implement segmented notification delivery routes capable of blasting messages to 'All Customers', 'New Customers', 'Old Customers', or a specific targeted individual user ID.
+
+---
+
+### 🛠️ TECHNICAL DELIVERY REQUIREMENTS
+1. Provide clean database migration scripts (PostgreSQL/MySQL) setting up all foreign-key constraints, tables, indexes, and initial configuration rows.
+2. Provide clean API backend routes handling all user validations, state updates, and security middleware.
+3. Keep the code fully modular, well-commented, and completely free of mock structures or hard-coded configurations.
