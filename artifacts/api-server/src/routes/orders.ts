@@ -178,7 +178,7 @@ const NOTIFICATION_TEMPLATES: Record<string, { title: string; body: string }> = 
 };
 
 router.put("/admin/orders/:id/status", authMiddleware, adminMiddleware, async (req, res) => {
-  const { status, courierPartner, trackingNumber } = req.body;
+  const { status, courierPartner, trackingNumber, utrNumber, cancellationReason } = req.body;
 
   if (!STATUS_PIPELINE.includes(status)) {
     res.status(400).json({ error: "Invalid status value." });
@@ -210,6 +210,8 @@ router.put("/admin/orders/:id/status", authMiddleware, adminMiddleware, async (r
   const updateData: Record<string, any> = { status, updatedAt: new Date() };
   if (status === "shipped" && courierPartner) updateData.courierPartner = courierPartner;
   if (status === "shipped" && trackingNumber) updateData.trackingNumber = trackingNumber;
+  if (status === "cancelled" && utrNumber) updateData.utrNumber = utrNumber;
+  if (status === "cancelled" && cancellationReason) updateData.cancellationReason = cancellationReason;
 
   const [updated] = await db
     .update(ordersTable)

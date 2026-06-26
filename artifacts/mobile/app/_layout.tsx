@@ -31,6 +31,11 @@ function RootLayoutNav() {
       <Stack.Screen name="checkout" options={{ headerShown: false }} />
       <Stack.Screen name="policies" options={{ headerShown: false }} />
       <Stack.Screen name="referrals" options={{ headerShown: false }} />
+      <Stack.Screen name="personal-info" options={{ headerShown: false }} />
+      <Stack.Screen name="notifications-user" options={{ headerShown: false }} />
+      <Stack.Screen name="support-ticket" options={{ headerShown: false }} />
+      <Stack.Screen name="appearance" options={{ headerShown: false }} />
+      <Stack.Screen name="payment-methods" options={{ headerShown: false }} />
     </Stack>
   );
 }

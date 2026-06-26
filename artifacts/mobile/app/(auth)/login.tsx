@@ -154,9 +154,6 @@ export default function LoginScreen() {
           </Pressable>
         </View>
 
-        <Pressable onPress={() => router.replace("/(tabs)")} style={styles.guestBtn}>
-          <Text style={[styles.guestText, { color: colors.mutedForeground }]}>Continue as Guest</Text>
-        </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
   );

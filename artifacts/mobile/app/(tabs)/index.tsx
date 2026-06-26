@@ -22,6 +22,17 @@ import { Product } from "@/data/products";
 
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
+
+function getISTGreeting(): string {
+  const now = new Date();
+  const istOffset = 5.5 * 60 * 60 * 1000;
+  const istTime = new Date(now.getTime() + istOffset - now.getTimezoneOffset() * 60 * 1000);
+  const hour = istTime.getUTCHours();
+  if (hour >= 5 && hour < 12) return "Good Morning";
+  if (hour >= 12 && hour < 17) return "Good Afternoon";
+  if (hour >= 17 && hour < 21) return "Good Evening";
+  return "Good Night";
+}
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const BANNER_WIDTH = SCREEN_WIDTH - 32;
 
@@ -48,7 +59,7 @@ export default function ShopScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { cartCount } = useApp();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   
   const [products, setProducts] = useState<Product[]>(staticProducts);
   const [banners, setBanners] = useState<ApiBanner[]>([]);
@@ -128,8 +139,8 @@ export default function ShopScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={[styles.welcomeText, { color: colors.mutedForeground }]}>Welcome to</Text>
-            <Text style={[styles.brandName, { color: colors.text }]}>XyloCart</Text>
+            <Text style={[styles.welcomeText, { color: colors.mutedForeground }]}>{getISTGreeting()} 👋</Text>
+            <Text style={[styles.brandName, { color: colors.text }]}>{user?.name?.split(" ")[0] ?? "XyloCart"}</Text>
           </View>
           <Pressable
             style={[styles.cartBtn, { backgroundColor: colors.card, borderColor: colors.border }]}

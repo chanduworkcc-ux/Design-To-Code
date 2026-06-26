@@ -1,7 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { Alert, Platform } from "react-native";
+import { Alert, Appearance, Platform } from "react-native";
 import { Product } from "@/data/products";
+
+export type ThemeMode = "light" | "dark" | "system";
 
 interface CartItem extends Product {
   quantity: 1;
@@ -20,13 +22,21 @@ interface AppContextType {
   cartCount: number;
   wishlistCount: number;
   cartTotal: number;
+  themeMode: ThemeMode;
+  setThemeMode: (mode: ThemeMode) => void;
+  resolvedTheme: "light" | "dark";
 }
 
-const AppContext = createContext<AppContextType | null>(null);
+export const AppContext = createContext<AppContextType | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [wishlist, setWishlist] = useState<Product[]>([]);
+  const [themeMode, setThemeModeState] = useState<ThemeMode>("system");
+
+  const systemScheme = Appearance.getColorScheme() ?? "light";
+  const resolvedTheme: "light" | "dark" =
+    themeMode === "system" ? systemScheme : themeMode;
 
   useEffect(() => {
     loadData();
@@ -34,13 +44,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   async function loadData() {
     try {
-      const [cartData, wishlistData] = await Promise.all([
+      const [cartData, wishlistData, savedTheme] = await Promise.all([
         AsyncStorage.getItem("cart"),
         AsyncStorage.getItem("wishlist"),
+        AsyncStorage.getItem("theme_mode"),
       ]);
       if (cartData) setCart(JSON.parse(cartData));
       if (wishlistData) setWishlist(JSON.parse(wishlistData));
+      if (savedTheme && ["light", "dark", "system"].includes(savedTheme)) {
+        setThemeModeState(savedTheme as ThemeMode);
+      }
     } catch {}
+  }
+
+  async function setThemeMode(mode: ThemeMode) {
+    setThemeModeState(mode);
+    await AsyncStorage.setItem("theme_mode", mode);
   }
 
   async function saveCart(newCart: CartItem[]) {
@@ -111,6 +130,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       cart, wishlist, addToCart, removeFromCart, clearCart,
       addToWishlist, removeFromWishlist, isInWishlist, isInCart,
       cartCount, wishlistCount, cartTotal,
+      themeMode, setThemeMode, resolvedTheme,
     }}>
       {children}
     </AppContext.Provider>

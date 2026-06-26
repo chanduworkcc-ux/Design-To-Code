@@ -1,0 +1,23 @@
+Here is the comprehensive English prompt incorporating all your requested features and specifications:
+### 1. UI/UX Enhancements (Fixes)
+ * Fix excess white space layout issues at the top of both the User and Admin interfaces for balanced, professional header spacing.
+ * Scan and fix all existing UI/UX and cross-interface errors, ensuring all interactive components work smoothly.
+### 2. Automated Smart Notifications (Customer Retention)
+ * Implement an automated, behavior-based push notification system to re-engage idle users.
+ * For example, if a customer opens the app but closes it without placing an order, trigger friendly retention notifications after a set period.
+### 3. Advanced Referral & Wallet System
+Implement a customized referral loop fully managed by the admin:
+ * The referrer shares a code; the referee gets no immediate sign-up reward.
+ * Once the referee's order is successfully delivered, the referrer automatically receives 100 coins.
+ * Coins cannot be used directly; the user must reach a minimum threshold of 1,000 coins, which is convertible to currency.
+ * Introduce a "Swipe to Withdraw into Wallet" feature once the 1,000-coin milestone is reached.
+ * Provide admin controls to turn the referral system on and off, and to edit coin values and conversion rates.
+### 4. Admin Management, Tracking & Logs
+ * Provide an admin dashboard to track comprehensive user logs, app activity, and order histories.
+ * For admin-canceled orders, require a mandatory reason for cancellation and initiate a refund, updating the status in the user's profile instantly.
+### 5. Dynamic Product & Tiered Pricing Management
+ * Enable administrators to add and edit products, descriptions, and stock quantities.
+ * Implement dynamic pricing per product for new users, old users, and special users.
+ * Provide toggle controls to hide or show specific products for particular user segments.
+### 6. Data Export & Analytics
+ * Provide a dedicated button in the admin panel to download all system data—including order histories, sign-ups, and transaction logs—in a standard CSV format.

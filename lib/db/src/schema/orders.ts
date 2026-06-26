@@ -23,6 +23,8 @@ export const ordersTable = pgTable("orders", {
   discountAmount: real("discount_amount").notNull().default(0),
   total: real("total").notNull(),
   shippingAddress: text("shipping_address"),
+  utrNumber: text("utr_number"),
+  cancellationReason: text("cancellation_reason"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

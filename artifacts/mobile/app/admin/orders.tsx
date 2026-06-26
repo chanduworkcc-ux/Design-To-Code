@@ -9,6 +9,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -25,6 +26,8 @@ interface Order {
   total: number;
   quantity: number;
   createdAt: string;
+  utrNumber?: string;
+  cancellationReason?: string;
 }
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; label: string; icon: string }> = {
@@ -35,8 +38,6 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string; label: string; 
   cancelled: { color: "#EF4444", bg: "#FEF2F2", label: "Cancelled",       icon: "x-circle" },
 };
 
-// Linear pipeline — admin can ONLY advance to the next stage, never skip or reverse.
-// pending → confirmed → shipped → delivered  (cancelled only from pending)
 const STATUS_ORDER = ["pending", "confirmed", "shipped", "delivered", "cancelled"];
 
 function getNextStatus(current: string): string | null {
@@ -59,6 +60,11 @@ export default function OrdersScreen() {
   const [notification, setNotification] = useState<{ title: string; body: string; orderId: string } | null>(null);
   const topPadding = Platform.OS === "web" ? 0 : insets.top;
 
+  // UTR/cancellation state per order
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [utrInput, setUtrInput] = useState("");
+  const [cancelReason, setCancelReason] = useState("");
+
   useEffect(() => { fetchOrders(); }, []);
 
   async function fetchOrders() {
@@ -75,17 +81,24 @@ export default function OrdersScreen() {
     setRefreshing(false);
   }
 
-  async function updateStatus(orderId: string, status: string) {
+  async function updateStatus(orderId: string, status: string, extras?: { utrNumber?: string; cancellationReason?: string }) {
     setUpdatingId(orderId);
     try {
+      const body: Record<string, any> = { status };
+      if (extras?.utrNumber) body.utrNumber = extras.utrNumber;
+      if (extras?.cancellationReason) body.cancellationReason = extras.cancellationReason;
+
       const res = await apiRequest(`/admin/orders/${orderId}/status`, {
         method: "PUT",
-        body: JSON.stringify({ status }),
+        body: JSON.stringify(body),
       });
       if (res.ok) {
         const data = await res.json();
-        setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)));
+        setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, ...data.order } : o)));
         setExpandedId(null);
+        setCancellingId(null);
+        setUtrInput("");
+        setCancelReason("");
         if (data.notification) {
           setNotification({ ...data.notification, orderId });
           setTimeout(() => setNotification(null), 8000);
@@ -93,6 +106,25 @@ export default function OrdersScreen() {
       }
     } catch {}
     setUpdatingId(null);
+  }
+
+  function handleCancelPress(orderId: string) {
+    if (cancellingId === orderId) {
+      setCancellingId(null);
+      setUtrInput("");
+      setCancelReason("");
+    } else {
+      setCancellingId(orderId);
+      setUtrInput("");
+      setCancelReason("");
+    }
+  }
+
+  async function handleConfirmCancel(orderId: string) {
+    await updateStatus(orderId, "cancelled", {
+      utrNumber: utrInput.trim() || undefined,
+      cancellationReason: cancelReason.trim() || undefined,
+    });
   }
 
   const filtered = filter === "all" ? orders : orders.filter((o) => o.status === filter);
@@ -113,7 +145,7 @@ export default function OrdersScreen() {
         </Pressable>
       </View>
 
-      {/* Notification preview — appears after each admin status update */}
+      {/* Notification preview */}
       {!!notification && (
         <View style={styles.notifBanner}>
           <View style={styles.notifIcon}>
@@ -169,6 +201,7 @@ export default function OrdersScreen() {
           {filtered.map((order) => {
             const cfg = STATUS_CONFIG[order.status] ?? STATUS_CONFIG.pending;
             const isExpanded = expandedId === order.id;
+            const isCancelling = cancellingId === order.id;
             return (
               <View key={order.id} style={styles.orderCard}>
                 <Pressable style={styles.orderHeader} onPress={() => setExpandedId(isExpanded ? null : order.id)}>
@@ -196,7 +229,22 @@ export default function OrdersScreen() {
                       <Text style={styles.metaLabel}>Pay Status: <Text style={styles.metaValue}>{order.paymentStatus}</Text></Text>
                     </View>
 
-                    {/* Admin Full Override — advance pipeline OR cancel at any stage */}
+                    {/* UTR / Cancellation info for cancelled orders */}
+                    {order.status === "cancelled" && (order.utrNumber || order.cancellationReason) && (
+                      <View style={styles.utrBox}>
+                        <Feather name="info" size={14} color="#6B7280" />
+                        <View style={{ flex: 1, gap: 4 }}>
+                          {order.cancellationReason && (
+                            <Text style={styles.utrLabel}>Reason: <Text style={styles.utrValue}>{order.cancellationReason}</Text></Text>
+                          )}
+                          {order.utrNumber && (
+                            <Text style={styles.utrLabel}>UTR No.: <Text style={styles.utrValue}>{order.utrNumber}</Text></Text>
+                          )}
+                        </View>
+                      </View>
+                    )}
+
+                    {/* Admin actions */}
                     {order.status !== "delivered" && order.status !== "cancelled" && (() => {
                       const next = getNextStatus(order.status);
                       const nextCfg = next ? STATUS_CONFIG[next] : null;
@@ -217,15 +265,70 @@ export default function OrdersScreen() {
                               </Pressable>
                             )}
                           </View>
-                          {/* Admin cancel override — available at ANY active stage */}
-                          <Pressable
-                            style={[styles.statusBtn, { backgroundColor: "#FEF2F2", borderColor: "#EF4444", opacity: updatingId === order.id ? 0.5 : 1 }]}
-                            onPress={() => updateStatus(order.id, "cancelled")}
-                            disabled={updatingId === order.id}
-                          >
-                            <Feather name="x-circle" size={14} color="#EF4444" />
-                            <Text style={[styles.statusBtnText, { color: "#EF4444" }]}>Cancel Order (Admin Override)</Text>
-                          </Pressable>
+
+                          {/* Cancel order — shows UTR/reason form inline */}
+                          {!isCancelling ? (
+                            <Pressable
+                              style={[styles.statusBtn, { backgroundColor: "#FEF2F2", borderColor: "#EF4444", opacity: updatingId === order.id ? 0.5 : 1 }]}
+                              onPress={() => handleCancelPress(order.id)}
+                              disabled={updatingId === order.id}
+                            >
+                              <Feather name="x-circle" size={14} color="#EF4444" />
+                              <Text style={[styles.statusBtnText, { color: "#EF4444" }]}>Cancel Order (Admin Override)</Text>
+                            </Pressable>
+                          ) : (
+                            <View style={styles.cancelForm}>
+                              <Text style={styles.cancelFormTitle}>Cancel Order — Admin Override</Text>
+                              <Text style={styles.cancelFormHint}>If a refund is applicable, enter the UTR number from your bank/UPI portal.</Text>
+
+                              <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>UTR / Transaction Ref. No. (optional)</Text>
+                                <TextInput
+                                  style={styles.input}
+                                  value={utrInput}
+                                  onChangeText={setUtrInput}
+                                  placeholder="e.g. 425612345678"
+                                  placeholderTextColor="#9CA3AF"
+                                  autoCapitalize="characters"
+                                  autoCorrect={false}
+                                />
+                              </View>
+
+                              <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>Cancellation Reason (optional)</Text>
+                                <TextInput
+                                  style={[styles.input, styles.textarea]}
+                                  value={cancelReason}
+                                  onChangeText={setCancelReason}
+                                  placeholder="e.g. Item out of stock, Customer requested cancellation..."
+                                  placeholderTextColor="#9CA3AF"
+                                  multiline
+                                  numberOfLines={3}
+                                  textAlignVertical="top"
+                                />
+                              </View>
+
+                              <View style={styles.cancelFormButtons}>
+                                <Pressable
+                                  style={styles.cancelFormBack}
+                                  onPress={() => handleCancelPress(order.id)}
+                                >
+                                  <Text style={styles.cancelFormBackText}>Go Back</Text>
+                                </Pressable>
+                                <Pressable
+                                  style={[styles.cancelFormConfirm, { opacity: updatingId === order.id ? 0.5 : 1 }]}
+                                  onPress={() => handleConfirmCancel(order.id)}
+                                  disabled={updatingId === order.id}
+                                >
+                                  {updatingId === order.id ? (
+                                    <ActivityIndicator size="small" color="#fff" />
+                                  ) : (
+                                    <Text style={styles.cancelFormConfirmText}>Confirm Cancel</Text>
+                                  )}
+                                </Pressable>
+                              </View>
+                            </View>
+                          )}
                         </View>
                       );
                     })()}
@@ -270,24 +373,31 @@ const styles = StyleSheet.create({
   statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   statusText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
   orderExpanded: { padding: 14, borderTopWidth: 1, borderTopColor: "#F3F4F6", gap: 12 },
-  orderMeta: { flexDirection: "row", gap: 16 },
+  orderMeta: { flexDirection: "row", gap: 16, flexWrap: "wrap" },
   metaLabel: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280" },
   metaValue: { fontFamily: "Inter_600SemiBold", color: "#0F1740" },
+  utrBox: { flexDirection: "row", gap: 8, alignItems: "flex-start", backgroundColor: "#F9FAFB", borderRadius: 10, borderWidth: 1, borderColor: "#E5EAF8", padding: 10 },
+  utrLabel: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280" },
+  utrValue: { fontFamily: "Inter_600SemiBold", color: "#0F1740" },
   updateLabel: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#374151" },
   statusButtons: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   statusBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, borderWidth: 1 },
   statusBtnText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  cancelForm: { backgroundColor: "#FEF2F2", borderRadius: 12, borderWidth: 1, borderColor: "#FECACA", padding: 14, gap: 10 },
+  cancelFormTitle: { fontSize: 14, fontFamily: "Inter_700Bold", color: "#991B1B" },
+  cancelFormHint: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#B91C1C", lineHeight: 18 },
+  inputGroup: { gap: 4 },
+  inputLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#6B7280" },
+  input: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#E5EAF8", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, fontFamily: "Inter_500Medium", color: "#0F1740" },
+  textarea: { minHeight: 60, textAlignVertical: "top" },
+  cancelFormButtons: { flexDirection: "row", gap: 8, marginTop: 4 },
+  cancelFormBack: { flex: 1, paddingVertical: 12, alignItems: "center", borderRadius: 10, backgroundColor: "#F3F4F6", borderWidth: 1, borderColor: "#E5EAF8" },
+  cancelFormBackText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#374151" },
+  cancelFormConfirm: { flex: 1, paddingVertical: 12, alignItems: "center", borderRadius: 10, backgroundColor: "#EF4444" },
+  cancelFormConfirmText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#fff" },
   lockNotice: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#F9FAFB", borderRadius: 8, padding: 10 },
   lockText: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#6B7280", flex: 1 },
-  notifBanner: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-    backgroundColor: "#1E3A5F",
-    padding: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: "#2563EB",
-  },
+  notifBanner: { flexDirection: "row", alignItems: "flex-start", gap: 10, backgroundColor: "#1E3A5F", padding: 14, borderBottomWidth: 1, borderBottomColor: "#2563EB" },
   notifIcon: { width: 30, height: 30, borderRadius: 8, backgroundColor: "#2563EB", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 },
   notifLabel: { fontSize: 9, fontFamily: "Inter_600SemiBold", color: "#93C5FD", letterSpacing: 0.6, textTransform: "uppercase" },
   notifTitle: { fontSize: 13, fontFamily: "Inter_700Bold", color: "#fff", marginTop: 1 },

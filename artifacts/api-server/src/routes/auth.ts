@@ -168,4 +168,21 @@ router.get("/auth/me", authMiddleware, async (req: AuthRequest, res) => {
   res.json({ user: users[0] });
 });
 
+const patchMeSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+});
+
+router.patch("/auth/me", authMiddleware, async (req: AuthRequest, res) => {
+  const parsed = patchMeSchema.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: "Validation failed", details: parsed.error.issues }); return; }
+  const { name } = parsed.data;
+  if (!name) { res.status(400).json({ error: "Nothing to update." }); return; }
+  const [updated] = await db.update(usersTable)
+    .set({ name })
+    .where(eq(usersTable.id, req.userId!))
+    .returning({ id: usersTable.id, email: usersTable.email, name: usersTable.name, role: usersTable.role, walletBalance: usersTable.walletBalance, referralCode: usersTable.referralCode });
+  if (!updated) { res.status(404).json({ error: "User not found" }); return; }
+  res.json({ user: updated });
+});
+
 export default router;
