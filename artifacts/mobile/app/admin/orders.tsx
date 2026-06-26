@@ -69,7 +69,7 @@ export default function OrdersScreen() {
     setUpdatingId(orderId);
     try {
       const res = await apiRequest(`/admin/orders/${orderId}/status`, {
-        method: "PATCH",
+        method: "PUT",
         body: JSON.stringify({ status }),
       });
       if (res.ok) {

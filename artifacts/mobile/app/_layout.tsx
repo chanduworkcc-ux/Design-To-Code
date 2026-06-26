@@ -28,6 +28,8 @@ function RootLayoutNav() {
       <Stack.Screen name="admin" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="orders" options={{ headerShown: false }} />
+      <Stack.Screen name="checkout" options={{ headerShown: false }} />
+      <Stack.Screen name="policies" options={{ headerShown: false }} />
     </Stack>
   );
 }
