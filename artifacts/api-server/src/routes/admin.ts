@@ -8,11 +8,14 @@ import {
   withdrawalRequestsTable,
   activityLogsTable,
   systemConfigTable,
+  walletTransactionsTable,
+  referralsTable,
 } from "@workspace/db/schema";
-import { eq, desc, count, sql, and, gte, lte } from "drizzle-orm";
+import { eq, desc, count, sql, and, gte, lte, inArray } from "drizzle-orm";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../middleware/auth";
 import { getAllConfig, setConfig } from "../lib/config";
 import { z } from "zod";
+import { v4 as uuidv4 } from "uuid";
 
 const router = Router();
 
@@ -21,7 +24,7 @@ const router = Router();
 router.get("/admin/stats", authMiddleware, adminMiddleware, async (_req, res) => {
   const [totalUsers] = await db.select({ count: count() }).from(usersTable).where(eq(usersTable.role, "user"));
   const [bannedUsers] = await db.select({ count: count() }).from(usersTable).where(eq(usersTable.status, "banned"));
-  const [suspendedUsers] = await db.select({ count: count() }).from(usersTable).where(eq(usersTable.status, "suspended"));
+  const [pendingUsers] = await db.select({ count: count() }).from(usersTable).where(eq(usersTable.status, "pending"));
   const [totalOrders] = await db.select({ count: count() }).from(ordersTable);
   const [pendingOrders] = await db.select({ count: count() }).from(ordersTable).where(eq(ordersTable.status, "pending"));
   const [shippedOrders] = await db.select({ count: count() }).from(ordersTable).where(eq(ordersTable.status, "shipped"));
@@ -29,27 +32,15 @@ router.get("/admin/stats", authMiddleware, adminMiddleware, async (_req, res) =>
   const [openTickets] = await db.select({ count: count() }).from(supportTicketsTable).where(eq(supportTicketsTable.status, "open"));
   const [pendingWithdrawals] = await db.select({ count: count() }).from(withdrawalRequestsTable).where(eq(withdrawalRequestsTable.status, "pending"));
 
-  // Online users: any user with activity log in the last 15 minutes
   const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000);
   const onlineResult = await db
     .selectDistinct({ userId: activityLogsTable.userId })
     .from(activityLogsTable)
-    .where(
-      and(
-        gte(activityLogsTable.timestamp, fifteenMinsAgo),
-        sql`${activityLogsTable.userId} IS NOT NULL`
-      )
-    );
+    .where(and(gte(activityLogsTable.timestamp, fifteenMinsAgo), sql`${activityLogsTable.userId} IS NOT NULL`));
   const onlineNow = onlineResult.length;
 
   const recentOrders = await db
-    .select({
-      id: ordersTable.id,
-      status: ordersTable.status,
-      total: ordersTable.total,
-      createdAt: ordersTable.createdAt,
-      userId: ordersTable.userId,
-    })
+    .select({ id: ordersTable.id, status: ordersTable.status, total: ordersTable.total, createdAt: ordersTable.createdAt, userId: ordersTable.userId })
     .from(ordersTable)
     .orderBy(desc(ordersTable.createdAt))
     .limit(5);
@@ -57,7 +48,7 @@ router.get("/admin/stats", authMiddleware, adminMiddleware, async (_req, res) =>
   res.json({
     stats: {
       totalUsers: totalUsers.count,
-      pendingApprovals: suspendedUsers.count,
+      pendingApprovals: pendingUsers.count,
       bannedUsers: bannedUsers.count,
       onlineNow,
       totalOrders: totalOrders.count,
@@ -74,7 +65,6 @@ router.get("/admin/stats", authMiddleware, adminMiddleware, async (_req, res) =>
 // ─── Analytics ───────────────────────────────────────────────────────────────
 
 router.get("/admin/analytics", authMiddleware, adminMiddleware, async (_req, res) => {
-  // Last 7 days revenue + orders per day
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
   const dailyOrders = await db
@@ -88,7 +78,6 @@ router.get("/admin/analytics", authMiddleware, adminMiddleware, async (_req, res
     .groupBy(sql`DATE(${ordersTable.createdAt})`)
     .orderBy(sql`DATE(${ordersTable.createdAt})`);
 
-  // New users per day (last 7 days)
   const dailyUsers = await db
     .select({
       day: sql<string>`DATE(${usersTable.createdAt})`.as("day"),
@@ -99,13 +88,11 @@ router.get("/admin/analytics", authMiddleware, adminMiddleware, async (_req, res
     .groupBy(sql`DATE(${usersTable.createdAt})`)
     .orderBy(sql`DATE(${usersTable.createdAt})`);
 
-  // Orders by status
   const ordersByStatus = await db
     .select({ status: ordersTable.status, count: count() })
     .from(ordersTable)
     .groupBy(ordersTable.status);
 
-  // Top 5 products by order count
   const topProducts = await db
     .select({
       productId: ordersTable.productId,
@@ -117,31 +104,20 @@ router.get("/admin/analytics", authMiddleware, adminMiddleware, async (_req, res
     .orderBy(desc(count()))
     .limit(5);
 
-  // Enrich top products with names
   const productIds = topProducts.map((p) => p.productId);
   const products = productIds.length
     ? await db.select({ id: productsTable.id, name: productsTable.name }).from(productsTable).where(sql`${productsTable.id} = ANY(${sql.raw(`ARRAY['${productIds.join("','")}']`)})`)
     : [];
   const productMap = Object.fromEntries(products.map((p) => [p.id, p.name]));
 
-  const enrichedTopProducts = topProducts.map((p) => ({
-    ...p,
-    name: productMap[p.productId] ?? "Unknown",
-  }));
+  const enrichedTopProducts = topProducts.map((p) => ({ ...p, name: productMap[p.productId] ?? "Unknown" }));
 
-  // Total revenue all time
   const [totalRevenue] = await db
     .select({ total: sql<number>`COALESCE(SUM(${ordersTable.total}), 0)` })
     .from(ordersTable)
     .where(eq(ordersTable.status, "delivered"));
 
-  res.json({
-    dailyOrders,
-    dailyUsers,
-    ordersByStatus,
-    topProducts: enrichedTopProducts,
-    totalRevenue: totalRevenue?.total ?? 0,
-  });
+  res.json({ dailyOrders, dailyUsers, ordersByStatus, topProducts: enrichedTopProducts, totalRevenue: totalRevenue?.total ?? 0 });
 });
 
 // ─── Users Management ────────────────────────────────────────────────────────
@@ -163,24 +139,14 @@ router.get("/admin/users", authMiddleware, adminMiddleware, async (req, res) => 
     .from(usersTable)
     .orderBy(desc(usersTable.createdAt));
 
-  // Determine online status: last activity within 15 mins
   const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000);
   const onlineUsers = await db
     .selectDistinct({ userId: activityLogsTable.userId })
     .from(activityLogsTable)
-    .where(
-      and(
-        gte(activityLogsTable.timestamp, fifteenMinsAgo),
-        sql`${activityLogsTable.userId} IS NOT NULL`
-      )
-    );
+    .where(and(gte(activityLogsTable.timestamp, fifteenMinsAgo), sql`${activityLogsTable.userId} IS NOT NULL`));
   const onlineSet = new Set(onlineUsers.map((u) => u.userId));
 
-  const usersWithStatus = users.map((u) => ({
-    ...u,
-    online: onlineSet.has(u.id),
-  }));
-
+  const usersWithStatus = users.map((u) => ({ ...u, online: onlineSet.has(u.id) }));
   res.json({ users: usersWithStatus });
 });
 
@@ -208,6 +174,25 @@ router.post("/admin/users/:id/unban", authMiddleware, adminMiddleware, async (re
   const [updated] = await db
     .update(usersTable)
     .set({ status: "active", banReason: null })
+    .where(eq(usersTable.id, req.params.id))
+    .returning({ id: usersTable.id, status: usersTable.status });
+  res.json({ user: updated });
+});
+
+router.post("/admin/users/:id/approve", authMiddleware, adminMiddleware, async (req, res) => {
+  const [updated] = await db
+    .update(usersTable)
+    .set({ status: "active", banReason: null })
+    .where(eq(usersTable.id, req.params.id))
+    .returning({ id: usersTable.id, status: usersTable.status });
+  res.json({ user: updated });
+});
+
+router.post("/admin/users/:id/reject", authMiddleware, adminMiddleware, async (req, res) => {
+  const { reason } = req.body;
+  const [updated] = await db
+    .update(usersTable)
+    .set({ status: "banned", banReason: reason || "Registration rejected by admin" })
     .where(eq(usersTable.id, req.params.id))
     .returning({ id: usersTable.id, status: usersTable.status });
   res.json({ user: updated });
@@ -243,17 +228,111 @@ router.patch("/admin/orders/:id/status", authMiddleware, adminMiddleware, async 
     .set({ status, updatedAt: new Date() })
     .where(eq(ordersTable.id, req.params.id))
     .returning();
+  if (!updated) { res.status(404).json({ error: "Order not found" }); return; }
+
+  if (status === "delivered") {
+    const [order] = await db.select().from(ordersTable).where(eq(ordersTable.id, req.params.id));
+    if (order) {
+      const [user] = await db.select().from(usersTable).where(eq(usersTable.id, updated.userId));
+      if (user) {
+        const DELIVERY_REWARD_COINS = 100;
+        await db.update(usersTable)
+          .set({ walletBalance: user.walletBalance + DELIVERY_REWARD_COINS })
+          .where(eq(usersTable.id, updated.userId));
+        await db.insert(walletTransactionsTable).values({
+          id: uuidv4(),
+          userId: updated.userId,
+          type: "credit",
+          coins: DELIVERY_REWARD_COINS,
+          description: `Delivery reward — Order #${updated.id.slice(0, 8).toUpperCase()} delivered`,
+          referenceId: updated.id,
+        });
+      }
+    }
+  }
+
   res.json({ order: updated });
+});
+
+router.put("/admin/orders/:id/status", authMiddleware, adminMiddleware, async (req, res) => {
+  const { status } = req.body;
+  const allowed = ["pending", "confirmed", "shipped", "delivered", "cancelled"];
+  if (!allowed.includes(status)) { res.status(400).json({ error: "Invalid status" }); return; }
+  const [updated] = await db
+    .update(ordersTable)
+    .set({ status, updatedAt: new Date() })
+    .where(eq(ordersTable.id, req.params.id))
+    .returning();
+  if (!updated) { res.status(404).json({ error: "Order not found" }); return; }
+
+  if (status === "delivered") {
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, updated.userId));
+    if (user) {
+      const DELIVERY_REWARD_COINS = 100;
+      await db.update(usersTable)
+        .set({ walletBalance: user.walletBalance + DELIVERY_REWARD_COINS })
+        .where(eq(usersTable.id, updated.userId));
+      await db.insert(walletTransactionsTable).values({
+        id: uuidv4(),
+        userId: updated.userId,
+        type: "credit",
+        coins: DELIVERY_REWARD_COINS,
+        description: `Delivery reward — Order #${updated.id.slice(0, 8).toUpperCase()} delivered`,
+        referenceId: updated.id,
+      });
+    }
+  }
+
+  res.json({ order: updated });
+});
+
+// ─── Referral Network (User) ──────────────────────────────────────────────────
+
+router.get("/referrals/network", authMiddleware, async (req: AuthRequest, res) => {
+  const referrals = await db
+    .select()
+    .from(referralsTable)
+    .where(eq(referralsTable.referrerId, req.userId!))
+    .orderBy(desc(referralsTable.createdAt));
+
+  if (!referrals.length) { res.json({ referrals: [], totalRevenue: 0, totalCoinsEarned: 0 }); return; }
+
+  const refereeIds = referrals.map((r) => r.refereeId);
+  const referees = await db
+    .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email, createdAt: usersTable.createdAt, status: usersTable.status })
+    .from(usersTable)
+    .where(inArray(usersTable.id, refereeIds));
+
+  const refereeMap = Object.fromEntries(referees.map((u) => [u.id, u]));
+
+  const allOrders = refereeIds.length
+    ? await db.select().from(ordersTable).where(inArray(ordersTable.userId, refereeIds)).orderBy(desc(ordersTable.createdAt))
+    : [];
+
+  const ordersByUser: Record<string, typeof allOrders> = {};
+  for (const o of allOrders) {
+    if (!ordersByUser[o.userId]) ordersByUser[o.userId] = [];
+    ordersByUser[o.userId].push(o);
+  }
+
+  const totalRevenue = allOrders.reduce((sum, o) => sum + (o.total ?? 0), 0);
+  const totalCoinsEarned = referrals.reduce((sum, r) => sum + r.coinsAwarded, 0);
+
+  const enriched = referrals.map((r) => ({
+    ...r,
+    referee: refereeMap[r.refereeId] ?? null,
+    orders: ordersByUser[r.refereeId] ?? [],
+    orderCount: (ordersByUser[r.refereeId] ?? []).length,
+    orderRevenue: (ordersByUser[r.refereeId] ?? []).reduce((s, o) => s + (o.total ?? 0), 0),
+  }));
+
+  res.json({ referrals: enriched, totalRevenue, totalCoinsEarned });
 });
 
 // ─── Tickets Admin ────────────────────────────────────────────────────────────
 
 router.get("/admin/tickets", authMiddleware, adminMiddleware, async (_req, res) => {
-  const tickets = await db
-    .select()
-    .from(supportTicketsTable)
-    .orderBy(desc(supportTicketsTable.createdAt))
-    .limit(100);
+  const tickets = await db.select().from(supportTicketsTable).orderBy(desc(supportTicketsTable.createdAt)).limit(100);
   res.json({ tickets });
 });
 
@@ -297,6 +376,16 @@ router.put("/admin/config", authMiddleware, adminMiddleware, async (req, res) =>
   }
   const config = await getAllConfig();
   res.json({ config });
+});
+
+// ─── Announcements (public read) ──────────────────────────────────────────────
+
+router.get("/announcement", async (_req, res) => {
+  const { getConfig } = await import("../lib/config");
+  const enabled = await getConfig("announcement_enabled");
+  const text = await getConfig("announcement_text");
+  const color = await getConfig("announcement_color");
+  res.json({ enabled: enabled === "true", text: text || "", color: color || "#2563EB" });
 });
 
 export default router;

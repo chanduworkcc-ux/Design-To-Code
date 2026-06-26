@@ -154,6 +154,18 @@ export default function ProfileScreen() {
           <MenuItem icon="truck" label="Track Orders" onPress={() => router.push("/orders")} />
         </View>
 
+        {/* Referrals Section */}
+        {user && (
+          <>
+            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>REFERRALS</Text>
+            <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <MenuItem icon="users" label="My Referral Network" onPress={() => router.push("/referrals" as any)} />
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              <MenuItem icon="gift" label="Invite & Earn" onPress={() => router.push("/referrals" as any)} />
+            </View>
+          </>
+        )}
+
         {/* Preferences Section */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>PREFERENCES</Text>
         <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>

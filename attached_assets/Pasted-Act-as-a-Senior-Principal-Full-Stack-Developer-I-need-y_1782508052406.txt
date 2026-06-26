@@ -1,0 +1,44 @@
+Act as a Senior Principal Full-Stack Developer. I need you to implement an automated rewards system, fix all broken settings pages, build an intensive downline tracking network for users, and establish error-free deployment structures. 
+
+Implement and repair the following specific system features exactly:
+
+1. Automatic Order-Delivery Reward Engine
+- Implement an automated database listener/webhook hook: Whenever a customer's order status changes to "DELIVERED", automatically credit exactly 100 reward points to that customer's user profile ledger.
+- This calculation must be executed strictly on the server side to prevent client manipulation. Log this point addition transaction clearly in the user's points history ledger.
+
+2. Transparent Downline Referral Tracking Grid (User Section)
+- Build a thorough, interactive Referral Tracking Hub within the user application interface. 
+- Users must be able to visually track their network: show exactly which customer used their referral code, the registration date of that invitee, and the real-time status of that invitee's recent orders.
+- Clearly present a "Disclaimer Section" stating: "Share your unique referral code safely. System point distribution schemes are governed by the platform terms of service. Rewards are strictly non-transferable."
+- Implement a clear financial breakdown panel showing the "Total Ordered Revenue Amount" or order basket values generated across their referred user network.
+
+3. Total User Profile & Layout Resolution
+- Re-architect the user's Profile & Settings page completely to guarantee 100% feature performance. Fix all broken layout hooks.
+- Repair the Language Selector dropdown, UI theme switches, and user detail updates so they instantly re-render and successfully persist to the database upon click.
+
+4. Dynamic Content Management (Admin Sliders & Logos)
+- Admin Banner Slider: Create a slide management system. Admin can pick/upload images strictly from a media gallery array, set ordering, and update the home carousel instantly.
+- App Logo Update: Allow the Admin to upload a new asset to replace the global application logo dynamically via the database/storage bucket. The logo must change instantly on the client application without requiring an application build update.
+- Announcement Bar: Build a real-time text marquee or banner at the top of the user home section. Admin can toggle this on/off, edit the text string, and change its style from the admin panel.
+
+5. Gatekeeper Registration & Approval Logic (Automatic vs. Manual)
+- Build a global Registration Toggle in Admin Settings: [On / Off]. If Off, new sign-ups are blocked.
+- Build an Approval Type Toggle in Admin Settings: [Automatic / Manual].
+- "Manual Approval" Workflow: When a customer registers, their account status defaults to 'Pending'. They cannot access the user application interface. They must see a polite, persistent waiting screen: "Your registration is pending review. Please wait for an administrator to approve your access."
+- Admin Approval Interface: Admin can view all 'Pending' profiles, audit their submitted credentials, and hit a functioning "Approve" or "Reject" button to instantly alter their live permission status.
+
+6. Critical Save Buttons & Transaction Field Repair
+- Deep-dive into all Admin Settings layouts, specifically the Transaction Fields settings and global profile edits.
+- Fix the 'Save' button handlers across these pages. Ensure they prevent default submission correctly, catch exceptions, pass payload validation, issue correct HTTP POST/PUT requests to the backend, and fire clear user-facing toast notifications upon success.
+
+7. Enhanced Security Tracking & Real-Time Auditing Logs
+- User IP Monitoring: Capture and securely log the exact client IP address, timestamp, device metadata, and geographical location context during every authentication request.
+- Real-Time Customer Logs: Provide a clean data analysis feed in the admin dashboard tracking user sign-ins, page views, click behaviors, and feature usage via a live stream.
+- Admin Auditing Trail: Log every action an admin takes (e.g., changing payment gateways, approving users, editing referral point settings) with timestamp logs for compliance tracking.
+
+8. Dynamic Payment Gateway Key Swapping (Razorpay/Paytm)
+- Create a secure credentials form within the Admin Panel to live-update payment configuration parameters.
+- Provide inputs for Razorpay (API Key, Key Secret) and Paytm (Merchant ID, Merchant Key, Environment Toggle).
+- Ensure the application's runtime billing engine dynamically hooks into these database values instantly when processing transactions, omitting hardcoded environment variables.
+
+Run a comprehensive compilation check. Eliminate any syntax errors, type mismatched states, broken API promises, or configuration glitches. Ensure all state updates render smoothly across both the user and admin views.

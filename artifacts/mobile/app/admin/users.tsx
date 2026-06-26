@@ -22,7 +22,7 @@ interface AdminUser {
   email: string;
   name: string;
   role: string;
-  status: "active" | "banned" | "suspended";
+  status: "active" | "banned" | "suspended" | "pending";
   walletBalance: number;
   referralCode: string;
   createdAt: string;
@@ -43,6 +43,7 @@ const STATUS_CONFIG = {
   active: { color: "#10B981", bg: "#ECFDF5", label: "Active" },
   banned: { color: "#EF4444", bg: "#FEF2F2", label: "Banned" },
   suspended: { color: "#F59E0B", bg: "#FFFBEB", label: "Suspended" },
+  pending: { color: "#8B5CF6", bg: "#F5F3FF", label: "Pending" },
 };
 
 function UserCard({
@@ -50,11 +51,15 @@ function UserCard({
   onBan,
   onUnban,
   onViewLogs,
+  onApprove,
+  onReject,
 }: {
   user: AdminUser;
   onBan: (u: AdminUser) => void;
   onUnban: (u: AdminUser) => void;
   onViewLogs: (u: AdminUser) => void;
+  onApprove: (u: AdminUser) => void;
+  onReject: (u: AdminUser) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const cfg = STATUS_CONFIG[user.status] ?? STATUS_CONFIG.active;
@@ -121,7 +126,24 @@ function UserCard({
                 <Text style={[styles.actionText, { color: "#2563EB" }]}>View Logs</Text>
               </Pressable>
 
-              {user.status === "banned" || user.status === "suspended" ? (
+              {user.status === "pending" ? (
+                <>
+                  <Pressable
+                    style={[styles.actionBtn, { backgroundColor: "#ECFDF5", borderColor: "#A7F3D0" }]}
+                    onPress={() => onApprove(user)}
+                  >
+                    <Feather name="check" size={14} color="#10B981" />
+                    <Text style={[styles.actionText, { color: "#10B981" }]}>Approve</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.actionBtn, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}
+                    onPress={() => onReject(user)}
+                  >
+                    <Feather name="x" size={14} color="#EF4444" />
+                    <Text style={[styles.actionText, { color: "#EF4444" }]}>Reject</Text>
+                  </Pressable>
+                </>
+              ) : user.status === "banned" || user.status === "suspended" ? (
                 <Pressable
                   style={[styles.actionBtn, { backgroundColor: "#ECFDF5", borderColor: "#A7F3D0" }]}
                   onPress={() => onUnban(user)}
@@ -205,11 +227,31 @@ export default function UsersScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"all" | "active" | "banned" | "suspended" | "online">("all");
+  const [filter, setFilter] = useState<"all" | "active" | "banned" | "suspended" | "pending" | "online">("all");
   const [logsUser, setLogsUser] = useState<AdminUser | null>(null);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
   const topPadding = Platform.OS === "web" ? 0 : insets.top;
+
+  async function handleApprove(user: AdminUser) {
+    const res = await apiRequest(`/admin/users/${user.id}/approve`, { method: "POST" });
+    if (res.ok) {
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, status: "active" } : u)));
+    }
+  }
+
+  async function handleReject(user: AdminUser) {
+    const reason = Platform.OS === "web"
+      ? prompt(`Rejection reason for ${user.name}:`) ?? ""
+      : "Registration rejected by admin";
+    const res = await apiRequest(`/admin/users/${user.id}/reject`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    });
+    if (res.ok) {
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, status: "banned", banReason: reason } : u)));
+    }
+  }
 
   useEffect(() => { fetchUsers(); }, []);
 
@@ -280,8 +322,10 @@ export default function UsersScreen() {
     return matchSearch && matchFilter;
   });
 
+  const pendingCount = users.filter((u) => u.status === "pending").length;
   const filterTabs: { key: typeof filter; label: string }[] = [
     { key: "all", label: `All (${users.length})` },
+    { key: "pending", label: `Pending${pendingCount > 0 ? ` (${pendingCount})` : ""}` },
     { key: "online", label: `Online (${users.filter((u) => u.online).length})` },
     { key: "active", label: `Active (${users.filter((u) => u.status === "active").length})` },
     { key: "banned", label: `Banned (${users.filter((u) => u.status === "banned").length})` },
@@ -356,6 +400,8 @@ export default function UsersScreen() {
               onBan={handleBan}
               onUnban={handleUnban}
               onViewLogs={handleViewLogs}
+              onApprove={handleApprove}
+              onReject={handleReject}
             />
           ))}
         </ScrollView>

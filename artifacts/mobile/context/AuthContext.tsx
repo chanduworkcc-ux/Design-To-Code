@@ -98,6 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify({ ...formData, deviceUuid }),
     });
     const data = await res.json();
+    if (data.error === "pending_approval") throw new Error("pending_approval");
     if (!res.ok) throw new Error(data.error ?? "Registration failed");
     await AsyncStorage.setItem("auth_token", data.token);
     setToken(data.token);

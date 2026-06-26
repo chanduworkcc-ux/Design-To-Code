@@ -28,6 +28,8 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const [pendingApproval, setPendingApproval] = useState(false);
+
   async function handleRegister() {
     if (!name.trim() || !email.trim() || !password.trim()) {
       setError("Please fill in all required fields");
@@ -43,10 +45,41 @@ export default function RegisterScreen() {
       await register({ name: name.trim(), email: email.trim().toLowerCase(), password, referralCode: referralCode.trim() || undefined });
       router.replace("/(tabs)");
     } catch (e: any) {
-      setError(e.message ?? "Registration failed");
+      if (e.message === "pending_approval") {
+        setPendingApproval(true);
+      } else {
+        setError(e.message ?? "Registration failed");
+      }
     } finally {
       setLoading(false);
     }
+  }
+
+  if (pendingApproval) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 32, backgroundColor: colors.background }}>
+        <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
+          <Feather name="clock" size={36} color="#8B5CF6" />
+        </View>
+        <Text style={{ fontSize: 22, fontFamily: "Inter_700Bold", color: colors.text, textAlign: "center", marginBottom: 10 }}>
+          Pending Review
+        </Text>
+        <Text style={{ fontSize: 14, fontFamily: "Inter_400Regular", color: colors.mutedForeground, textAlign: "center", lineHeight: 22, marginBottom: 28 }}>
+          Your registration is pending review.{"\n"}Please wait for an administrator to approve your access.
+        </Text>
+        <View style={{ backgroundColor: "#FFFBEB", borderRadius: 12, padding: 14, borderWidth: 1, borderColor: "#FCD34D", marginBottom: 24 }}>
+          <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: "#92400E", textAlign: "center", lineHeight: 18 }}>
+            You will be able to sign in as soon as your account is approved. This usually takes 24–48 hours.
+          </Text>
+        </View>
+        <Pressable
+          style={{ borderRadius: 14, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 24, paddingVertical: 12 }}
+          onPress={() => router.replace("/(auth)/login")}
+        >
+          <Text style={{ fontSize: 14, fontFamily: "Inter_600SemiBold", color: colors.text }}>Back to Sign In</Text>
+        </Pressable>
+      </View>
+    );
   }
 
   return (

@@ -22,17 +22,35 @@ interface ConfigItem {
   description: string | null;
 }
 
-const CONFIG_META: Record<string, { label: string; description: string; type: "text" | "boolean" | "number" }> = {
-  registration_open: { label: "Registration Open", description: "Allow new user sign-ups", type: "boolean" },
-  maintenance_mode: { label: "Maintenance Mode", description: "Take the app offline for maintenance", type: "boolean" },
-  cod_enabled: { label: "Cash on Delivery", description: "Allow COD payment method", type: "boolean" },
-  razorpay_enabled: { label: "Razorpay Enabled", description: "Allow Razorpay payment method", type: "boolean" },
-  coins_per_inr: { label: "Coins per ₹1", description: "How many coins equal 1 INR", type: "number" },
-  referral_bonus_coins: { label: "Referral Bonus Coins", description: "Coins rewarded for successful referral", type: "number" },
-  delivery_charge: { label: "Delivery Charge (₹)", description: "Standard delivery fee", type: "number" },
-  free_delivery_threshold: { label: "Free Delivery Above (₹)", description: "Order value for free delivery", type: "number" },
-  tax_rate: { label: "Tax Rate (%)", description: "Percentage tax applied to orders", type: "number" },
-  service_charge_rate: { label: "Service Charge (%)", description: "Platform service fee", type: "number" },
+const BOOLEAN_CONFIGS: Record<string, { label: string; description: string }> = {
+  registration_open: { label: "Registration Open", description: "Allow new user sign-ups" },
+  maintenance_mode: { label: "Maintenance Mode", description: "Take the app offline for maintenance" },
+  cod_enabled: { label: "Cash on Delivery", description: "Allow COD payment method" },
+  razorpay_enabled: { label: "Razorpay Enabled", description: "Allow Razorpay payment method" },
+  announcement_enabled: { label: "Announcement Bar", description: "Show announcement banner on home screen" },
+};
+
+const NUMERIC_CONFIGS: Record<string, { label: string; description: string }> = {
+  coins_per_inr: { label: "Coins per ₹1", description: "How many coins equal 1 INR" },
+  referral_bonus_coins: { label: "Referral Bonus Coins", description: "Coins rewarded for successful referral" },
+  delivery_charge: { label: "Delivery Charge (₹)", description: "Standard delivery fee" },
+  free_delivery_threshold: { label: "Free Delivery Above (₹)", description: "Order value for free delivery" },
+  tax_rate: { label: "Tax Rate (%)", description: "Percentage tax applied to orders" },
+  service_charge_rate: { label: "Service Charge (%)", description: "Platform service fee" },
+};
+
+const TEXT_CONFIGS: Record<string, { label: string; description: string; placeholder?: string }> = {
+  approval_mode: { label: "Approval Mode", description: "automatic = instant access, manual = admin approves each signup", placeholder: "automatic" },
+  announcement_text: { label: "Announcement Text", description: "Text shown in the home announcement bar", placeholder: "🎉 Welcome to XyloCart! Free delivery on all orders today." },
+  announcement_color: { label: "Announcement Color", description: "Hex color for the announcement bar (e.g. #2563EB)", placeholder: "#2563EB" },
+};
+
+const PAYMENT_CONFIGS: Record<string, { label: string; description: string; secure?: boolean }> = {
+  razorpay_key_id: { label: "Razorpay Key ID", description: "Your Razorpay API Key ID" },
+  razorpay_key_secret: { label: "Razorpay Key Secret", description: "Your Razorpay API Key Secret", secure: true },
+  paytm_merchant_id: { label: "Paytm Merchant ID", description: "Your Paytm Merchant ID" },
+  paytm_merchant_key: { label: "Paytm Merchant Key", description: "Your Paytm Merchant Key", secure: true },
+  paytm_environment: { label: "Paytm Environment", description: "staging or production", },
 };
 
 export default function SettingsScreen() {
@@ -112,11 +130,12 @@ export default function SettingsScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]} showsVerticalScrollIndicator={false}>
-          {/* Boolean toggles */}
+
+          {/* Feature Toggles */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Feature Toggles</Text>
+            <Text style={styles.sectionTitle}>FEATURE TOGGLES</Text>
             <View style={styles.card}>
-              {Object.entries(CONFIG_META).filter(([, m]) => m.type === "boolean").map(([key, meta], i, arr) => {
+              {Object.entries(BOOLEAN_CONFIGS).map(([key, meta], i, arr) => {
                 const val = (edited[key] ?? "true") === "true";
                 return (
                   <React.Fragment key={key}>
@@ -139,23 +158,96 @@ export default function SettingsScreen() {
             </View>
           </View>
 
-          {/* Numeric configs */}
+          {/* Text / Behaviour */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Pricing & Fees</Text>
+            <Text style={styles.sectionTitle}>BEHAVIOUR & CONTENT</Text>
             <View style={styles.card}>
-              {Object.entries(CONFIG_META).filter(([, m]) => m.type === "number" || m.type === "text").map(([key, meta], i, arr) => {
+              {Object.entries(TEXT_CONFIGS).map(([key, meta], i, arr) => (
+                <React.Fragment key={key}>
+                  <View style={styles.textInputRow}>
+                    <Text style={styles.configLabel}>{meta.label}</Text>
+                    <Text style={styles.configDesc}>{meta.description}</Text>
+                    <TextInput
+                      style={styles.textInput}
+                      value={edited[key] ?? ""}
+                      onChangeText={(v) => setEdited((prev) => ({ ...prev, [key]: v }))}
+                      placeholder={meta.placeholder ?? ""}
+                      placeholderTextColor="#9CA3AF"
+                    />
+                  </View>
+                  {i < arr.length - 1 && <View style={styles.divider} />}
+                </React.Fragment>
+              ))}
+            </View>
+          </View>
+
+          {/* Pricing & Fees */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>PRICING & FEES</Text>
+            <View style={styles.card}>
+              {Object.entries(NUMERIC_CONFIGS).map(([key, meta], i, arr) => (
+                <React.Fragment key={key}>
+                  <View style={styles.inputRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.configLabel}>{meta.label}</Text>
+                      <Text style={styles.configDesc}>{meta.description}</Text>
+                    </View>
+                    <TextInput
+                      style={styles.configInput}
+                      value={edited[key] ?? ""}
+                      onChangeText={(v) => setEdited((prev) => ({ ...prev, [key]: v }))}
+                      keyboardType="numeric"
+                    />
+                  </View>
+                  {i < arr.length - 1 && <View style={styles.divider} />}
+                </React.Fragment>
+              ))}
+            </View>
+          </View>
+
+          {/* Payment Gateway */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>PAYMENT GATEWAYS</Text>
+            <View style={[styles.card, { gap: 0 }]}>
+              <View style={styles.gatewayHeader}>
+                <Text style={styles.gatewayLabel}>Razorpay</Text>
+              </View>
+              {["razorpay_key_id", "razorpay_key_secret"].map((key, i) => {
+                const meta = PAYMENT_CONFIGS[key];
                 return (
                   <React.Fragment key={key}>
-                    <View style={styles.inputRow}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.configLabel}>{meta.label}</Text>
-                        <Text style={styles.configDesc}>{meta.description}</Text>
-                      </View>
+                    <View style={styles.textInputRow}>
+                      <Text style={styles.configLabel}>{meta.label}</Text>
                       <TextInput
-                        style={styles.configInput}
+                        style={styles.textInput}
                         value={edited[key] ?? ""}
                         onChangeText={(v) => setEdited((prev) => ({ ...prev, [key]: v }))}
-                        keyboardType={meta.type === "number" ? "numeric" : "default"}
+                        placeholder={`Enter ${meta.label}`}
+                        placeholderTextColor="#9CA3AF"
+                        secureTextEntry={!!meta.secure}
+                      />
+                    </View>
+                    {i === 0 && <View style={styles.divider} />}
+                  </React.Fragment>
+                );
+              })}
+              <View style={[styles.gatewayHeader, { borderTopWidth: 1, borderTopColor: "#F3F4F6" }]}>
+                <Text style={styles.gatewayLabel}>Paytm</Text>
+              </View>
+              {["paytm_merchant_id", "paytm_merchant_key", "paytm_environment"].map((key, i, arr) => {
+                const meta = PAYMENT_CONFIGS[key];
+                return (
+                  <React.Fragment key={key}>
+                    <View style={styles.textInputRow}>
+                      <Text style={styles.configLabel}>{meta.label}</Text>
+                      <Text style={styles.configDesc}>{meta.description}</Text>
+                      <TextInput
+                        style={styles.textInput}
+                        value={edited[key] ?? ""}
+                        onChangeText={(v) => setEdited((prev) => ({ ...prev, [key]: v }))}
+                        placeholder={`Enter ${meta.label}`}
+                        placeholderTextColor="#9CA3AF"
+                        secureTextEntry={!!meta.secure}
                       />
                     </View>
                     {i < arr.length - 1 && <View style={styles.divider} />}
@@ -165,33 +257,9 @@ export default function SettingsScreen() {
             </View>
           </View>
 
-          {/* Unknown keys */}
-          {Object.keys(config).filter((k) => !CONFIG_META[k]).length > 0 && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Other Config</Text>
-              <View style={styles.card}>
-                {Object.keys(config).filter((k) => !CONFIG_META[k]).map((key, i, arr) => (
-                  <React.Fragment key={key}>
-                    <View style={styles.inputRow}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.configLabel}>{key}</Text>
-                      </View>
-                      <TextInput
-                        style={styles.configInput}
-                        value={edited[key] ?? ""}
-                        onChangeText={(v) => setEdited((prev) => ({ ...prev, [key]: v }))}
-                      />
-                    </View>
-                    {i < arr.length - 1 && <View style={styles.divider} />}
-                  </React.Fragment>
-                ))}
-              </View>
-            </View>
-          )}
-
           {hasChanges && (
             <Pressable style={[styles.saveBtnLarge, { opacity: saving ? 0.6 : 1 }]} onPress={handleSave} disabled={saving}>
-              {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnLargeText}>Save Changes</Text>}
+              {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnLargeText}>Save All Changes</Text>}
             </Pressable>
           )}
         </ScrollView>
@@ -211,13 +279,17 @@ const styles = StyleSheet.create({
   loadingText: { color: "#6B7280", fontFamily: "Inter_500Medium", fontSize: 14 },
   content: { padding: 16, gap: 0 },
   section: { marginBottom: 20 },
-  sectionTitle: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#6B7280", letterSpacing: 0.8, marginBottom: 8, marginLeft: 4 },
+  sectionTitle: { fontSize: 11, fontFamily: "Inter_700Bold", color: "#6B7280", letterSpacing: 1, marginBottom: 8, marginLeft: 4 },
   card: { backgroundColor: "#fff", borderRadius: 16, borderWidth: 1, borderColor: "#E5EAF8", overflow: "hidden" },
   toggleRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 16 },
   inputRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 16 },
+  textInputRow: { padding: 16, gap: 4 },
   configLabel: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#0F1740" },
   configDesc: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#9CA3AF", marginTop: 2 },
   configInput: { width: 80, fontSize: 14, fontFamily: "Inter_700Bold", color: "#2563EB", textAlign: "right", backgroundColor: "#EFF6FF", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7 },
+  textInput: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#0F1740", backgroundColor: "#F8FAFF", borderRadius: 10, borderWidth: 1, borderColor: "#E5EAF8", paddingHorizontal: 12, paddingVertical: 10, marginTop: 8 },
+  gatewayHeader: { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: "#F8FAFF" },
+  gatewayLabel: { fontSize: 13, fontFamily: "Inter_700Bold", color: "#2563EB" },
   divider: { height: 1, backgroundColor: "#F3F4F6", marginLeft: 16 },
   saveBtnLarge: { backgroundColor: "#2563EB", borderRadius: 14, paddingVertical: 16, alignItems: "center", marginTop: 4 },
   saveBtnLargeText: { color: "#fff", fontSize: 16, fontFamily: "Inter_600SemiBold" },

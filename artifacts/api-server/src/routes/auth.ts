@@ -70,6 +70,9 @@ router.post("/auth/register", async (req, res) => {
     if (referrer.length > 0) referredById = referrer[0].id;
   }
 
+  const approvalMode = await getConfig("approval_mode");
+  const userStatus = approvalMode === "manual" ? "pending" : "active";
+
   await db.insert(usersTable).values({
     id: userId,
     email,
@@ -80,7 +83,7 @@ router.post("/auth/register", async (req, res) => {
     referredById,
     walletBalance: 0,
     role: "user",
-    status: "active",
+    status: userStatus as any,
   });
 
   if (referredById) {
@@ -105,6 +108,11 @@ router.post("/auth/register", async (req, res) => {
         referenceId: userId,
       });
     }
+  }
+
+  if (userStatus === "pending") {
+    res.status(202).json({ error: "pending_approval", message: "Your registration is pending admin review. You will be able to sign in once approved." });
+    return;
   }
 
   const token = signToken(userId);
@@ -136,6 +144,11 @@ router.post("/auth/login", async (req, res) => {
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) {
     res.status(401).json({ error: "Invalid email or password." });
+    return;
+  }
+
+  if (user.status === "pending") {
+    res.status(403).json({ error: "pending_approval", message: "Your registration is pending review. Please wait for an administrator to approve your access." });
     return;
   }
 

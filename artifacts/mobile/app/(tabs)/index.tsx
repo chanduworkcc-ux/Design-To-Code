@@ -25,6 +25,12 @@ const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const BANNER_WIDTH = SCREEN_WIDTH - 32;
 
+interface Announcement {
+  enabled: boolean;
+  text: string;
+  color: string;
+}
+
 interface ApiBanner {
   id: string;
   title: string;
@@ -46,16 +52,25 @@ export default function ShopScreen() {
   
   const [products, setProducts] = useState<Product[]>(staticProducts);
   const [banners, setBanners] = useState<ApiBanner[]>([]);
+  const [announcement, setAnnouncement] = useState<Announcement | null>(null);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [bannerIdx, setBannerIdx] = useState(0);
   const bannerScrollRef = useRef<ScrollView>(null);
   const bannerTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const marqueeAnim = useRef(new Animated.Value(SCREEN_WIDTH)).current;
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
 
   useEffect(() => { fetchData(); }, []);
 
   async function fetchData() {
-    await Promise.all([fetchProducts(), fetchBanners()]);
+    await Promise.all([fetchProducts(), fetchBanners(), fetchAnnouncement()]);
+  }
+
+  async function fetchAnnouncement() {
+    try {
+      const res = await fetch(`${BASE_URL}/announcement`);
+      if (res.ok) { const d = await res.json(); setAnnouncement(d); }
+    } catch {}
   }
 
   async function fetchProducts() {
@@ -100,9 +115,15 @@ export default function ShopScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
+      {/* Announcement Bar */}
+      {announcement?.enabled && !!announcement.text && (
+        <View style={[styles.announcementBar, { backgroundColor: announcement.color || "#2563EB", paddingTop: topPadding }]}>
+          <Text style={styles.announcementText} numberOfLines={1}>{announcement.text}</Text>
+        </View>
+      )}
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scroll, { paddingTop: topPadding + 12, paddingBottom: 100 }]}
+        contentContainerStyle={[styles.scroll, { paddingTop: (announcement?.enabled && announcement.text ? 0 : topPadding) + 12, paddingBottom: 100 }]}
       >
         {/* Header */}
         <View style={styles.header}>
@@ -246,6 +267,8 @@ export default function ShopScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  announcementBar: { paddingHorizontal: 16, paddingBottom: 10, alignItems: "center" },
+  announcementText: { color: "#fff", fontSize: 13, fontFamily: "Inter_600SemiBold", textAlign: "center" },
   scroll: { paddingHorizontal: 16 },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
   welcomeText: { fontSize: 13, fontFamily: "Inter_400Regular" },
