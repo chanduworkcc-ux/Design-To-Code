@@ -1,5 +1,4 @@
 import { Feather } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -16,10 +15,11 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ProductCard } from "@/components/ProductCard";
 import { useApp } from "@/context/AppContext";
-import { Category, categories, products as staticProducts } from "@/data/products";
+import { products as staticProducts } from "@/data/products";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
 import { Product } from "@/data/products";
+
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -43,7 +43,7 @@ export default function ShopScreen() {
   const router = useRouter();
   const { cartCount } = useApp();
   const { token } = useAuth();
-  const [selectedCategory, setSelectedCategory] = useState<Category>("All");
+  
   const [products, setProducts] = useState<Product[]>(staticProducts);
   const [banners, setBanners] = useState<ApiBanner[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -97,11 +97,6 @@ export default function ShopScreen() {
   }, [banners.length]);
 
   const featured = products.filter((p) => (p as any).featured ?? false).slice(0, 6);
-  const filtered = selectedCategory === "All"
-    ? products
-    : products.filter((p) => p.category.toLowerCase() === selectedCategory.toLowerCase());
-
-  const uniqueCategories: Category[] = ["All", ...Array.from(new Set(products.map((p) => p.category as Category)))];
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -231,39 +226,15 @@ export default function ShopScreen() {
           {loadingProducts && <ActivityIndicator size="small" color={colors.primary} />}
         </View>
 
-        {/* Category Chips */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-          {uniqueCategories.map((cat) => (
-            <Pressable
-              key={cat}
-              onPress={() => {
-                setSelectedCategory(cat);
-                if (Platform.OS !== "web") Haptics.selectionAsync();
-              }}
-              style={[
-                styles.chip,
-                {
-                  backgroundColor: selectedCategory === cat ? colors.primary : colors.card,
-                  borderColor: selectedCategory === cat ? colors.primary : colors.border,
-                },
-              ]}
-            >
-              <Text style={[styles.chipText, { color: selectedCategory === cat ? colors.primaryForeground : colors.text }]}>
-                {cat}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-
         {/* Product Grid */}
-        {filtered.length === 0 ? (
+        {products.length === 0 ? (
           <View style={{ alignItems: "center", paddingVertical: 32, gap: 8 }}>
             <Feather name="package" size={40} color={colors.mutedForeground} />
-            <Text style={[{ color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>No products in this category</Text>
+            <Text style={[{ color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>No products available</Text>
           </View>
         ) : (
           <View style={styles.grid}>
-            {filtered.map((product) => (
+            {products.map((product) => (
               <ProductCard key={product.id} product={product} style={{ width: "47%" }} />
             ))}
           </View>
@@ -307,8 +278,5 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 20, fontFamily: "Inter_700Bold" },
   seeAll: { fontSize: 14, fontFamily: "Inter_500Medium" },
   featuredList: { gap: 12, paddingRight: 16 },
-  chips: { gap: 8, paddingBottom: 12, paddingRight: 16 },
-  chip: { borderRadius: 20, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 8 },
-  chipText: { fontSize: 13, fontFamily: "Inter_500Medium" },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 12, justifyContent: "space-between" },
 });
