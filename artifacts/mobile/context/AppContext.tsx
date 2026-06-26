@@ -1,9 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { Alert, Platform } from "react-native";
 import { Product } from "@/data/products";
 
 interface CartItem extends Product {
-  quantity: number;
+  quantity: 1;
 }
 
 interface AppContextType {
@@ -11,7 +12,7 @@ interface AppContextType {
   wishlist: Product[];
   addToCart: (product: Product) => void;
   removeFromCart: (id: string) => void;
-  updateQuantity: (id: string, quantity: number) => void;
+  clearCart: () => void;
   addToWishlist: (product: Product) => void;
   removeFromWishlist: (id: string) => void;
   isInWishlist: (id: string) => boolean;
@@ -53,11 +54,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }
 
   function addToCart(product: Product) {
-    const existing = cart.find((i) => i.id === product.id);
-    if (existing) {
-      saveCart(cart.map((i) => i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i));
+    if (cart.length > 0 && cart[0].id === product.id) {
+      return;
+    }
+    if (cart.length > 0) {
+      const replace = () => saveCart([{ ...product, quantity: 1 }]);
+      if (Platform.OS === "web") {
+        replace();
+      } else {
+        Alert.alert(
+          "Replace Cart Item?",
+          `Your cart already has "${cart[0].name}". Only one item is allowed per order. Replace it with "${product.name}"?`,
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Replace", style: "destructive", onPress: replace },
+          ]
+        );
+      }
     } else {
-      saveCart([...cart, { ...product, quantity: 1 }]);
+      saveCart([{ ...product, quantity: 1 }]);
     }
   }
 
@@ -65,12 +80,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     saveCart(cart.filter((i) => i.id !== id));
   }
 
-  function updateQuantity(id: string, quantity: number) {
-    if (quantity <= 0) {
-      removeFromCart(id);
-    } else {
-      saveCart(cart.map((i) => i.id === id ? { ...i, quantity } : i));
-    }
+  async function clearCart() {
+    await saveCart([]);
   }
 
   function addToWishlist(product: Product) {
@@ -91,13 +102,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return !!cart.find((i) => i.id === id);
   }
 
-  const cartCount = cart.reduce((sum, i) => sum + i.quantity, 0);
+  const cartCount = cart.length;
   const wishlistCount = wishlist.length;
-  const cartTotal = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const cartTotal = cart.reduce((sum, i) => sum + i.price, 0);
 
   return (
     <AppContext.Provider value={{
-      cart, wishlist, addToCart, removeFromCart, updateQuantity,
+      cart, wishlist, addToCart, removeFromCart, clearCart,
       addToWishlist, removeFromWishlist, isInWishlist, isInCart,
       cartCount, wishlistCount, cartTotal,
     }}>

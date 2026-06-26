@@ -174,6 +174,16 @@ export default function ProfileScreen() {
           <MenuItem icon="star" label="Rate the App" onPress={() => handleMenuPress("Rate the App")} />
         </View>
 
+        {/* Legal Section */}
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>LEGAL</Text>
+        <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <MenuItem icon="file-text" label="Terms & Conditions" onPress={() => router.push("/policies" as any)} />
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          <MenuItem icon="shield" label="Privacy Policy" onPress={() => router.push("/policies" as any)} />
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          <MenuItem icon="info" label="General Policies" onPress={() => router.push("/policies" as any)} />
+        </View>
+
         {/* Admin Panel — only shown to admin users or as login gateway */}
         <Pressable
           style={[styles.adminBtn, { backgroundColor: colors.primary }]}

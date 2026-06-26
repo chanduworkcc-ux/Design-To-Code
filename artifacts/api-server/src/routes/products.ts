@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { productsTable } from "@workspace/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../middleware/auth";
 import { z } from "zod";
 import { v4 as uuidv4 } from "uuid";
@@ -9,11 +9,13 @@ import { v4 as uuidv4 } from "uuid";
 const router = Router();
 
 router.get("/products", async (_req, res) => {
-  const products = await db.select().from(productsTable).where(eq(productsTable.isActive, true));
+  const products = await db
+    .select()
+    .from(productsTable)
+    .where(eq(productsTable.isActive, true));
   res.json({ products });
 });
 
-// Admin: all products including inactive
 router.get("/admin/products", authMiddleware, adminMiddleware, async (_req, res) => {
   const products = await db.select().from(productsTable);
   res.json({ products });
@@ -56,6 +58,31 @@ router.put("/products/:id", authMiddleware, adminMiddleware, async (req: AuthReq
 router.delete("/products/:id", authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
   await db.update(productsTable).set({ isActive: false }).where(eq(productsTable.id, req.params.id));
   res.json({ success: true });
+});
+
+router.post("/admin/products/:id/add-stock", authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
+  const { quantity } = req.body;
+  const qty = parseInt(quantity);
+  if (isNaN(qty) || qty <= 0) { res.status(400).json({ error: "quantity must be a positive integer" }); return; }
+  const existing = await db.select().from(productsTable).where(eq(productsTable.id, req.params.id));
+  if (!existing.length) { res.status(404).json({ error: "Product not found" }); return; }
+  const [updated] = await db
+    .update(productsTable)
+    .set({ stock: sql`${productsTable.stock} + ${qty}` })
+    .where(eq(productsTable.id, req.params.id))
+    .returning();
+  res.json({ product: updated });
+});
+
+router.post("/admin/products/:id/out-of-stock", authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
+  const existing = await db.select().from(productsTable).where(eq(productsTable.id, req.params.id));
+  if (!existing.length) { res.status(404).json({ error: "Product not found" }); return; }
+  const [updated] = await db
+    .update(productsTable)
+    .set({ stock: 0 })
+    .where(eq(productsTable.id, req.params.id))
+    .returning();
+  res.json({ product: updated });
 });
 
 export default router;

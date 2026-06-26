@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { ordersTable, productsTable, usersTable, couponsTable } from "@workspace/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../middleware/auth";
 import { getConfig } from "../lib/config";
 import { z } from "zod";
@@ -23,7 +23,7 @@ router.post("/orders", authMiddleware, async (req: AuthRequest, res) => {
   const { productId, paymentMethod, couponCode, shippingAddress, items } = parsed.data;
 
   if (items.length !== 1) {
-    res.status(400).json({ error: "Single-item cart enforcement: Only one item per order is allowed." });
+    res.status(400).json({ error: "Only one item per order is allowed." });
     return;
   }
 
@@ -33,8 +33,29 @@ router.post("/orders", authMiddleware, async (req: AuthRequest, res) => {
   }
 
   const products = await db.select().from(productsTable).where(eq(productsTable.id, productId));
-  if (!products.length || !products[0].isActive) { res.status(404).json({ error: "Product not found or unavailable." }); return; }
+  if (!products.length || !products[0].isActive) {
+    res.status(404).json({ error: "Product not found or unavailable." });
+    return;
+  }
   const product = products[0];
+
+  if (product.stock <= 0) {
+    res.status(400).json({ error: "This product is out of stock." });
+    return;
+  }
+
+  const existingOrders = await db
+    .select()
+    .from(ordersTable)
+    .where(eq(ordersTable.userId, req.userId!));
+
+  const alreadyPurchased = existingOrders.some(
+    (o) => o.productId === productId && o.status !== "cancelled"
+  );
+  if (alreadyPurchased) {
+    res.status(400).json({ error: "You have already purchased this item. Each item can only be bought once." });
+    return;
+  }
 
   const deliveryCharge = parseFloat(await getConfig("delivery_charge")) || 0;
   const taxPercent = parseFloat(await getConfig("tax_percent")) || 0;
@@ -51,8 +72,7 @@ router.post("/orders", authMiddleware, async (req: AuthRequest, res) => {
     if (coupons.length > 0) {
       const coupon = coupons[0];
       const now = new Date();
-      const users = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!));
-      const userOrderCount = (await db.select().from(ordersTable).where(eq(ordersTable.userId, req.userId!))).length;
+      const userOrderCount = existingOrders.length;
       const isNewUser = userOrderCount === 0;
 
       const cohortMatch = coupon.targetCohort === "all_users" ||
@@ -80,7 +100,7 @@ router.post("/orders", authMiddleware, async (req: AuthRequest, res) => {
     quantity: 1,
     status: "pending",
     paymentMethod: paymentMethod as any,
-    paymentStatus: paymentMethod === "cod" ? "pending" : "pending",
+    paymentStatus: "pending",
     subtotal,
     deliveryCharge,
     taxAmount,
@@ -90,6 +110,11 @@ router.post("/orders", authMiddleware, async (req: AuthRequest, res) => {
     total,
     shippingAddress,
   }).returning();
+
+  await db
+    .update(productsTable)
+    .set({ stock: sql`${productsTable.stock} - 1` })
+    .where(eq(productsTable.id, productId));
 
   res.status(201).json({ order, breakdown: { subtotal, deliveryCharge, taxAmount, serviceCharge, maintenanceCharge, discountAmount, total } });
 });

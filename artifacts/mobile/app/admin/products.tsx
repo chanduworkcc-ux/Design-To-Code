@@ -151,6 +151,66 @@ export default function ProductsScreen() {
     }
   }
 
+  async function handleAddStock(p: Product) {
+    const doAdd = async (qty: number) => {
+      const res = await apiRequest(`/admin/products/${p.id}/add-stock`, {
+        method: "POST",
+        body: JSON.stringify({ quantity: qty }),
+      });
+      if (res.ok) {
+        const d = await res.json();
+        setProducts((prev) => prev.map((x) => (x.id === p.id ? d.product : x)));
+        Alert.alert("Stock Updated", `Added ${qty} units. New stock: ${d.product.stock}`);
+      } else {
+        Alert.alert("Error", "Failed to update stock.");
+      }
+    };
+    if (Platform.OS === "web") {
+      const input = window.prompt(`Add stock for "${p.name}" (current: ${p.stock})\n\nEnter quantity to add:`, "10");
+      if (input) {
+        const qty = parseInt(input);
+        if (!isNaN(qty) && qty > 0) doAdd(qty);
+      }
+    } else {
+      Alert.prompt(
+        "Add Stock",
+        `Current stock for "${p.name}": ${p.stock}\n\nEnter quantity to add:`,
+        (input) => {
+          const qty = parseInt(input ?? "");
+          if (!isNaN(qty) && qty > 0) doAdd(qty);
+          else Alert.alert("Invalid", "Please enter a positive number.");
+        },
+        "plain-text",
+        "10",
+        "numeric"
+      );
+    }
+  }
+
+  async function handleMarkOutOfStock(p: Product) {
+    if (p.stock === 0) {
+      Alert.alert("Already Out of Stock", `"${p.name}" is already out of stock.`);
+      return;
+    }
+    const doMark = async () => {
+      const res = await apiRequest(`/admin/products/${p.id}/out-of-stock`, { method: "POST" });
+      if (res.ok) {
+        const d = await res.json();
+        setProducts((prev) => prev.map((x) => (x.id === p.id ? d.product : x)));
+      } else {
+        Alert.alert("Error", "Failed to mark out of stock.");
+      }
+    };
+    if (Platform.OS === "web") {
+      if (window.confirm(`Mark "${p.name}" as Out of Stock? This will set stock to 0.`)) doMark();
+    } else {
+      Alert.alert("Mark Out of Stock", `Set stock to 0 for "${p.name}"?`, [
+        { text: "Cancel", style: "cancel" },
+        { text: "Confirm", style: "destructive", onPress: doMark },
+      ]);
+    }
+  }
+
   async function handleDelete(p: Product) {
     const doDelete = async () => {
       const res = await apiRequest(`/products/${p.id}`, { method: "DELETE" });
@@ -269,6 +329,16 @@ export default function ProductsScreen() {
                     <Feather name="edit-2" size={15} color="#2563EB" />
                     <Text style={[styles.actionText, { color: "#2563EB" }]}>Edit</Text>
                   </Pressable>
+                  <Pressable style={[styles.actionBtn, { backgroundColor: "#ECFDF5" }]} onPress={() => handleAddStock(p)}>
+                    <Feather name="plus-circle" size={15} color="#10B981" />
+                    <Text style={[styles.actionText, { color: "#10B981" }]}>Add Stock</Text>
+                  </Pressable>
+                  <Pressable style={[styles.actionBtn, { backgroundColor: "#FFFBEB" }]} onPress={() => handleMarkOutOfStock(p)}>
+                    <Feather name="alert-circle" size={15} color="#F59E0B" />
+                    <Text style={[styles.actionText, { color: "#F59E0B" }]}>Out of Stock</Text>
+                  </Pressable>
+                </View>
+                <View style={[styles.productActions, { borderTopWidth: 1, borderTopColor: "#F3F4F6" }]}>
                   <Pressable style={[styles.actionBtn, { backgroundColor: p.isActive ? "#FFFBEB" : "#ECFDF5" }]} onPress={() => handleToggleActive(p)}>
                     <Feather name={p.isActive ? "eye-off" : "eye"} size={15} color={p.isActive ? "#F59E0B" : "#10B981"} />
                     <Text style={[styles.actionText, { color: p.isActive ? "#F59E0B" : "#10B981" }]}>{p.isActive ? "Deactivate" : "Activate"}</Text>

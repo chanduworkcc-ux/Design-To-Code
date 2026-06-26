@@ -22,8 +22,12 @@ export function ProductCard({ product, style }: ProductCardProps) {
   const colors = useColors();
   const { addToCart, isInCart, addToWishlist, removeFromWishlist, isInWishlist } = useApp();
   const inWishlist = isInWishlist(product.id);
+  const inCart = isInCart(product.id);
+  const stock = (product as any).stock ?? 100;
+  const isOutOfStock = stock <= 0;
 
   function handleAddToCart() {
+    if (isOutOfStock) return;
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     addToCart(product);
   }
@@ -37,9 +41,8 @@ export function ProductCard({ product, style }: ProductCardProps) {
     }
   }
 
-  // Resolve image source: prefer local require(), fall back to imageUrl string, then placeholder icon
-  const imageSource: any = product.image
-    ? product.image
+  const imageSource: any = (product as any).image
+    ? (product as any).image
     : product.imageUrl
     ? { uri: product.imageUrl }
     : null;
@@ -54,10 +57,16 @@ export function ProductCard({ product, style }: ProductCardProps) {
             <Feather name="package" size={36} color={colors.mutedForeground} />
           </View>
         )}
-        {product.discount && product.discount > 0 && (
-          <View style={[styles.discountBadge, { backgroundColor: colors.orange }]}>
-            <Text style={styles.discountText}>-{product.discount}%</Text>
+        {isOutOfStock ? (
+          <View style={styles.outOfStockOverlay}>
+            <Text style={styles.outOfStockText}>Out of Stock</Text>
           </View>
+        ) : (
+          product.discount && product.discount > 0 && (
+            <View style={[styles.discountBadge, { backgroundColor: colors.orange }]}>
+              <Text style={styles.discountText}>-{product.discount}%</Text>
+            </View>
+          )
         )}
         <Pressable
           style={[
@@ -88,26 +97,33 @@ export function ProductCard({ product, style }: ProductCardProps) {
         </View>
         <View style={styles.priceRow}>
           <View>
-            <Text style={[styles.price, { color: colors.text }]}>
-              ₹{Number(product.price).toFixed(0)}
+            <Text style={[styles.price, { color: isOutOfStock ? colors.mutedForeground : colors.text }]}>
+              ₹{Number(product.price).toLocaleString("en-IN")}
             </Text>
             {product.originalPrice && product.originalPrice > product.price && (
               <Text style={[styles.originalPrice, { color: colors.mutedForeground }]}>
-                ₹{Number(product.originalPrice).toFixed(0)}
+                ₹{Number(product.originalPrice).toLocaleString("en-IN")}
               </Text>
             )}
           </View>
           <Pressable
             onPress={handleAddToCart}
+            disabled={isOutOfStock}
             style={[
               styles.addBtn,
-              { backgroundColor: isInCart(product.id) ? colors.accent : colors.primary },
+              {
+                backgroundColor: isOutOfStock
+                  ? "#E5E7EB"
+                  : inCart
+                  ? colors.accent
+                  : colors.primary,
+              },
             ]}
           >
             <Feather
-              name={isInCart(product.id) ? "check" : "plus"}
+              name={isOutOfStock ? "x" : inCart ? "check" : "plus"}
               size={18}
-              color={isInCart(product.id) ? colors.primary : colors.primaryForeground}
+              color={isOutOfStock ? "#9CA3AF" : inCart ? colors.primary : colors.primaryForeground}
             />
           </Pressable>
         </View>
@@ -136,6 +152,23 @@ const styles = StyleSheet.create({
     height: "100%",
     alignItems: "center",
     justifyContent: "center",
+  },
+  outOfStockOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  outOfStockText: {
+    color: "#fff",
+    fontSize: 12,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 0.5,
+    textAlign: "center",
   },
   discountBadge: {
     position: "absolute",
