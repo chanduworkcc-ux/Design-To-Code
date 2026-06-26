@@ -4,7 +4,7 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { activityLogger } from "./middleware/auth";
-import { seedDefaultConfig } from "./lib/config";
+import { seedDefaultConfig, seedAdminUser } from "./lib/config";
 
 const app: Express = express();
 
@@ -28,5 +28,6 @@ app.use(activityLogger as any);
 app.use("/api", router);
 
 seedDefaultConfig().catch((err) => logger.error({ err }, "Failed to seed config"));
+seedAdminUser().catch((err) => logger.error({ err }, "Failed to seed admin user"));
 
 export default app;

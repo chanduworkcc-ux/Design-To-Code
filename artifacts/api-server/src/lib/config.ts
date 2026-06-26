@@ -1,6 +1,8 @@
 import { db } from "@workspace/db";
-import { systemConfigTable } from "@workspace/db/schema";
+import { systemConfigTable, usersTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
+import bcrypt from "bcryptjs";
+import { v4 as uuidv4 } from "uuid";
 
 const DEFAULTS: Record<string, string> = {
   coins_per_inr: "100",
@@ -51,4 +53,26 @@ export async function seedDefaultConfig(): Promise<void> {
       .values({ key, value })
       .onConflictDoNothing();
   }
+}
+
+export async function seedAdminUser(): Promise<void> {
+  const existing = await db
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(eq(usersTable.email, "admin@xyloscart.com"));
+
+  if (existing.length > 0) return;
+
+  const passwordHash = await bcrypt.hash("admin123", 12);
+  await db.insert(usersTable).values({
+    id: uuidv4(),
+    email: "admin@xyloscart.com",
+    passwordHash,
+    name: "Admin",
+    deviceUuid: "admin-device-seed",
+    referralCode: "ADMIN0",
+    walletBalance: 0,
+    role: "admin",
+    status: "active",
+  });
 }
