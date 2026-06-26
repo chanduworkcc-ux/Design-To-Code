@@ -2,6 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -84,10 +85,11 @@ export default function LoginScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.logoArea}>
-          <View style={[styles.logoCircle, { backgroundColor: colors.primary }]}>
-            <Feather name="shopping-cart" size={30} color="#fff" />
-          </View>
-          <Text style={[styles.appName, { color: colors.text }]}>XyloCart</Text>
+          <Image
+            source={require("@/assets/logo.png")}
+            style={styles.logoImg}
+            resizeMode="contain"
+          />
           <Text style={[styles.tagline, { color: colors.mutedForeground }]}>Shop smarter, live better</Text>
         </View>
 
@@ -163,8 +165,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { paddingHorizontal: 20, flexGrow: 1, justifyContent: "center" },
   logoArea: { alignItems: "center", marginBottom: 32, gap: 8 },
-  logoCircle: { width: 72, height: 72, borderRadius: 20, alignItems: "center", justifyContent: "center" },
-  appName: { fontSize: 28, fontFamily: "Inter_700Bold" },
+  logoImg: { width: 180, height: 100 },
   tagline: { fontSize: 14, fontFamily: "Inter_400Regular" },
   card: { borderRadius: 20, borderWidth: 1, padding: 24, gap: 16 },
   cardTitle: { fontSize: 22, fontFamily: "Inter_700Bold" },

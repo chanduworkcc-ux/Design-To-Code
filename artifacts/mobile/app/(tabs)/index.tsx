@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -138,9 +139,12 @@ export default function ShopScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <View>
-            <Text style={[styles.welcomeText, { color: colors.mutedForeground }]}>{getISTGreeting()} 👋</Text>
-            <Text style={[styles.brandName, { color: colors.text }]}>{user?.name?.split(" ")[0] ?? "XyloCart"}</Text>
+          <View style={styles.headerLeft}>
+            <Image source={require("@/assets/logo.png")} style={styles.headerLogo} resizeMode="contain" />
+            <View>
+              <Text style={[styles.welcomeText, { color: colors.mutedForeground }]}>{getISTGreeting()} 👋</Text>
+              <Text style={[styles.brandName, { color: colors.text }]}>{user?.name?.split(" ")[0] ?? "XyloCart"}</Text>
+            </View>
           </View>
           <Pressable
             style={[styles.cartBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -282,6 +286,8 @@ const styles = StyleSheet.create({
   announcementText: { color: "#fff", fontSize: 13, fontFamily: "Inter_600SemiBold", textAlign: "center" },
   scroll: { paddingHorizontal: 16 },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
+  headerLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
+  headerLogo: { width: 40, height: 40 },
   welcomeText: { fontSize: 13, fontFamily: "Inter_400Regular" },
   brandName: { fontSize: 26, fontFamily: "Inter_700Bold" },
   cartBtn: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", borderWidth: 1, position: "relative" },
