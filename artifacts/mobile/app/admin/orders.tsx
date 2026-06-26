@@ -28,14 +28,23 @@ interface Order {
 }
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; label: string; icon: string }> = {
-  pending: { color: "#F59E0B", bg: "#FFFBEB", label: "Pending", icon: "clock" },
-  confirmed: { color: "#3B82F6", bg: "#EFF6FF", label: "Confirmed", icon: "check-circle" },
-  shipped: { color: "#8B5CF6", bg: "#F5F3FF", label: "Shipped", icon: "truck" },
-  delivered: { color: "#10B981", bg: "#ECFDF5", label: "Delivered", icon: "package" },
-  cancelled: { color: "#EF4444", bg: "#FEF2F2", label: "Cancelled", icon: "x-circle" },
+  pending:   { color: "#F59E0B", bg: "#FFFBEB", label: "Order Created",   icon: "clock" },
+  confirmed: { color: "#3B82F6", bg: "#EFF6FF", label: "Order Accepted",  icon: "check-circle" },
+  shipped:   { color: "#8B5CF6", bg: "#F5F3FF", label: "Order Shipped",   icon: "truck" },
+  delivered: { color: "#10B981", bg: "#ECFDF5", label: "Order Delivered", icon: "package" },
+  cancelled: { color: "#EF4444", bg: "#FEF2F2", label: "Cancelled",       icon: "x-circle" },
 };
 
+// Linear pipeline — admin can ONLY advance to the next stage, never skip or reverse.
+// pending → confirmed → shipped → delivered  (cancelled only from pending)
 const STATUS_ORDER = ["pending", "confirmed", "shipped", "delivered", "cancelled"];
+
+function getNextStatus(current: string): string | null {
+  const pipeline = ["pending", "confirmed", "shipped", "delivered"];
+  const idx = pipeline.indexOf(current);
+  if (idx === -1 || idx === pipeline.length - 1) return null;
+  return pipeline[idx + 1];
+}
 
 export default function OrdersScreen() {
   const insets = useSafeAreaInsets();
@@ -163,22 +172,58 @@ export default function OrdersScreen() {
                       <Text style={styles.metaLabel}>Payment: <Text style={styles.metaValue}>{order.paymentMethod.toUpperCase()}</Text></Text>
                       <Text style={styles.metaLabel}>Pay Status: <Text style={styles.metaValue}>{order.paymentStatus}</Text></Text>
                     </View>
-                    <Text style={styles.updateLabel}>Update Status:</Text>
-                    <View style={styles.statusButtons}>
-                      {STATUS_ORDER.filter((s) => s !== order.status).map((s) => {
-                        const c = STATUS_CONFIG[s];
-                        return (
-                          <Pressable
-                            key={s}
-                            style={[styles.statusBtn, { backgroundColor: c.bg, borderColor: c.color, opacity: updatingId === order.id ? 0.5 : 1 }]}
-                            onPress={() => updateStatus(order.id, s)}
-                            disabled={updatingId === order.id}
-                          >
-                            <Text style={[styles.statusBtnText, { color: c.color }]}>{c.label}</Text>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
+
+                    {/* Linear pipeline — only show the single valid next action */}
+                    {order.status !== "delivered" && order.status !== "cancelled" && (() => {
+                      const next = getNextStatus(order.status);
+                      const nextCfg = next ? STATUS_CONFIG[next] : null;
+                      return (
+                        <View style={{ gap: 8 }}>
+                          <Text style={styles.updateLabel}>Advance Order:</Text>
+                          <View style={styles.statusButtons}>
+                            {next && nextCfg && (
+                              <Pressable
+                                style={[styles.statusBtn, { backgroundColor: nextCfg.bg, borderColor: nextCfg.color, flex: 1, opacity: updatingId === order.id ? 0.5 : 1 }]}
+                                onPress={() => updateStatus(order.id, next)}
+                                disabled={updatingId === order.id}
+                              >
+                                <Feather name={nextCfg.icon as any} size={14} color={nextCfg.color} />
+                                <Text style={[styles.statusBtnText, { color: nextCfg.color }]}>
+                                  Mark as {nextCfg.label}
+                                </Text>
+                              </Pressable>
+                            )}
+                            {/* Cancel only available while still pending */}
+                            {order.status === "pending" && (
+                              <Pressable
+                                style={[styles.statusBtn, { backgroundColor: "#FEF2F2", borderColor: "#EF4444", opacity: updatingId === order.id ? 0.5 : 1 }]}
+                                onPress={() => updateStatus(order.id, "cancelled")}
+                                disabled={updatingId === order.id}
+                              >
+                                <Feather name="x-circle" size={14} color="#EF4444" />
+                                <Text style={[styles.statusBtnText, { color: "#EF4444" }]}>Cancel Order</Text>
+                              </Pressable>
+                            )}
+                          </View>
+                          {/* Lock notice for post-pending orders */}
+                          {order.status !== "pending" && (
+                            <View style={styles.lockNotice}>
+                              <Feather name="lock" size={12} color="#6B7280" />
+                              <Text style={styles.lockText}>Cancellation locked — order already accepted by admin.</Text>
+                            </View>
+                          )}
+                        </View>
+                      );
+                    })()}
+
+                    {(order.status === "delivered" || order.status === "cancelled") && (
+                      <View style={styles.lockNotice}>
+                        <Feather name="check-circle" size={12} color="#6B7280" />
+                        <Text style={styles.lockText}>
+                          {order.status === "delivered" ? "Order lifecycle complete." : "Order cancelled — no further actions."}
+                        </Text>
+                      </View>
+                    )}
                   </View>
                 )}
               </View>
@@ -216,6 +261,8 @@ const styles = StyleSheet.create({
   metaValue: { fontFamily: "Inter_600SemiBold", color: "#0F1740" },
   updateLabel: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#374151" },
   statusButtons: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  statusBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1 },
+  statusBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, borderWidth: 1 },
   statusBtnText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  lockNotice: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#F9FAFB", borderRadius: 8, padding: 10 },
+  lockText: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#6B7280", flex: 1 },
 });

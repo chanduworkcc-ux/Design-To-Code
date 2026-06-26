@@ -37,10 +37,10 @@ interface Order {
 }
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: string; label: string }> = {
-  pending:   { color: "#F59E0B", bg: "#FFFBEB", icon: "clock",        label: "Pending" },
-  confirmed: { color: "#3B82F6", bg: "#EFF6FF", icon: "check",        label: "Confirmed" },
-  shipped:   { color: "#8B5CF6", bg: "#F5F3FF", icon: "truck",        label: "Shipped" },
-  delivered: { color: "#10B981", bg: "#ECFDF5", icon: "check-circle", label: "Delivered" },
+  pending:   { color: "#F59E0B", bg: "#FFFBEB", icon: "clock",        label: "Order Created" },
+  confirmed: { color: "#3B82F6", bg: "#EFF6FF", icon: "check",        label: "Order Accepted" },
+  shipped:   { color: "#8B5CF6", bg: "#F5F3FF", icon: "truck",        label: "Order Shipped" },
+  delivered: { color: "#10B981", bg: "#ECFDF5", icon: "check-circle", label: "Order Delivered" },
   cancelled: { color: "#EF4444", bg: "#FEF2F2", icon: "x-circle",     label: "Cancelled" },
 };
 
@@ -114,6 +114,7 @@ export default function OrdersScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>("all");
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [lastPolledAt, setLastPolledAt] = useState<Date | null>(null);
   const [isPolling, setIsPolling] = useState(false);
   const [changedIds, setChangedIds] = useState<Set<string>>(new Set());
@@ -208,6 +209,26 @@ export default function OrdersScreen() {
     setRefreshing(true);
     await fetchOrders();
     setRefreshing(false);
+  }
+
+  // Phase A: Only allowed when status === "pending"
+  // Phase B: Button is completely absent from DOM when status is confirmed+
+  async function handleCancelOrder(orderId: string) {
+    setCancellingId(orderId);
+    try {
+      const res = await apiRequest(`/orders/${orderId}/cancel`, { method: "POST" });
+      if (res.ok) {
+        setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status: "cancelled", updatedAt: new Date().toISOString() } : o));
+        setExpandedId(null);
+      } else {
+        const body = await res.json().catch(() => ({}));
+        const msg = body?.message ?? "Unable to cancel this order.";
+        alert(msg);
+      }
+    } catch {
+      alert("Network error. Please try again.");
+    }
+    setCancellingId(null);
   }
 
   const filtered = filter === "all" ? orders : orders.filter((o) => o.status === filter);
@@ -437,6 +458,28 @@ export default function OrdersScreen() {
                           <Text style={[styles.metaVal, { color: colors.text }]}>{order.quantity}</Text>
                         </View>
                       </View>
+
+                      {/* ── IRONCLAD ANTI-CANCELLATION RULE ──────────────────
+                           Phase A (pending): Button is VISIBLE & ACTIVE.
+                           Phase B (confirmed+): Element is COMPLETELY DESTROYED —
+                           not hidden, not disabled — entirely absent from the tree.
+                      ──────────────────────────────────────────────────────── */}
+                      {order.status === "pending" && (
+                        <Pressable
+                          style={[styles.cancelBtn, cancellingId === order.id && { opacity: 0.6 }]}
+                          onPress={() => handleCancelOrder(order.id)}
+                          disabled={cancellingId === order.id}
+                        >
+                          {cancellingId === order.id ? (
+                            <ActivityIndicator size="small" color="#EF4444" />
+                          ) : (
+                            <Feather name="x-circle" size={15} color="#EF4444" />
+                          )}
+                          <Text style={styles.cancelBtnText}>
+                            {cancellingId === order.id ? "Cancelling…" : "Cancel Order"}
+                          </Text>
+                        </Pressable>
+                      )}
                     </View>
                   )}
                 </Animated.View>
@@ -520,4 +563,17 @@ const styles = StyleSheet.create({
   metaKey: { fontSize: 10, fontFamily: "Inter_400Regular" },
   metaVal: { fontSize: 13, fontFamily: "Inter_700Bold" },
   metaDivider: { width: 1 },
+  cancelBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "#EF4444",
+    backgroundColor: "#FEF2F2",
+    marginTop: 4,
+  },
+  cancelBtnText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#EF4444" },
 });

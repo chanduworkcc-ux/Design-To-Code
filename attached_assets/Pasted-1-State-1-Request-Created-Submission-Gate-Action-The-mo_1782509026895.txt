@@ -1,0 +1,66 @@
+1. **State 1: Request Created (Submission Gate)**
+   * **Action:** The moment a user submits a withdrawal execution request, create a secure transactional instance (`withdrawal_id`).
+   * **Data Capture:** Log the dynamic data block: `withdrawal_created_date` and `withdrawal_created_time` (Format: `YYYY-MM-DD HH:MM:SS`).
+   * **UI Action:** Display a success toast: *"Your withdrawal request has been sent to the admin successfully."* The first milestone marker on the wallet history page lights up instantly with the recorded creation timestamp.
+2. **State 2: Admin Accepted & Admitted (Processing Boundary)**
+   * **Action:** The request routes to the Master Admin Panel. When the administrator clicks the **"Accept & Admit"** control interface:
+   * **Mandatory Admin Input Fields:** The admin interface *cannot* process the approval without specifying two explicit variables:
+     1. `scheduled_credit_date`: The specific calendar date the funds will be added.
+     2. `target_resolution_hours`: The total target execution window expressed as a absolute hourly parameter (e.g., `24`, `48`, or `72` hours).
+   * **System Calculation Engine:** Upon execution, the server backend must immediately calculate a strict cryptographic countdown constraint: 
+     $$\text{Countdown Target Timestamp} = \text{Admin Acceptance Time} + \text{target\_resolution\_hours}$$
+3. **State 3: Funds Delivered to Wallet (Settlement State)**
+   * **Action:** Once the calculated duration window lapses or the admin fires the final payout instruction, the server adds the exact specified ledger credit back into `user_wallet_balance`.
+   * **UI Action:** Mark the third milestone as successfully complete.
+
+### C. Live Real-Time UI Countdown Clock
+* **Dynamic Client-Side Ticker:** While a request rests in **State 2 (Accepted / Admitted)**, the user's wallet UI interface must render a live, high-precision visual countdown digital ticker down to the exact second (Format: `HH:MM:SS`).
+* **Calculation Anchor:** This clock reads from the server-synchronized `Countdown Target Timestamp`. It forces a dynamic client-side decrease every 1000 milliseconds, showing the user exactly how many hours and minutes remain before the funds land in their digital wallet.
+
+---
+
+## SECTION 5: REVOLUTIONARY AUTOMATED AI NOTIFICATION PIPELINE
+
+You feature a fully autonomous, native Language-Model-driven event listener that tracks status modifications on the server. Whenever an event fires, you must instantly compose a natural, context-aware notification and dispatch it via SMS, WhatsApp, and App Push Notification networks.
+
+### Event-Driven Prompt Logic & Notification Generation Rules:
+1. **Event: Status shifts to `Order Created`**
+   * **Required Core Output Example:** *"Order Confirmed! Hi [Name], your order #[ID] has been successfully initialized on [Date] at [Time]. We have alerted our dispatch team to verify your package."*
+2. **Event: Status shifts to `Order Accepted`**
+   * **Required Core Output Example:** *"Great news! Your order #[ID] has been approved and accepted by our administration team. Preparation for shipping has begun. Track your real-time updates directly inside the app!"*
+3. **Event: Status shifts to `Order Shipped`**
+   * **Required Core Output Example:** *"On its way! Your order #[ID] has been shipped via [Courier Partner Name]. Tracking ID: [Tracking Number]. Get ready for delivery!"*
+4. **Event: Status shifts to `Order Delivered`**
+   * **Required Core Output Example:** *"Delivered! Your order #[ID] has been successfully delivered today. Thank you for shopping with us!"*
+5. **Event: Wallet Withdrawal Status shifts to `Admin Accepted / Admitted`**
+   * **AI Prompt Instruction:** Read the admin-defined `scheduled_credit_date` and `target_resolution_hours` parameters. Formulate an explicit, formal, and clear status text message mapping out when the wallet balance will update.
+   * **Required Core Output Example:** *"Withdrawal Update: Hello [Name], your referral cash-out request #[ID] has been admitted by our administration. The verified amount will be directly deposited into your App Wallet on [Scheduled Date]. Your real-time processing countdown timer of [Hours] Hours is now active inside your profile dashboard."*
+
+---
+
+## SECTION 6: MASTER ADMIN DASHBOARD CORE CONTROL OVERRIDES
+
+The Administrator Control Panel interfaces directly with global structural system variables. Changes applied here must propagate instantly and globally modify the downstream customer application architecture.
+
+### A. Authentication Gate Kill-Switch (`global_auth_system_status`: ENFORCED / DEACTIVATED)
+* **When Toggled to DEACTIVATED:** The application backend instantly unbinds the login validation middleware layers. The consumer app dynamically customizes its view to completely hide, remove, and strip all Sign-In and Sign-Up modals, forms, and validation barriers. Users can surf products, inspect listings, and roam the platform completely unchecked without account constraints.
+* **When Toggled back to ENFORCED:** The application re-instantiates security protocols. The entry gateway modal instantly reappears, re-locking the consumer app behind the standard authorization checkpoints.
+
+### B. Global New Registration Freeze Gate (`allow_new_signups`: TRUE / FALSE)
+* **When Toggled to FALSE:** The system leaves the application open for all existing users to log in, browse, and place orders. However, if a payload hits `POST /api/v1/auth/signup`, the backend gateway drops the packet and responds with an error banner: *"New account creation is temporarily suspended by platform administration. Existing users may log in normally."*
+
+### C. Total Catalog Structural Mutation Engines
+* **Permanent Category Purging:** Provide the admin with root `DELETE` pathways over product taxonomy matrices. If an administrator chooses to permanently delete a product category tier from the admin console, cascade the database deletion down. Instantly wipe or unpublish all nested child product profiles linked to that category, scrubbing them permanently from the user interface views.
+* **Dynamic Offer Insertion Engine:** Provide full CRUD interfaces to dynamically broadcast active promotional offers, discount matrices, real-time sales campaigns, and homepage marketing banners directly into the consumer UI layout.
+
+---
+
+## SECTION 7: CODE INTEGRITY, ZERO-DEBT UI/UX, AND GLOBAL LOCALIZATION
+
+### A. Architecture-Wide Language Localization (Multi-Language Core)
+* Hard-coded textual string components are strictly outlawed anywhere within the application repository. Every component header, checkout phrase, validation warning, tracking statement, and button text must map to an active localization key routing file.
+* Automated AI notification generation tasks must evaluate the customer’s user profile setting `preferred_language` and dynamically render all message text outputs in the matching native dialect.
+
+### B. Total UI/UX Bug & Error Eradication Protocol
+* **Resilient Component Wrapping:** Encapsulate every major operational user view inside distinct structural React / Flutter Error Boundaries to catch, isolate, and elegantly resolve background computation errors without crashing the main user interface.
+* **Zero Cumulative Layout Shift (CLS):** Design static space-holders for tracking timelines, wallet history logs, and countdown frameworks. Moving shipping coordinates or status transitions must never cause items to shift layouts or make text fields overlap.

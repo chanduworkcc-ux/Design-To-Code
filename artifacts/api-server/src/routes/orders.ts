@@ -130,14 +130,103 @@ router.get("/orders/:id", authMiddleware, async (req: AuthRequest, res) => {
   res.json({ order: orders[0] });
 });
 
+// ─── Ironclad Anti-Cancellation Rule ─────────────────────────────────────────
+// Phase A: Cancellation ONLY permitted when status is "pending" (Order Created).
+// Phase B: The moment an admin moves the order to "confirmed" or beyond, this
+//          endpoint is permanently locked with 403 TRANSACTION_LOCKED.
+router.post("/orders/:id/cancel", authMiddleware, async (req: AuthRequest, res) => {
+  const orders = await db.select().from(ordersTable).where(eq(ordersTable.id, req.params.id));
+  if (!orders.length || orders[0].userId !== req.userId) {
+    res.status(404).json({ error: "Order not found" });
+    return;
+  }
+  const order = orders[0];
+
+  const LOCKED_STATUSES = ["confirmed", "shipped", "delivered"];
+  if (LOCKED_STATUSES.includes(order.status)) {
+    res.status(403).json({
+      error: "TRANSACTION_LOCKED",
+      message: "This order has already been processed and accepted by the administration. Cancellation is no longer permitted.",
+    });
+    return;
+  }
+
+  if (order.status === "cancelled") {
+    res.status(400).json({ error: "Order is already cancelled." });
+    return;
+  }
+
+  const [updated] = await db
+    .update(ordersTable)
+    .set({ status: "cancelled", updatedAt: new Date() })
+    .where(eq(ordersTable.id, order.id))
+    .returning();
+
+  // Restore stock when cancelled
+  await db
+    .update(productsTable)
+    .set({ stock: sql`${productsTable.stock} + 1` })
+    .where(eq(productsTable.id, order.productId));
+
+  res.json({ order: updated });
+});
+
 router.get("/admin/orders", authMiddleware, adminMiddleware, async (_req, res) => {
   const orders = await db.select().from(ordersTable).orderBy(desc(ordersTable.createdAt));
   res.json({ orders });
 });
 
+// Linear pipeline: pending → confirmed → shipped → delivered
+// Admin cannot skip stages or move backwards.
+const STATUS_PIPELINE = ["pending", "confirmed", "shipped", "delivered", "cancelled"];
+
 router.put("/admin/orders/:id/status", authMiddleware, adminMiddleware, async (req, res) => {
-  const { status } = req.body;
-  const [updated] = await db.update(ordersTable).set({ status, updatedAt: new Date() }).where(eq(ordersTable.id, req.params.id)).returning();
+  const { status, courierPartner, trackingNumber } = req.body;
+
+  if (!STATUS_PIPELINE.includes(status)) {
+    res.status(400).json({ error: "Invalid status value." });
+    return;
+  }
+
+  const orders = await db.select().from(ordersTable).where(eq(ordersTable.id, req.params.id));
+  if (!orders.length) { res.status(404).json({ error: "Order not found" }); return; }
+  const order = orders[0];
+
+  if (order.status === "delivered" || order.status === "cancelled") {
+    res.status(400).json({ error: `Cannot update a ${order.status} order.` });
+    return;
+  }
+
+  const currentIdx = STATUS_PIPELINE.indexOf(order.status);
+  const newIdx = STATUS_PIPELINE.indexOf(status);
+
+  // Allow only forward progression (or cancel from pending)
+  if (status === "cancelled" && order.status !== "pending") {
+    res.status(403).json({
+      error: "TRANSACTION_LOCKED",
+      message: "Only pending orders can be cancelled. This order has already been accepted.",
+    });
+    return;
+  }
+
+  if (status !== "cancelled" && newIdx !== currentIdx + 1) {
+    res.status(400).json({
+      error: "INVALID_TRANSITION",
+      message: `Cannot move order from '${order.status}' to '${status}'. Status must follow the pipeline: pending → confirmed → shipped → delivered.`,
+    });
+    return;
+  }
+
+  const updateData: Record<string, any> = { status, updatedAt: new Date() };
+  if (status === "shipped" && courierPartner) updateData.courierPartner = courierPartner;
+  if (status === "shipped" && trackingNumber) updateData.trackingNumber = trackingNumber;
+
+  const [updated] = await db
+    .update(ordersTable)
+    .set(updateData)
+    .where(eq(ordersTable.id, req.params.id))
+    .returning();
+
   res.json({ order: updated });
 });
 

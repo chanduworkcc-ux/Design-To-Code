@@ -1,0 +1,19 @@
+
+### The Ironclad Anti-Cancellation Rule
+* **Phase A (Pre-Acceptance):** While an order rests in the **1. Order Created** processing stage, the customer's interface retains a visible, accessible **"Cancel Order"** button.
+* **Phase B (Post-Acceptance Override):** The precise second an administrator updates the order to **2. Order Accepted** within the Admin Panel:
+  * **Frontend Enforcement:** The client-side UI must immediately unmount, hide, and completely destroy the "Cancel Order" button element from the user's interface. 
+  * **Backend Enforcement:** The REST API endpoint routing cancellations (`POST /api/v1/orders/{order_id}/cancel`) must implement a strict guard clause. Any user request striking this endpoint while the status reads `ACCEPTED` or further along the timeline must be instantly terminated with a `403 Forbidden` payload responding: `{ "error": "TRANSACTION_LOCKED", "message": "This order has already been processed and accepted by the administration. Cancellation is no longer permitted." }`
+
+---
+
+## SECTION 4: INTEGRATED WALLET WITHDRAWAL & REFERRAL ENGINE
+
+The application features a secure, closed-loop financial wallet system. Users accrue credit via a specialized referral distribution network. All cash-out actions follow a rigid administrative approval lifecycle.
+
+### A. Anti-External Gateway Bypass (Strictly No UPI)
+* **Direct Credit Constraint:** The system is strictly forbidden from executing external payouts via third-party payment rails, external banking switches, or instant Unified Payments Interface (UPI) handling nodes.
+* **Intra-Wallet Deposit Enforcement:** When an administrator approves a cash withdrawal, the payout funds must be dynamically injected directly back into the user's native in-app **Wallet Balance** ledger asset (`user_wallet_balance`). This balance can only be used as promotional or purchasing credits within the native application marketplace ecosystem.
+
+### B. Withdrawal Request and Referral Status Lifecycle
+When a user attempts to redeem referral earnings, the wallet tracking subsystem must execute and display a strict chronological three-state milestone log inside the **Withdrawal Windows / History UI**:
