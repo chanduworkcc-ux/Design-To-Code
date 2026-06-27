@@ -6,6 +6,7 @@ import { eq, desc, sql } from "drizzle-orm";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../middleware/auth";
 import { getConfig } from "../lib/config";
 import { getIO } from "../lib/socket";
+import { insertAutoNotification } from "./notifications";
 import { z } from "zod";
 import { v4 as uuidv4 } from "uuid";
 
@@ -205,6 +206,16 @@ router.get("/admin/audit-logs", authMiddleware, adminMiddleware, async (_req, re
 // Once an order reaches "delivered" or "cancelled", isLocked = true — no further updates.
 const STATUS_PIPELINE = ["pending", "confirmed", "shipped", "delivered", "cancelled"];
 
+function getStatusIcon(status: string): string {
+  const icons: Record<string, string> = {
+    confirmed: "check-circle",
+    shipped: "package",
+    delivered: "check-square",
+    cancelled: "x-circle",
+  };
+  return icons[status] ?? "bell";
+}
+
 const NOTIFICATION_TEMPLATES: Record<string, { title: string; body: string }> = {
   confirmed: {
     title: "🎉 Order Confirmed!",
@@ -324,20 +335,40 @@ router.put("/admin/orders/:id/status", authMiddleware, adminMiddleware, async (r
     }
   }
 
-  // ── Real-time push to customer ────────────────────────────────────────────
+  // ── Push notification + in-app notification ───────────────────────────────
+  const template = NOTIFICATION_TEMPLATES[status] ?? null;
+  if (template) {
+    try {
+      const [customer] = await db
+        .select({ name: usersTable.name })
+        .from(usersTable)
+        .where(eq(usersTable.id, order.userId));
+
+      const customerName = customer?.name ?? "Customer";
+      const filledTitle = template.title;
+      const filledBody = template.body
+        .replace(/{Customer_Name}/g, customerName)
+        .replace(/{Order_ID}/g, order.orderNumber ?? order.id.slice(0, 8).toUpperCase())
+        .replace(/{Courier_Name}/g, courierPartner ?? "our courier")
+        .replace(/{Tracking_Number}/g, trackingNumber ?? "N/A")
+        .replace(/{Tracking_Update}/g, "Your package is on its way");
+
+      await insertAutoNotification(order.userId, filledTitle, filledBody, getStatusIcon(status));
+    } catch {}
+  }
+
+  // ── Real-time socket push to customer ────────────────────────────────────
   try {
-    const notification = NOTIFICATION_TEMPLATES[status] ?? null;
     getIO().to(`user:${order.userId}`).emit("order_update", {
       orderId: order.id,
       orderNumber: order.orderNumber,
       status,
       isLocked: willLock,
-      notification,
+      notification: template,
     });
   } catch {}
 
-  const notification = NOTIFICATION_TEMPLATES[status] ?? null;
-  res.json({ order: updated, notification });
+  res.json({ order: updated, notification: template });
 });
 
 export default router;

@@ -8,6 +8,7 @@ import React, {
   useState,
 } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useSocket } from "@/context/SocketContext";
 
 const LAST_SEEN_KEY = "notif_last_seen_at";
 const POLL_INTERVAL = 30_000;
@@ -24,6 +25,7 @@ const NotificationContext = createContext<NotificationContextType>({
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const { token, apiRequest } = useAuth();
+  const { socket } = useSocket();
   const [unreadCount, setUnreadCount] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -58,6 +60,18 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [fetchUnread]);
+
+  // Instantly refresh unread count when an order status update arrives via socket
+  useEffect(() => {
+    if (!socket) return;
+    const handler = () => {
+      fetchUnread();
+    };
+    socket.on("order_update", handler);
+    return () => {
+      socket.off("order_update", handler);
+    };
+  }, [socket, fetchUnread]);
 
   return (
     <NotificationContext.Provider value={{ unreadCount, markAllRead }}>

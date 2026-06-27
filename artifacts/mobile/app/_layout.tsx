@@ -36,7 +36,13 @@ function PushNotificationInit() {
 
 function SocketInit({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  return <SocketProvider userId={user?.id}>{children}</SocketProvider>;
+  return (
+    <SocketProvider userId={user?.id}>
+      <NotificationProvider>
+        {children}
+      </NotificationProvider>
+    </SocketProvider>
+  );
 }
 
 SplashScreen.preventAutoHideAsync();
@@ -170,23 +176,21 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <PushNotificationInit />
-            <NotificationProvider>
-              <AppProvider>
-                <SocketInit>
-                  <GestureHandlerRootView style={{ flex: 1 }}>
-                    <KeyboardProvider>
-                      <RootLayoutNav />
-                      {showSplash && (
-                        <AppSplash
-                          logoUrl={logoUrl}
-                          onDone={() => setShowSplash(false)}
-                        />
-                      )}
-                    </KeyboardProvider>
-                  </GestureHandlerRootView>
-                </SocketInit>
-              </AppProvider>
-            </NotificationProvider>
+            <AppProvider>
+              <SocketInit>
+                <GestureHandlerRootView style={{ flex: 1 }}>
+                  <KeyboardProvider>
+                    <RootLayoutNav />
+                    {showSplash && (
+                      <AppSplash
+                        logoUrl={logoUrl}
+                        onDone={() => setShowSplash(false)}
+                      />
+                    )}
+                  </KeyboardProvider>
+                </GestureHandlerRootView>
+              </SocketInit>
+            </AppProvider>
           </AuthProvider>
         </QueryClientProvider>
       </ErrorBoundary>
