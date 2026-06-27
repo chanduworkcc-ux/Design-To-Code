@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   FlatList,
   Image,
@@ -17,6 +17,7 @@ import Animated, {
   withSequence,
   withTiming,
   withSpring,
+  withRepeat,
   Easing,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -24,9 +25,46 @@ import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
 import BurstAnimation, { type BurstHandle } from "@/components/BurstAnimation";
 import { useSocket } from "@/context/SocketContext";
+import { FloatingOrb, PulsingRing } from "@/components/ThreeD";
 
 function HeartBurst({ onDone }: { onDone?: () => void }) {
   return null;
+}
+
+function WishlistEmpty3D() {
+  const colors = useColors();
+  const bob = useSharedValue(0);
+  const tilt = useSharedValue(0);
+  useEffect(() => {
+    bob.value = withRepeat(
+      withSequence(
+        withTiming(-14, { duration: 1800, easing: Easing.inOut(Easing.sin) }),
+        withTiming(14,  { duration: 1800, easing: Easing.inOut(Easing.sin) }),
+      ), -1, false
+    );
+    tilt.value = withRepeat(
+      withSequence(
+        withTiming(-12, { duration: 2200, easing: Easing.inOut(Easing.sin) }),
+        withTiming(12,  { duration: 2200, easing: Easing.inOut(Easing.sin) }),
+      ), -1, false
+    );
+  }, []);
+  const iconStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: bob.value }, { rotateZ: `${tilt.value}deg` }, { perspective: 500 }],
+  }));
+  return (
+    <View style={{ width: "100%", height: 190, alignItems: "center", justifyContent: "center", overflow: "visible", marginBottom: 8 }}>
+      <FloatingOrb color="#EF4444" size={160} style={{ top: -20, left: -40 }} amplitude={9} duration={3200} />
+      <FloatingOrb color="#7C3AED" size={110} style={{ top: 50, right: -30 }} delay={600} amplitude={11} duration={2700} />
+      <View style={{ width: 130, height: 130, alignItems: "center", justifyContent: "center" }}>
+        <PulsingRing color="#EF4444" size={118} duration={2000} />
+        <PulsingRing color="#EF4444" size={118} delay={1000} duration={2000} />
+        <Animated.View style={[{ width: 90, height: 90, borderRadius: 45, alignItems: "center", justifyContent: "center", backgroundColor: colors.card }, iconStyle]}>
+          <Feather name="heart" size={42} color="#EF4444" />
+        </Animated.View>
+      </View>
+    </View>
+  );
 }
 
 function WishlistCard({
@@ -164,7 +202,8 @@ export default function WishlistScreen() {
         <View style={[styles.emptyContainer, { paddingTop: topPadding + 20 }]}>
           <Text style={[styles.title, { color: colors.text }]}>Wishlist</Text>
           <View style={styles.emptyState}>
-            <Feather name="heart" size={52} color={colors.mutedForeground} />
+            <WishlistEmpty3D />
+            <View style={{ display: "none" }}><Feather name="heart" size={52} color={colors.mutedForeground} /></View>
             <Text style={[styles.emptyTitle, { color: colors.text }]}>Your wishlist is empty</Text>
             <Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>
               Save items you love and come back to them later
@@ -268,4 +307,7 @@ const styles = StyleSheet.create({
     height: 110,
     borderLeftWidth: 1,
   },
+  emptyScene: { width: "100%", height: 190, alignItems: "center", justifyContent: "center", overflow: "visible", marginBottom: 8 },
+  emptyIconBox: { width: 130, height: 130, alignItems: "center", justifyContent: "center" },
+  emptyIconCircle3D: { width: 90, height: 90, borderRadius: 45, alignItems: "center", justifyContent: "center" },
 });

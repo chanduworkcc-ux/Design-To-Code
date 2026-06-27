@@ -19,6 +19,7 @@ import { useApp } from "@/context/AppContext";
 import { products as staticProducts } from "@/data/products";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
+import { useNotifications } from "@/context/NotificationContext";
 import { Product } from "@/data/products";
 import { FloatingOrb, FloatIn, PulsingRing } from "@/components/ThreeD";
 import Animated2, {
@@ -51,6 +52,25 @@ interface ApiBanner {
   id: string; title: string; subtitle: string | null; bgColor: string;
   textColor: string; ctaText: string; imageUrl: string | null;
   isActive: boolean; sortOrder: number;
+}
+
+// 3D notification badge
+function NotifBadge({ count }: { count: number }) {
+  const scale = useSharedValue(1);
+  useEffect(() => {
+    if (count === 0) return;
+    scale.value = withSequence(
+      withTiming(1.4, { duration: 160, easing: Easing.out(Easing.back) }),
+      withTiming(1,   { duration: 200, easing: Easing.out(Easing.cubic) }),
+    );
+  }, [count]);
+  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  if (count === 0) return null;
+  return (
+    <Animated2.View style={[styles.notifBadge, style]}>
+      <Text style={styles.notifBadgeText}>{count > 9 ? "9+" : count}</Text>
+    </Animated2.View>
+  );
 }
 
 // 3D pulsing cart badge
@@ -124,6 +144,7 @@ export default function ShopScreen() {
   const router = useRouter();
   const { cartCount } = useApp();
   const { token, user } = useAuth();
+  const { unreadCount } = useNotifications();
 
   const [products, setProducts] = useState<Product[]>(staticProducts);
   const [banners, setBanners] = useState<ApiBanner[]>([]);
@@ -208,13 +229,22 @@ export default function ShopScreen() {
               <Text style={[styles.brandName, { color: colors.text }]}>{user?.name?.split(" ")[0] ?? "XyloCart"}</Text>
             </View>
           </View>
-          <Pressable
-            style={[styles.cartBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => router.push("/(tabs)/cart")}
-          >
-            <Feather name="shopping-cart" size={20} color={colors.text} />
-            <CartBadge count={cartCount} />
-          </Pressable>
+          <View style={styles.headerActions}>
+            <Pressable
+              style={[styles.headerIconBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => router.push("/notifications-user" as any)}
+            >
+              <Feather name="bell" size={20} color={colors.text} />
+              <NotifBadge count={unreadCount} />
+            </Pressable>
+            <Pressable
+              style={[styles.cartBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => router.push("/(tabs)/cart")}
+            >
+              <Feather name="shopping-cart" size={20} color={colors.text} />
+              <CartBadge count={cartCount} />
+            </Pressable>
+          </View>
         </FloatIn>
 
         {/* Search Bar — float-in */}
@@ -333,9 +363,16 @@ export default function ShopScreen() {
         </View>
 
         {products.length === 0 ? (
-          <FloatIn delay={300} distance={20} style={{ alignItems: "center", paddingVertical: 32, gap: 8 }}>
-            <Feather name="package" size={40} color={colors.mutedForeground} />
-            <Text style={[{ color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>No products available</Text>
+          <FloatIn delay={300} distance={20} style={{ alignItems: "center", paddingVertical: 40, gap: 0 }}>
+            <View style={{ width: 120, height: 120, alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+              <PulsingRing color={colors.primary} size={110} duration={2200} />
+              <PulsingRing color={colors.primary} size={110} delay={1100} duration={2200} />
+              <Animated2.View style={[styles.emptyIconCircle, { backgroundColor: colors.card }]}>
+                <Feather name="package" size={38} color={colors.primary} />
+              </Animated2.View>
+            </View>
+            <Text style={[{ color: colors.text, fontFamily: "Inter_700Bold", fontSize: 18, marginBottom: 6 }]}>No products yet</Text>
+            <Text style={[{ color: colors.mutedForeground, fontFamily: "Inter_400Regular", fontSize: 13, textAlign: "center" }]}>Check back soon for new arrivals</Text>
           </FloatIn>
         ) : (
           <FloatIn delay={280} distance={20}>
@@ -361,6 +398,11 @@ const styles = StyleSheet.create({
   headerLogo: { width: 40, height: 40 },
   welcomeText: { fontSize: 13, fontFamily: "Inter_400Regular" },
   brandName: { fontSize: 26, fontFamily: "Inter_700Bold" },
+  headerActions: { flexDirection: "row", gap: 8 },
+  headerIconBtn: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", borderWidth: 1, position: "relative" },
+  notifBadge: { position: "absolute", top: -4, right: -4, minWidth: 18, height: 18, borderRadius: 9, alignItems: "center", justifyContent: "center", backgroundColor: "#EF4444", paddingHorizontal: 3 },
+  notifBadgeText: { color: "#fff", fontSize: 9, fontFamily: "Inter_700Bold" },
+  emptyIconCircle: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 8, elevation: 3 },
   cartBtn: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", borderWidth: 1, position: "relative" },
   cartBadge: { position: "absolute", top: -4, right: -4, width: 18, height: 18, borderRadius: 9, alignItems: "center", justifyContent: "center", backgroundColor: "#2563EB" },
   cartBadgeText: { color: "#fff", fontSize: 10, fontFamily: "Inter_700Bold" },

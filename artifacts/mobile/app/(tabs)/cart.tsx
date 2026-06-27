@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Image,
   Platform,
@@ -10,9 +10,71 @@ import {
   Text,
   View,
 } from "react-native";
+import Animated2, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+  Easing,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
+import { FloatingOrb, PulsingRing } from "@/components/ThreeD";
+
+function Empty3DCart() {
+  const colors = useColors();
+  const router = useRouter();
+  const bob = useSharedValue(0);
+  const tilt = useSharedValue(0);
+
+  useEffect(() => {
+    bob.value = withRepeat(
+      withSequence(
+        withTiming(-14, { duration: 1700, easing: Easing.inOut(Easing.sin) }),
+        withTiming(14,  { duration: 1700, easing: Easing.inOut(Easing.sin) }),
+      ), -1, false
+    );
+    tilt.value = withRepeat(
+      withSequence(
+        withTiming(-10, { duration: 2100, easing: Easing.inOut(Easing.sin) }),
+        withTiming(10,  { duration: 2100, easing: Easing.inOut(Easing.sin) }),
+      ), -1, false
+    );
+  }, []);
+
+  const iconStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: bob.value }, { rotateZ: `${tilt.value}deg` }, { perspective: 500 }],
+  }));
+
+  return (
+    <View style={styles.emptyState}>
+      <View style={styles.emptyScene}>
+        <FloatingOrb color={colors.primary} size={180} style={{ top: -30, left: -50 }} amplitude={10} duration={3400} />
+        <FloatingOrb color="#7C3AED" size={120} style={{ top: 50, right: -35 }} delay={700} amplitude={12} duration={2900} />
+        <View style={styles.emptyIconBox}>
+          <PulsingRing color={colors.primary} size={118} duration={2100} />
+          <PulsingRing color={colors.primary} size={118} delay={1050} duration={2100} />
+          <Animated2.View style={[styles.emptyIconCircle, { backgroundColor: colors.card }, iconStyle]}>
+            <Feather name="shopping-cart" size={42} color={colors.primary} />
+          </Animated2.View>
+        </View>
+      </View>
+      <Text style={[styles.emptyTitle, { color: colors.text }]}>Your cart is empty</Text>
+      <Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>
+        Browse the shop and add something you love
+      </Text>
+      <Pressable
+        style={[styles.startBtn, { backgroundColor: colors.primary }]}
+        onPress={() => router.push("/(tabs)")}
+      >
+        <Feather name="shopping-bag" size={16} color="#fff" />
+        <Text style={styles.startBtnText}>Browse Products</Text>
+      </Pressable>
+    </View>
+  );
+}
 
 export default function CartScreen() {
   const colors = useColors();
@@ -30,22 +92,7 @@ export default function CartScreen() {
       <View style={[styles.root, { backgroundColor: colors.background }]}>
         <View style={[styles.emptyWrap, { paddingTop: topPadding + 24 }]}>
           <Text style={[styles.title, { color: colors.text }]}>Cart</Text>
-          <View style={styles.emptyState}>
-            <View style={[styles.emptyIconCircle, { backgroundColor: colors.card }]}>
-              <Feather name="shopping-cart" size={36} color={colors.mutedForeground} />
-            </View>
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>Your cart is empty</Text>
-            <Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>
-              Browse the shop and add something you love
-            </Text>
-            <Pressable
-              style={[styles.startBtn, { backgroundColor: colors.primary }]}
-              onPress={() => router.push("/(tabs)")}
-            >
-              <Feather name="shopping-bag" size={16} color="#fff" />
-              <Text style={styles.startBtnText}>Browse Products</Text>
-            </Pressable>
-          </View>
+          <Empty3DCart />
         </View>
       </View>
     );
@@ -210,6 +257,8 @@ const styles = StyleSheet.create({
   /* Empty state */
   emptyWrap: { flex: 1, paddingHorizontal: 16 },
   emptyState: { flex: 1, alignItems: "center", justifyContent: "center", gap: 14, paddingBottom: 100 },
+  emptyScene: { width: "100%", height: 190, alignItems: "center", justifyContent: "center", overflow: "visible", marginBottom: 8 },
+  emptyIconBox: { width: 130, height: 130, alignItems: "center", justifyContent: "center" },
   emptyIconCircle: { width: 90, height: 90, borderRadius: 45, alignItems: "center", justifyContent: "center" },
   emptyTitle: { fontSize: 22, fontFamily: "Inter_700Bold" },
   emptySubtitle: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 22, paddingHorizontal: 24 },

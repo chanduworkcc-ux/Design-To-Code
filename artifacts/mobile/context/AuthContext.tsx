@@ -12,6 +12,7 @@ export interface AuthUser {
   role: "user" | "admin";
   walletBalance: number;
   referralCode: string;
+  mobileNumber?: string | null;
   status?: string;
   suspendedUntil?: string | null;
   banReason?: string | null;

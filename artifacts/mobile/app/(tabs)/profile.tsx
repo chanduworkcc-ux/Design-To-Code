@@ -1,9 +1,10 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -12,6 +13,7 @@ import {
   Text,
   View,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
@@ -53,6 +55,13 @@ export default function ProfileScreen() {
   const { user, logout, loading } = useAuth();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
+  const [avatarUri, setAvatarUri] = useState<string | null>(null);
+
+  useEffect(() => {
+    AsyncStorage.getItem("@xc_avatar_uri").then((uri) => {
+      if (uri) setAvatarUri(uri);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/(auth)/login");
@@ -97,9 +106,13 @@ export default function ProfileScreen() {
         <FloatIn delay={0} distance={24}>
           <View style={[styles.userCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <GlowPulse color={colors.primary} size={54}>
-              <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-                <Text style={styles.avatarText}>{avatarLetter}</Text>
-              </View>
+              {avatarUri ? (
+                <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
+              ) : (
+                <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+                  <Text style={styles.avatarText}>{avatarLetter}</Text>
+                </View>
+              )}
             </GlowPulse>
             <View style={styles.userInfo}>
               <Text style={[styles.userName, { color: colors.text }]}>{user.name}</Text>
@@ -107,6 +120,9 @@ export default function ProfileScreen() {
               {user.referralCode && (
                 <Text style={[styles.referralCode, { color: colors.primary }]}>Code: {user.referralCode}</Text>
               )}
+              <View style={[styles.fxBadge, { backgroundColor: "#EFF6FF" }]}>
+                <Text style={[styles.fxBadgeText, { color: "#2563EB" }]}>⚡ FX Prime 26</Text>
+              </View>
             </View>
             <Pressable
               style={[styles.editBtn, { borderColor: colors.border }]}
@@ -172,7 +188,7 @@ export default function ProfileScreen() {
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <MenuItem icon="refresh-cw" label="Returns & Refunds" onPress={() => router.push("/orders" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <MenuItem icon="truck"      label="Track Orders"     onPress={() => router.push("/orders" as any)} />
+            <MenuItem icon="truck"      label="Track Orders"     onPress={() => router.push("/track-order" as any)} />
           </View>
         </FloatIn>
 
@@ -222,7 +238,7 @@ export default function ProfileScreen() {
           </View>
         </FloatIn>
 
-        {user.email === "chandu@gmail.com" && (
+        {user.role === "admin" && (
           <Pressable style={[styles.adminBtn, { backgroundColor: colors.primary }]} onPress={() => router.push("/admin" as any)}>
             <Feather name="shield" size={18} color="#fff" />
             <Text style={styles.adminBtnText}>Admin Panel</Text>
@@ -248,6 +264,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontFamily: "Inter_700Bold", marginBottom: 16 },
   userCard: { flexDirection: "row", alignItems: "center", padding: 16, borderRadius: 14, borderWidth: 1, gap: 12, marginBottom: 12 },
   avatar: { width: 54, height: 54, borderRadius: 27, alignItems: "center", justifyContent: "center" },
+  avatarImage: { width: 54, height: 54, borderRadius: 27 },
   avatarText: { color: "#fff", fontSize: 22, fontFamily: "Inter_700Bold" },
   userInfo: { flex: 1 },
   userName: { fontSize: 16, fontFamily: "Inter_700Bold" },
@@ -273,6 +290,8 @@ const styles = StyleSheet.create({
   badge: { borderRadius: 10, paddingHorizontal: 7, paddingVertical: 2, marginRight: 4 },
   badgeText: { color: "#fff", fontSize: 11, fontFamily: "Inter_700Bold" },
   divider: { height: 1, marginLeft: 62 },
+  fxBadge: { alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, marginTop: 4 },
+  fxBadgeText: { fontSize: 10, fontFamily: "Inter_600SemiBold", letterSpacing: 0.3 },
   adminBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, borderRadius: 14, paddingVertical: 16, marginBottom: 12 },
   adminBtnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_600SemiBold" },
   signOutBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, borderRadius: 14, paddingVertical: 16, borderWidth: 1, marginTop: 4 },

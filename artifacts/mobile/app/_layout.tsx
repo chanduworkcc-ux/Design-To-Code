@@ -14,6 +14,7 @@ import {
   Dimensions,
   Image,
   StyleSheet,
+  Text,
   View,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -76,6 +77,8 @@ function AppSplash({ onDone, logoUrl }: { onDone: () => void; logoUrl: string | 
     <Animated.View style={[styles.splashRoot, { opacity: bgOpacity }]}>
       <Animated.View style={[styles.splashLogoWrap, { opacity: logoOpacity, transform: [{ scale: logoScale }] }]}>
         <Image source={logoSource} style={styles.splashLogo} resizeMode="contain" />
+        <Text style={styles.splashBrand}>FX Prime 26</Text>
+        <Text style={styles.splashTagline}>Premium Shopping Experience</Text>
       </Animated.View>
       <View style={styles.dotsRow}>
         {[0, 1, 2].map((i) => <PulseDot key={i} delay={i * 180} />)}
@@ -118,6 +121,7 @@ function RootLayoutNav() {
       <Stack.Screen name="payment-methods" options={{ headerShown: false }} />
       <Stack.Screen name="product/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="suspended" options={{ headerShown: false }} />
+      <Stack.Screen name="track-order" options={{ headerShown: false }} />
     </Stack>
   );
 }
@@ -208,6 +212,8 @@ const styles = StyleSheet.create({
   },
   splashLogoWrap: { alignItems: "center", justifyContent: "center" },
   splashLogo: { width: width * 0.62, height: width * 0.62 * 0.56 },
-  dotsRow: { flexDirection: "row", gap: 8, marginTop: 48 },
+  splashBrand: { fontSize: 28, fontFamily: "Inter_700Bold", color: "#1E3A8A", marginTop: 20, letterSpacing: -0.5 },
+  splashTagline: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#3B82F6", marginTop: 5, letterSpacing: 0.6 },
+  dotsRow: { flexDirection: "row", gap: 8, marginTop: 40 },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#2563EB" },
 });

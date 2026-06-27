@@ -371,4 +371,43 @@ router.put("/admin/orders/:id/status", authMiddleware, adminMiddleware, async (r
   res.json({ order: updated, notification: template });
 });
 
+router.get("/orders/track/:orderRef", async (req, res) => {
+  const raw = (req.params.orderRef ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
+  if (raw.length < 6) {
+    res.status(400).json({ error: "Please enter at least 6 characters of the Order ID." });
+    return;
+  }
+  try {
+    const found = await db.select({
+      id: ordersTable.id,
+      status: ordersTable.status,
+      createdAt: ordersTable.createdAt,
+      updatedAt: ordersTable.updatedAt,
+      paymentMethod: ordersTable.paymentMethod,
+      paymentStatus: ordersTable.paymentStatus,
+      total: ordersTable.total,
+    }).from(ordersTable)
+      .where(sql`UPPER(LEFT(${ordersTable.id}::text, 8)) = ${raw}`)
+      .limit(1);
+
+    if (!found.length) {
+      res.status(404).json({ error: "No order found with that ID. Please check the ID and try again." });
+      return;
+    }
+    const o = found[0];
+    res.json({
+      id: o.id,
+      displayId: o.id.slice(0, 8).toUpperCase(),
+      status: o.status,
+      createdAt: o.createdAt,
+      updatedAt: o.updatedAt,
+      paymentMethod: o.paymentMethod,
+      paymentStatus: o.paymentStatus,
+      total: o.total,
+    });
+  } catch {
+    res.status(500).json({ error: "Failed to look up order." });
+  }
+});
+
 export default router;
