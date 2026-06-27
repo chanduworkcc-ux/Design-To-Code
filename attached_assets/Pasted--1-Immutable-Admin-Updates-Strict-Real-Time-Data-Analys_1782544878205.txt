@@ -1,0 +1,46 @@
+## 1. Immutable Admin Updates (Strict Real-Time Data Analysis)
+
+* One-Time Write Rule: Program your backend API to reject any UPDATE requests on a court booking or transaction once the admin marks it as "Completed" or "Locked."
+* Database Constraint: Set a boolean flag like is_locked = true upon the first admin update. Add a check condition that blocks subsequent changes. [1] 
+* Audit Logging: Instead of changing existing rows, append a new row to a ledger table. This keeps a permanent, unchangeable history of what the admin did for data analysis. [2] 
+
+## 2. Zero-Demo Data Policy
+
+* Disable Seeders: Completely remove or comment out functions like seedDatabase() or generateFakeUsers() from your startup scripts.
+* Production Flags: Force your application environment variable to NODE_ENV=production or APP_ENV=production to automatically block fallback mock data.
+* Strict Validation: Reject empty or generic test forms at the API level so only genuine customer inputs enter your system.
+
+## 3. Real-Time Customer Support Ticket System
+
+* Ticket Creation: Provide a simple "Raise a Ticket" form in the user panel with fields for Issue Category (e.g., Court Booking, Payments, Account) and Description.
+* Live Admin Notification: Use WebSockets (socket.emit('new_ticket', data)) to push the ticket instantly to the admin dashboard without requiring a page refresh. [3] 
+* Live Status Sync: When an admin types a reply or changes the ticket status to "In Progress" or "Resolved", flash the update instantly on the customer's screen.
+
+------------------------------
+## MASTER SYSTEM INSTRUCTION: FULL-STACK APPLICATION WITH ADVANCED ADMINISTRATIVE ENGINE## 1. Core Architecture, Real-Time State, & Database Sync
+Build a highly secure, fully responsive full-stack application split into a User Portal and an Admin Control Panel. Use Firebase (Authentication, Firestore, Cloud Functions, and Realtime Database) for all backend services, real-time logging, and transactional states.
+
+* Zero-Silent-Errors Directive: Implement comprehensive try-catch wrappers, explicit UI validation states, and descriptive fallback error elements for every single button click, form submission, toggle change, or routing operation.
+* Real-Time Sync Engine: Use Firestore onSnapshot listeners to establish a live data sync between Admin configuration states and User application behavior. All UI views must update dynamically without requiring page refreshes.
+* Order ID Generation Formula: All generated invoices must be sequential, strictly structured, and prefixed exactly as: 2026-01-XXXX (e.g., 2026-01-0001, 2026-01-0002).
+
+------------------------------
+## 2. Advanced Security, Fraud Mitigation, & Device Locking
+
+* One Device, One Account Policy: Programmatically capture a unique device hardware fingerprint (using Canvas fingerprinting or a robust device info library) along with the user's current IP address upon registration and login.
+* Registration/Login Blocking: Store these unique hardware signatures in a centralized device_registry collection. If an active device signature attempts to register a new account, or log into an alternate profile, block execution completely, reject the session, and display a "Device Blocked: Multi-Account Violation" warning.
+* Strict Identity Check: Only one mobile number, one email account, one device footprint, and one account per individual user are permitted.
+* Admin Control Bans: Provide the Admin with two distinct permanent termination vectors from the Admin panel:
+* Account Ban: Revokes Firebase Auth access tokens immediately and marks the user's database status as banned.
+   * Device Footprint Ban: Blacklists the target device fingerprint and IP address globally inside Firestore rules, permanently locking that hardware out of the registration or login screens.
+* Temporary Suspension Engine: Admin can suspend any user for a specific duration (e.g., a custom number of days set by a text/number field). When a suspended user authenticates, show a locked, full-screen countdown screen displaying the remaining days, hours, and minutes until access is restored.
+
+------------------------------
+## 3. Real-Time Heartbeats, Audit Logs, & Analytics
+
+* Online/Offline Pulse Tracking: Integrate the Firebase Realtime Database .info/connected status network.
+* When a user connects, set /status/{uid} = { state: 'online', last_changed: serverTimestamp() }.
+   * On disconnect (onDisconnect()), flip the value to 'offline'.
+   * The Admin dashboard user management view must listen to this endpoint in real time and render a dynamic green badge for Online users and a grey badge for Offline users.
+* Live User Analytics & System Logs: Every interactive action performed by a user (e.g., placing an order, viewing a page, updating profile options, generating a referral link, triggering a payout request) must write a structured event object into a global customer_logs collection.
+* Log Parameters: Each l...
