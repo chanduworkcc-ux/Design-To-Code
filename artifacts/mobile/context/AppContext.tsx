@@ -9,6 +9,11 @@ interface CartItem extends Product {
   quantity: 1;
 }
 
+export interface CartRemovalNotice {
+  productName: string;
+  removedAt: string;
+}
+
 interface AppContextType {
   cart: CartItem[];
   wishlist: Product[];
@@ -25,14 +30,20 @@ interface AppContextType {
   themeMode: ThemeMode;
   setThemeMode: (mode: ThemeMode) => void;
   resolvedTheme: "light" | "dark";
+  cartRemovalNotice: CartRemovalNotice | null;
+  dismissCartRemovalNotice: () => void;
+  checkCartStock: (apiFn: (path: string, opts?: RequestInit) => Promise<Response>) => Promise<void>;
 }
 
 export const AppContext = createContext<AppContextType | null>(null);
+
+const CART_REMOVAL_KEY = "cart_removal_notice";
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [wishlist, setWishlist] = useState<Product[]>([]);
   const [themeMode, setThemeModeState] = useState<ThemeMode>("system");
+  const [cartRemovalNotice, setCartRemovalNotice] = useState<CartRemovalNotice | null>(null);
 
   const systemScheme = Appearance.getColorScheme() ?? "light";
   const resolvedTheme: "light" | "dark" =
@@ -44,16 +55,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   async function loadData() {
     try {
-      const [cartData, wishlistData, savedTheme] = await Promise.all([
+      const [cartData, wishlistData, savedTheme, removalData] = await Promise.all([
         AsyncStorage.getItem("cart"),
         AsyncStorage.getItem("wishlist"),
         AsyncStorage.getItem("theme_mode"),
+        AsyncStorage.getItem(CART_REMOVAL_KEY),
       ]);
       if (cartData) setCart(JSON.parse(cartData));
       if (wishlistData) setWishlist(JSON.parse(wishlistData));
       if (savedTheme && ["light", "dark", "system"].includes(savedTheme)) {
         setThemeModeState(savedTheme as ThemeMode);
       }
+      if (removalData) setCartRemovalNotice(JSON.parse(removalData));
     } catch {}
   }
 
@@ -121,6 +134,46 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return !!cart.find((i) => i.id === id);
   }
 
+  async function dismissCartRemovalNotice() {
+    setCartRemovalNotice(null);
+    await AsyncStorage.removeItem(CART_REMOVAL_KEY);
+  }
+
+  async function checkCartStock(apiFn: (path: string, opts?: RequestInit) => Promise<Response>) {
+    const currentCart = await AsyncStorage.getItem("cart");
+    const items: CartItem[] = currentCart ? JSON.parse(currentCart) : [];
+    if (items.length === 0) return;
+
+    const removedItems: string[] = [];
+
+    await Promise.all(
+      items.map(async (item) => {
+        try {
+          const res = await apiFn(`/products/${item.id}`);
+          if (res.ok) {
+            const data = await res.json();
+            const live = data.product;
+            if (!live || live.stock === 0 || !live.isActive) {
+              removedItems.push(item.name);
+            }
+          }
+        } catch {}
+      })
+    );
+
+    if (removedItems.length > 0) {
+      const newCart = items.filter((item) => !removedItems.includes(item.name));
+      await saveCart(newCart);
+
+      const notice: CartRemovalNotice = {
+        productName: removedItems.join(", "),
+        removedAt: new Date().toISOString(),
+      };
+      setCartRemovalNotice(notice);
+      await AsyncStorage.setItem(CART_REMOVAL_KEY, JSON.stringify(notice));
+    }
+  }
+
   const cartCount = cart.length;
   const wishlistCount = wishlist.length;
   const cartTotal = cart.reduce((sum, i) => sum + i.price, 0);
@@ -131,6 +184,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       addToWishlist, removeFromWishlist, isInWishlist, isInCart,
       cartCount, wishlistCount, cartTotal,
       themeMode, setThemeMode, resolvedTheme,
+      cartRemovalNotice, dismissCartRemovalNotice, checkCartStock,
     }}>
       {children}
     </AppContext.Provider>

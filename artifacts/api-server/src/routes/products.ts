@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { productsTable } from "@workspace/db/schema";
+import { productsTable, notificationsTable } from "@workspace/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../middleware/auth";
 import { z } from "zod";
@@ -77,11 +77,24 @@ router.post("/admin/products/:id/add-stock", authMiddleware, adminMiddleware, as
 router.post("/admin/products/:id/out-of-stock", authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
   const existing = await db.select().from(productsTable).where(eq(productsTable.id, req.params.id));
   if (!existing.length) { res.status(404).json({ error: "Product not found" }); return; }
+  const product = existing[0];
   const [updated] = await db
     .update(productsTable)
-    .set({ stock: 0 })
+    .set({ stock: 0, isActive: false })
     .where(eq(productsTable.id, req.params.id))
     .returning();
+
+  // Insert a broadcast notification so carts can detect the removal
+  try {
+    await db.insert(notificationsTable).values({
+      id: uuidv4(),
+      title: "Cart Item Removed",
+      body: `CART_REMOVED::${product.id}::${product.name}`,
+      targetType: "all",
+      iconName: "shopping-cart",
+    });
+  } catch {}
+
   res.json({ product: updated });
 });
 

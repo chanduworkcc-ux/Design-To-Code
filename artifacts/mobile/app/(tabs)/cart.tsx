@@ -1,7 +1,8 @@
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import React, { useEffect } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useRef } from "react";
 import {
+  ActivityIndicator,
   Image,
   Platform,
   Pressable,
@@ -20,6 +21,7 @@ import Animated2, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { FloatingOrb, PulsingRing } from "@/components/ThreeD";
 
@@ -29,7 +31,7 @@ function Empty3DCart() {
   const bob = useSharedValue(0);
   const tilt = useSharedValue(0);
 
-  useEffect(() => {
+  React.useEffect(() => {
     bob.value = withRepeat(
       withSequence(
         withTiming(-14, { duration: 1700, easing: Easing.inOut(Easing.sin) }),
@@ -80,14 +82,27 @@ export default function CartScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { cart, removeFromCart, cartTotal } = useApp();
+  const { cart, removeFromCart, cartTotal, cartRemovalNotice, dismissCartRemovalNotice, checkCartStock } = useApp();
+  const { apiRequest } = useAuth();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomInset = Platform.OS === "web" ? 34 : insets.bottom;
+  const checkingRef = useRef(false);
 
   const delivery = 0;
   const total = Number(cartTotal) + delivery;
 
-  if (cart.length === 0) {
+  // Check live stock every time the cart screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      if (checkingRef.current) return;
+      checkingRef.current = true;
+      checkCartStock(apiRequest).finally(() => {
+        checkingRef.current = false;
+      });
+    }, [checkCartStock, apiRequest])
+  );
+
+  if (cart.length === 0 && !cartRemovalNotice) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background }]}>
         <View style={[styles.emptyWrap, { paddingTop: topPadding + 24 }]}>
@@ -106,15 +121,38 @@ export default function CartScreen() {
       >
         <Text style={[styles.title, { color: colors.text }]}>Cart</Text>
 
-        {/* Policy Banner */}
-        <View style={[styles.policyBanner, { backgroundColor: "#FFFBEB", borderColor: "#FCD34D" }]}>
-          <View style={[styles.policyIconBox, { backgroundColor: "#FEF3C7" }]}>
-            <Feather name="alert-circle" size={14} color="#D97706" />
+        {/* Out-of-stock removal banner */}
+        {cartRemovalNotice && (
+          <View style={styles.removalBanner}>
+            <View style={styles.removalLeft}>
+              <View style={styles.removalIconBox}>
+                <Feather name="alert-triangle" size={16} color="#D97706" />
+              </View>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={styles.removalTitle}>Item Removed from Cart</Text>
+                <Text style={styles.removalBody}>
+                  <Text style={styles.removalProductName}>"{cartRemovalNotice.productName}"</Text>
+                  {" "}went out of stock and was removed from your cart. Your total has been updated.
+                </Text>
+              </View>
+            </View>
+            <Pressable style={styles.removalDismiss} onPress={dismissCartRemovalNotice}>
+              <Feather name="x" size={15} color="#92400E" />
+            </Pressable>
           </View>
-          <Text style={[styles.policyText, { color: "#92400E" }]}>
-            One item per order · No returns or refunds · All sales final
-          </Text>
-        </View>
+        )}
+
+        {/* Policy Banner */}
+        {cart.length > 0 && (
+          <View style={[styles.policyBanner, { backgroundColor: "#FFFBEB", borderColor: "#FCD34D" }]}>
+            <View style={[styles.policyIconBox, { backgroundColor: "#FEF3C7" }]}>
+              <Feather name="alert-circle" size={14} color="#D97706" />
+            </View>
+            <Text style={[styles.policyText, { color: "#92400E" }]}>
+              One item per order · No returns or refunds · All sales final
+            </Text>
+          </View>
+        )}
 
         {/* Cart Items */}
         {cart.map((cartItem) => {
@@ -195,57 +233,66 @@ export default function CartScreen() {
         })}
 
         {/* Order Summary Card */}
-        <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.summaryTitle, { color: colors.text }]}>Order Summary</Text>
+        {cart.length > 0 && (
+          <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.summaryTitle, { color: colors.text }]}>Order Summary</Text>
 
-          <View style={styles.summaryRow}>
-            <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>Subtotal</Text>
-            <Text style={[styles.summaryValue, { color: colors.text }]}>
-              ₹{Number(cartTotal).toLocaleString("en-IN")}
-            </Text>
+            <View style={styles.summaryRow}>
+              <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>Subtotal</Text>
+              <Text style={[styles.summaryValue, { color: colors.text }]}>
+                ₹{Number(cartTotal).toLocaleString("en-IN")}
+              </Text>
+            </View>
+
+            <View style={styles.summaryRow}>
+              <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>Delivery</Text>
+              <Text style={[styles.summaryValue, { color: "#16A34A" }]}>Free</Text>
+            </View>
+
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+            <View style={styles.summaryRow}>
+              <Text style={[styles.totalLabel, { color: colors.text }]}>Total</Text>
+              <Text style={[styles.totalAmount, { color: colors.text }]}>
+                ₹{total.toLocaleString("en-IN")}
+              </Text>
+            </View>
           </View>
+        )}
 
-          <View style={styles.summaryRow}>
-            <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>Delivery</Text>
-            <Text style={[styles.summaryValue, { color: "#16A34A" }]}>Free</Text>
-          </View>
-
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-          <View style={styles.summaryRow}>
-            <Text style={[styles.totalLabel, { color: colors.text }]}>Total</Text>
-            <Text style={[styles.totalAmount, { color: colors.text }]}>
-              ₹{total.toLocaleString("en-IN")}
-            </Text>
-          </View>
-        </View>
+        {/* Removed-item empty state with notice still showing */}
+        {cart.length === 0 && cartRemovalNotice && (
+          <Empty3DCart />
+        )}
       </ScrollView>
 
       {/* Fixed Footer */}
-      <View
-        style={[
-          styles.footer,
-          {
-            backgroundColor: colors.background,
-            borderTopColor: colors.border,
-            paddingBottom: bottomInset + (Platform.OS === "web" ? 80 : 90),
-          },
-        ]}
-      >
-        <Pressable
-          style={[styles.checkoutBtn, { backgroundColor: colors.primary }]}
-          onPress={() => router.push("/checkout" as any)}
+      {cart.length > 0 && (
+        <View
+          style={[
+            styles.footer,
+            {
+              backgroundColor: colors.background,
+              borderTopColor: colors.border,
+              paddingBottom: bottomInset + (Platform.OS === "web" ? 80 : 90),
+            },
+          ]}
         >
-          <Text style={styles.checkoutText}>Proceed to Checkout</Text>
-          <View style={[styles.checkoutArrow, { backgroundColor: "rgba(255,255,255,0.2)" }]}>
-            <Feather name="arrow-right" size={16} color="#fff" />
-          </View>
-        </Pressable>
+          <Pressable
+            style={[styles.checkoutBtn, { backgroundColor: colors.primary }]}
+            onPress={() => router.push("/checkout" as any)}
+          >
+            <Text style={styles.checkoutText}>Proceed to Checkout</Text>
+            <View style={[styles.checkoutArrow, { backgroundColor: "rgba(255,255,255,0.2)" }]}>
+              <Feather name="arrow-right" size={16} color="#fff" />
+            </View>
+          </Pressable>
 
-        <Text style={[styles.secureNote, { color: colors.mutedForeground }]}>
-          <Feather name="lock" size={11} color={colors.mutedForeground} /> Secure checkout
-        </Text>
-      </View>
+          <Text style={[styles.secureNote, { color: colors.mutedForeground }]}>
+            <Feather name="lock" size={11} color={colors.mutedForeground} /> Secure checkout
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -267,6 +314,43 @@ const styles = StyleSheet.create({
 
   /* Header */
   title: { fontSize: 30, fontFamily: "Inter_700Bold", marginBottom: 16 },
+
+  /* Removal banner */
+  removalBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    backgroundColor: "#FFFBEB",
+    borderWidth: 1.5,
+    borderColor: "#F59E0B",
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 14,
+    gap: 10,
+  },
+  removalLeft: { flex: 1, flexDirection: "row", alignItems: "flex-start", gap: 10 },
+  removalIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: "#FEF3C7",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  removalTitle: { fontSize: 13, fontFamily: "Inter_700Bold", color: "#92400E" },
+  removalBody: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#92400E", lineHeight: 18, marginTop: 2 },
+  removalProductName: { fontFamily: "Inter_600SemiBold" },
+  removalDismiss: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: "#FEF3C7",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    marginTop: 2,
+  },
 
   /* Policy banner */
   policyBanner: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12, borderRadius: 12, borderWidth: 1, marginBottom: 20 },
