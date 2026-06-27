@@ -474,6 +474,7 @@ router.get("/config/public", async (_req, res) => {
     maintenance_mode, maintenance_message,
     login_enabled, registration_enabled,
     login_closed_message, registration_closed_message,
+    logo_url,
   ] = await Promise.all([
     getConfig("maintenance_mode"),
     getConfig("maintenance_message"),
@@ -481,6 +482,7 @@ router.get("/config/public", async (_req, res) => {
     getConfig("registration_enabled"),
     getConfig("login_closed_message"),
     getConfig("registration_closed_message"),
+    getConfig("logo_url"),
   ]);
   res.json({
     maintenance_mode,
@@ -489,6 +491,7 @@ router.get("/config/public", async (_req, res) => {
     registration_enabled,
     login_closed_message,
     registration_closed_message,
+    logo_url: logo_url || null,
   });
 });
 

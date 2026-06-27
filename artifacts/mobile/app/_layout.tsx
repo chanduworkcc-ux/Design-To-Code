@@ -24,6 +24,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AppProvider } from "@/context/AppContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { NotificationProvider } from "@/context/NotificationContext";
+import { SocketProvider } from "@/context/SocketContext";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import MaintenanceScreen from "./maintenance";
 
@@ -33,13 +34,20 @@ function PushNotificationInit() {
   return null;
 }
 
+function SocketInit({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  return <SocketProvider userId={user?.id}>{children}</SocketProvider>;
+}
+
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 const { width } = Dimensions.get("window");
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
-function AppSplash({ onDone }: { onDone: () => void }) {
+const LOCAL_LOGO = require("@/assets/logo.png");
+
+function AppSplash({ onDone, logoUrl }: { onDone: () => void; logoUrl: string | null }) {
   const bgOpacity = useRef(new Animated.Value(1)).current;
   const logoScale = useRef(new Animated.Value(0.78)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
@@ -52,14 +60,16 @@ function AppSplash({ onDone }: { onDone: () => void }) {
       setTimeout(() => {
         Animated.timing(bgOpacity, { toValue: 0, duration: 420, useNativeDriver: true })
           .start(() => onDone());
-      }, 7000);
+      }, 2200);
     });
   }, []);
+
+  const logoSource = logoUrl ? { uri: logoUrl } : LOCAL_LOGO;
 
   return (
     <Animated.View style={[styles.splashRoot, { opacity: bgOpacity }]}>
       <Animated.View style={[styles.splashLogoWrap, { opacity: logoOpacity, transform: [{ scale: logoScale }] }]}>
-        <Image source={require("@/assets/logo.png")} style={styles.splashLogo} resizeMode="contain" />
+        <Image source={logoSource} style={styles.splashLogo} resizeMode="contain" />
       </Animated.View>
       <View style={styles.dotsRow}>
         {[0, 1, 2].map((i) => <PulseDot key={i} delay={i * 180} />)}
@@ -112,12 +122,12 @@ export default function RootLayout() {
   });
   const [showSplash, setShowSplash] = useState(true);
   const [maintenance, setMaintenance] = useState<{ active: boolean; message?: string }>({ active: false });
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (fontsLoaded || fontError) SplashScreen.hideAsync();
   }, [fontsLoaded, fontError]);
 
-  // Check maintenance mode after fonts load
   useEffect(() => {
     if (!fontsLoaded && !fontError) return;
     fetch(`${BASE_URL}/config/public`)
@@ -126,13 +136,15 @@ export default function RootLayout() {
         if (d?.maintenance_mode === "true") {
           setMaintenance({ active: true, message: d.maintenance_message });
         }
+        if (d?.logo_url) {
+          setLogoUrl(d.logo_url);
+        }
       })
       .catch(() => {});
   }, [fontsLoaded, fontError]);
 
   if (!fontsLoaded && !fontError) return null;
 
-  // Full-screen maintenance overlay (sits above everything)
   if (maintenance.active) {
     return (
       <SafeAreaProvider>
@@ -143,6 +155,7 @@ export default function RootLayout() {
               .then((r) => r.json())
               .then((d) => {
                 if (d?.maintenance_mode !== "true") setMaintenance({ active: false });
+                if (d?.logo_url) setLogoUrl(d.logo_url);
               })
               .catch(() => {});
           }}
@@ -158,14 +171,21 @@ export default function RootLayout() {
           <AuthProvider>
             <PushNotificationInit />
             <NotificationProvider>
-            <AppProvider>
-              <GestureHandlerRootView style={{ flex: 1 }}>
-                <KeyboardProvider>
-                  <RootLayoutNav />
-                  {showSplash && <AppSplash onDone={() => setShowSplash(false)} />}
-                </KeyboardProvider>
-              </GestureHandlerRootView>
-            </AppProvider>
+              <AppProvider>
+                <SocketInit>
+                  <GestureHandlerRootView style={{ flex: 1 }}>
+                    <KeyboardProvider>
+                      <RootLayoutNav />
+                      {showSplash && (
+                        <AppSplash
+                          logoUrl={logoUrl}
+                          onDone={() => setShowSplash(false)}
+                        />
+                      )}
+                    </KeyboardProvider>
+                  </GestureHandlerRootView>
+                </SocketInit>
+              </AppProvider>
             </NotificationProvider>
           </AuthProvider>
         </QueryClientProvider>

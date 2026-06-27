@@ -9,6 +9,7 @@ import couponsRouter from "./coupons";
 import adminRouter from "./admin";
 import bannersRouter from "./banners";
 import notificationsRouter from "./notifications";
+import storageRouter from "./storage";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(couponsRouter);
 router.use(adminRouter);
 router.use(bannersRouter);
 router.use(notificationsRouter);
+router.use(storageRouter);
 
 export default router;

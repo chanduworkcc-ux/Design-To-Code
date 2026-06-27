@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -11,8 +11,15 @@ import {
   Text,
   View,
 } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSequence,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
+import { useSocket } from "@/context/SocketContext";
 import { useColors } from "@/hooks/useColors";
 
 interface AnalyticsData {
@@ -21,6 +28,12 @@ interface AnalyticsData {
   ordersByStatus: { status: string; count: number }[];
   topProducts: { productId: string; name: string; orders: number; revenue: number }[];
   totalRevenue: number;
+}
+
+interface LiveCounters {
+  newOrders: number;
+  cartAdds: number;
+  activeUsers: number;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -45,17 +58,96 @@ function formatDay(dayStr: string) {
   return d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric" });
 }
 
+function LiveCounter({ label, value, color, icon }: { label: string; value: number; color: string; icon: string }) {
+  const scale = useSharedValue(1);
+  const prevValue = useRef(value);
+
+  useEffect(() => {
+    if (value !== prevValue.current) {
+      scale.value = withSequence(
+        withTiming(1.3, { duration: 150 }),
+        withTiming(1, { duration: 200 }),
+      );
+      prevValue.current = value;
+    }
+  }, [value]);
+
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
+  return (
+    <View style={[liveStyles.counter, { borderColor: color + "30" }]}>
+      <View style={[liveStyles.iconWrap, { backgroundColor: color + "15" }]}>
+        <Feather name={icon as any} size={16} color={color} />
+      </View>
+      <Animated.Text style={[liveStyles.value, { color }, animStyle]}>
+        {value}
+      </Animated.Text>
+      <Text style={liveStyles.label}>{label}</Text>
+    </View>
+  );
+}
+
+const liveStyles = StyleSheet.create({
+  counter: {
+    flex: 1,
+    alignItems: "center",
+    gap: 4,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    backgroundColor: "#fff",
+  },
+  iconWrap: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  value: { fontSize: 22, fontFamily: "Inter_700Bold" },
+  label: { fontSize: 11, fontFamily: "Inter_500Medium", color: "#6B7280", textAlign: "center" },
+});
+
 export default function AnalyticsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { apiRequest } = useAuth();
+  const { socket } = useSocket();
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [live, setLive] = useState<LiveCounters>({ newOrders: 0, cartAdds: 0, activeUsers: 0 });
   const topPadding = Platform.OS === "web" ? 0 : insets.top;
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.emit("admin:join");
+
+    const onNewOrder = () => {
+      setLive((prev) => ({ ...prev, newOrders: prev.newOrders + 1 }));
+      fetchData();
+    };
+    const onCartAdd = () => {
+      setLive((prev) => ({ ...prev, cartAdds: prev.cartAdds + 1 }));
+    };
+    const onUserOnline = () => {
+      setLive((prev) => ({ ...prev, activeUsers: prev.activeUsers + 1 }));
+    };
+    const onUserOffline = () => {
+      setLive((prev) => ({ ...prev, activeUsers: Math.max(0, prev.activeUsers - 1) }));
+    };
+
+    socket.on("new_order", onNewOrder);
+    socket.on("user:cart_add", onCartAdd);
+    socket.on("user:online", onUserOnline);
+    socket.on("user:offline", onUserOffline);
+
+    return () => {
+      socket.off("new_order", onNewOrder);
+      socket.off("user:cart_add", onCartAdd);
+      socket.off("user:online", onUserOnline);
+      socket.off("user:offline", onUserOffline);
+    };
+  }, [socket]);
 
   async function fetchData() {
     try {
@@ -78,7 +170,6 @@ export default function AnalyticsScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: "#F8FAFF" }]}>
-      {/* Header */}
       <View style={[styles.header, { paddingTop: topPadding + 12 }]}>
         <Pressable style={styles.backBtn} onPress={() => router.back()}>
           <Feather name="arrow-left" size={20} color="#0F1740" />
@@ -100,6 +191,22 @@ export default function AnalyticsScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
           showsVerticalScrollIndicator={false}
         >
+          {/* Live Activity */}
+          <View style={styles.card}>
+            <View style={styles.liveHeader}>
+              <Text style={styles.cardTitle}>Live Activity</Text>
+              <View style={styles.liveBadge}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveText}>Real-time</Text>
+              </View>
+            </View>
+            <View style={styles.liveRow}>
+              <LiveCounter label="New Orders" value={live.newOrders} color="#10B981" icon="shopping-bag" />
+              <LiveCounter label="Cart Adds" value={live.cartAdds} color="#3B82F6" icon="shopping-cart" />
+              <LiveCounter label="Online Now" value={live.activeUsers} color="#F59E0B" icon="users" />
+            </View>
+          </View>
+
           {/* Total Revenue */}
           <View style={[styles.revCard, { backgroundColor: "#2563EB" }]}>
             <Text style={styles.revLabel}>Total Delivered Revenue</Text>
@@ -158,47 +265,42 @@ export default function AnalyticsScreen() {
             </View>
           </View>
 
-          {/* Orders By Status */}
+          {/* Orders by Status */}
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Orders by Status</Text>
             <View style={{ gap: 10, marginTop: 12 }}>
-              {data?.ordersByStatus.map((o) => {
-                const pct = totalOrderCount > 0 ? Math.round((o.count / totalOrderCount) * 100) : 0;
-                const color = STATUS_COLORS[o.status] ?? "#6B7280";
-                return (
-                  <View key={o.status} style={styles.statusRow}>
-                    <View style={[styles.statusDot, { backgroundColor: color }]} />
-                    <Text style={styles.statusLabel}>{o.status.charAt(0).toUpperCase() + o.status.slice(1)}</Text>
-                    <View style={{ flex: 1, marginHorizontal: 10 }}>
-                      <MiniBar value={o.count} max={totalOrderCount} color={color} />
-                    </View>
-                    <Text style={styles.statusCount}>{o.count} ({pct}%)</Text>
+              {data?.ordersByStatus.map((o) => (
+                <View key={o.status} style={styles.barRow}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, width: 80 }}>
+                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: STATUS_COLORS[o.status] ?? "#9CA3AF" }} />
+                    <Text style={styles.barLabel}>{o.status}</Text>
                   </View>
-                );
-              })}
-              {totalOrderCount === 0 && <Text style={styles.emptyText}>No orders yet</Text>}
-            </View>
-          </View>
-
-          {/* Top Products */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Top Products</Text>
-            <View style={{ gap: 12, marginTop: 12 }}>
-              {data?.topProducts.length === 0 && <Text style={styles.emptyText}>No product data yet</Text>}
-              {data?.topProducts.map((p, i) => (
-                <View key={p.productId} style={styles.productRow}>
-                  <View style={styles.rankBadge}>
-                    <Text style={styles.rankText}>#{i + 1}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.productName} numberOfLines={1}>{p.name}</Text>
-                    <Text style={styles.productSub}>{p.orders} orders</Text>
-                  </View>
-                  <Text style={styles.productRevenue}>₹{Number(p.revenue).toFixed(0)}</Text>
+                  <MiniBar value={o.count} max={totalOrderCount} color={STATUS_COLORS[o.status] ?? "#9CA3AF"} />
+                  <Text style={styles.barValue}>{o.count}</Text>
                 </View>
               ))}
             </View>
           </View>
+
+          {/* Top Products */}
+          {(data?.topProducts.length ?? 0) > 0 && (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Top Products</Text>
+              <View style={{ gap: 12, marginTop: 12 }}>
+                {data?.topProducts.map((p, i) => (
+                  <View key={p.productId} style={styles.productRow}>
+                    <View style={[styles.rankBadge, { backgroundColor: i === 0 ? "#FEF9C3" : "#F3F4F6" }]}>
+                      <Text style={[styles.rankText, { color: i === 0 ? "#B45309" : "#6B7280" }]}>#{i + 1}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.productName} numberOfLines={1}>{p.name}</Text>
+                      <Text style={styles.productSub}>{p.orders} orders · ₹{p.revenue.toFixed(0)} revenue</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
         </ScrollView>
       )}
     </View>
@@ -207,30 +309,34 @@ export default function AnalyticsScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#E5EAF8", gap: 12 },
-  backBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, borderColor: "#E5EAF8", alignItems: "center", justifyContent: "center" },
-  headerTitle: { flex: 1, fontSize: 18, fontFamily: "Inter_700Bold", color: "#0F1740" },
+  header: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: 16, paddingBottom: 12,
+    backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#E5EAF8",
+  },
+  backBtn: { padding: 4 },
+  headerTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#0F1740" },
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
-  loadingText: { color: "#6B7280", fontFamily: "Inter_500Medium", fontSize: 14 },
+  loadingText: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#6B7280" },
   content: { padding: 16, gap: 16 },
-  revCard: { borderRadius: 16, padding: 20, gap: 4 },
-  revLabel: { color: "rgba(255,255,255,0.8)", fontSize: 13, fontFamily: "Inter_500Medium" },
-  revValue: { color: "#fff", fontSize: 32, fontFamily: "Inter_700Bold" },
-  revSub: { color: "rgba(255,255,255,0.6)", fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 4 },
-  card: { backgroundColor: "#fff", borderRadius: 16, borderWidth: 1, borderColor: "#E5EAF8", padding: 16 },
-  cardTitle: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#0F1740" },
-  emptyText: { color: "#9CA3AF", fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center", paddingVertical: 16 },
-  barRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  barLabel: { width: 52, fontSize: 11, fontFamily: "Inter_500Medium", color: "#6B7280" },
-  barValue: { width: 40, fontSize: 12, fontFamily: "Inter_700Bold", color: "#0F1740", textAlign: "right" },
-  statusRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  statusDot: { width: 10, height: 10, borderRadius: 5 },
-  statusLabel: { width: 72, fontSize: 13, fontFamily: "Inter_500Medium", color: "#374151" },
-  statusCount: { fontSize: 12, fontFamily: "Inter_500Medium", color: "#6B7280", minWidth: 60, textAlign: "right" },
-  productRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  rankBadge: { width: 28, height: 28, borderRadius: 8, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center" },
-  rankText: { fontSize: 12, fontFamily: "Inter_700Bold", color: "#2563EB" },
+  liveHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
+  liveBadge: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#ECFDF5", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20 },
+  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#10B981" },
+  liveText: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#10B981" },
+  liveRow: { flexDirection: "row", gap: 10 },
+  revCard: { borderRadius: 18, padding: 24, gap: 4 },
+  revLabel: { fontSize: 13, fontFamily: "Inter_500Medium", color: "rgba(255,255,255,0.75)" },
+  revValue: { fontSize: 34, fontFamily: "Inter_700Bold", color: "#fff" },
+  revSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.6)", marginTop: 2 },
+  card: { backgroundColor: "#fff", borderRadius: 18, padding: 16, shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  cardTitle: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#0F1740" },
+  barRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  barLabel: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280", width: 52 },
+  barValue: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#0F1740", width: 46, textAlign: "right" },
+  emptyText: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#9CA3AF", textAlign: "center", paddingVertical: 8 },
+  productRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  rankBadge: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  rankText: { fontSize: 13, fontFamily: "Inter_700Bold" },
   productName: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#0F1740" },
-  productSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280" },
-  productRevenue: { fontSize: 14, fontFamily: "Inter_700Bold", color: "#10B981" },
+  productSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280", marginTop: 2 },
 });

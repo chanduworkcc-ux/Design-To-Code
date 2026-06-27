@@ -72,11 +72,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function apiRequest(path: string, options: RequestInit = {}): Promise<Response> {
+    const t = token ?? (await AsyncStorage.getItem("auth_token"));
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       ...(options.headers as Record<string, string>),
     };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
+    if (t) headers["Authorization"] = `Bearer ${t}`;
     return fetch(`${BASE_URL}${path}`, { ...options, headers });
   }
 
@@ -88,15 +89,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     const data = await res.json();
     if (!res.ok) {
-      if (data.error === "unverified") {
-        throw new Error(`unverified:${data.email ?? email}`);
-      }
       if (data.error === "suspended") {
         throw new Error(`suspended:${data.suspendedUntil ?? ""}:${data.banReason ?? ""}`);
       }
-      if (data.error === "rejected") {
-        throw new Error("rejected");
-      }
+      if (data.error === "rejected") throw new Error("rejected");
+      if (data.error === "pending_approval") throw new Error("pending_approval");
       throw new Error(data.error ?? "Login failed");
     }
     await AsyncStorage.setItem("auth_token", data.token);
@@ -113,9 +110,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify({ ...formData, deviceUuid }),
     });
     const data = await res.json();
-    if (data.requiresVerification) throw new Error(`needs_verification:${data.email}`);
-    if (data.error === "pending_approval") throw new Error("pending_approval");
     if (!res.ok) throw new Error(data.error ?? "Registration failed");
+    if (data.pendingApproval) throw new Error("pending_approval");
     await AsyncStorage.setItem("auth_token", data.token);
     setToken(data.token);
     setUser(data.user);

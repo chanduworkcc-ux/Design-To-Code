@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
 
 const DEFAULTS: Record<string, string> = {
+  logo_url: "",
   coins_per_inr: "100",
   referral_coins: "100",
   referral_enabled: "true",

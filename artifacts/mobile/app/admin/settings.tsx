@@ -1,9 +1,11 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -15,6 +17,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
+
+const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
 interface ConfigItem {
   key: string;
@@ -104,9 +108,73 @@ export default function SettingsScreen() {
   const [showBanner, setShowBanner] = useState(true);
   const [gatewayErrors, setGatewayErrors] = useState<Record<string, string>>({});
   const [secureFields, setSecureFields] = useState<Record<string, boolean>>({});
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
   const topPadding = Platform.OS === "web" ? 0 : insets.top;
 
-  useEffect(() => { fetchConfig(); }, []);
+  useEffect(() => { fetchConfig(); fetchLogo(); }, []);
+
+  async function fetchLogo() {
+    try {
+      const res = await fetch(`${BASE_URL}/config/public`);
+      if (res.ok) {
+        const d = await res.json();
+        if (d.logo_url) setLogoUrl(d.logo_url);
+      }
+    } catch {}
+  }
+
+  async function uploadLogo() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Permission Required", "Please allow access to your photo library to upload a logo.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [16, 7],
+      quality: 0.85,
+    });
+
+    if (result.canceled || !result.assets[0]) return;
+
+    const asset = result.assets[0];
+    const fileName = asset.fileName ?? `logo-${Date.now()}.jpg`;
+    const fileSize = asset.fileSize ?? 500000;
+    const mimeType = asset.mimeType ?? "image/jpeg";
+
+    setLogoUploading(true);
+    try {
+      const urlRes = await apiRequest("/storage/uploads/request-url", {
+        method: "POST",
+        body: JSON.stringify({ name: fileName, size: fileSize, contentType: mimeType }),
+      });
+      if (!urlRes.ok) throw new Error("Failed to get upload URL");
+      const { uploadURL, objectPath } = await urlRes.json();
+
+      const blob = await (await fetch(asset.uri)).blob();
+      const uploadRes = await fetch(uploadURL, {
+        method: "PUT",
+        body: blob,
+        headers: { "Content-Type": mimeType },
+      });
+      if (!uploadRes.ok) throw new Error("Upload failed");
+
+      const saveRes = await apiRequest("/storage/uploads/logo", {
+        method: "POST",
+        body: JSON.stringify({ objectPath }),
+      });
+      if (!saveRes.ok) throw new Error("Failed to save logo URL");
+      const { logoUrl: newUrl } = await saveRes.json();
+      setLogoUrl(newUrl);
+      Alert.alert("Success", "Logo updated successfully. It will appear instantly for all users.");
+    } catch (e: any) {
+      Alert.alert("Upload Failed", e.message ?? "Could not upload logo. Please try again.");
+    }
+    setLogoUploading(false);
+  }
 
   async function fetchConfig() {
     try {
@@ -231,6 +299,37 @@ export default function SettingsScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]} showsVerticalScrollIndicator={false}>
+
+          {/* App Logo */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>APP BRANDING</Text>
+            <View style={styles.card}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+                <View style={styles.logoPreview}>
+                  {logoUrl
+                    ? <Image source={{ uri: logoUrl }} style={styles.logoImg} resizeMode="contain" />
+                    : <Feather name="image" size={28} color="#9CA3AF" />
+                  }
+                </View>
+                <View style={{ flex: 1, gap: 4 }}>
+                  <Text style={styles.configLabel}>App Logo</Text>
+                  <Text style={styles.configDesc}>
+                    {logoUrl ? "Custom logo active — tap to update" : "No custom logo set — using default"}
+                  </Text>
+                </View>
+                <Pressable
+                  style={[styles.uploadBtn, { opacity: logoUploading ? 0.6 : 1 }]}
+                  onPress={uploadLogo}
+                  disabled={logoUploading}
+                >
+                  {logoUploading
+                    ? <ActivityIndicator size="small" color="#fff" />
+                    : <><Feather name="upload" size={14} color="#fff" /><Text style={styles.uploadBtnText}>Upload</Text></>
+                  }
+                </Pressable>
+              </View>
+            </View>
+          </View>
 
           {/* Feature Toggles */}
           <View style={styles.section}>
@@ -465,6 +564,17 @@ const styles = StyleSheet.create({
   headerTitle: { flex: 1, fontSize: 18, fontFamily: "Inter_700Bold", color: "#0F1740" },
   saveBtn: { backgroundColor: "#2563EB", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10 },
   saveBtnText: { color: "#fff", fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  logoPreview: {
+    width: 72, height: 48, borderRadius: 10, backgroundColor: "#F3F4F6",
+    alignItems: "center", justifyContent: "center", overflow: "hidden",
+    borderWidth: 1, borderColor: "#E5E7EB",
+  },
+  logoImg: { width: 70, height: 46 },
+  uploadBtn: {
+    flexDirection: "row", alignItems: "center", gap: 5,
+    backgroundColor: "#2563EB", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10,
+  },
+  uploadBtnText: { color: "#fff", fontSize: 13, fontFamily: "Inter_600SemiBold" },
 
   // Option 3: Warning Banner
   warningBanner: { flexDirection: "row", alignItems: "flex-start", gap: 10, backgroundColor: "#FFFBEB", borderBottomWidth: 1, borderBottomColor: "#FCD34D", paddingHorizontal: 16, paddingVertical: 12 },
