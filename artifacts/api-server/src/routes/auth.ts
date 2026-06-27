@@ -7,7 +7,7 @@ import { eq, or, and, gt } from "drizzle-orm";
 import { z } from "zod";
 import { signToken, authMiddleware, type AuthRequest } from "../middleware/auth";
 import { getConfig } from "../lib/config";
-import { sendPasswordResetEmail } from "../lib/mailer";
+import { sendPasswordResetEmail, sendVerificationEmail } from "../lib/mailer";
 
 const router = Router();
 
@@ -28,6 +28,10 @@ const loginSchema = z.object({
 
 function generateReferralCode(): string {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
+function generateVerificationCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 router.post("/auth/register", async (req, res) => {
@@ -72,8 +76,8 @@ router.post("/auth/register", async (req, res) => {
     if (referrer.length > 0) referredById = referrer[0].id;
   }
 
-  const approvalMode = await getConfig("approval_mode");
-  const userStatus = approvalMode === "manual" ? "pending" : "active";
+  const verificationCode = generateVerificationCode();
+  const verificationExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
   await db.insert(usersTable).values({
     id: userId,
@@ -86,34 +90,98 @@ router.post("/auth/register", async (req, res) => {
     referredById,
     walletBalance: 0,
     role: "user",
-    status: userStatus as any,
+    status: "unverified",
+    verificationToken: verificationCode,
+    verificationExpiresAt,
   });
 
-  if (referredById) {
-    const referralEnabled = await getConfig("referral_enabled");
-    const referralCoins = parseInt(await getConfig("referral_coins")) || 100;
-    if (referralEnabled === "true") {
-      // Record the referral but do NOT award coins yet.
-      // Coins are credited to the referrer only after the referee's
-      // first order is marked as "delivered" (see orders route).
-      await db.insert(referralsTable).values({
-        id: uuidv4(),
-        referrerId: referredById,
-        refereeId: userId,
-        coinsAwarded: referralCoins,
-        rewardedAt: null,
-      }).onConflictDoNothing();
-    }
-  }
+  await sendVerificationEmail(email, name, verificationCode).catch(() => {});
 
-  if (userStatus === "pending") {
-    res.status(202).json({ error: "pending_approval", message: "Your registration is pending admin review. You will be able to sign in once approved." });
+  res.status(201).json({ requiresVerification: true, email });
+});
+
+router.post("/auth/verify-email", async (req, res) => {
+  const { email, code } = req.body;
+  if (!email || !code) {
+    res.status(400).json({ error: "Email and verification code are required." });
     return;
   }
 
-  const token = signToken(userId);
-  const [user] = await db.select({ id: usersTable.id, email: usersTable.email, name: usersTable.name, role: usersTable.role, walletBalance: usersTable.walletBalance, referralCode: usersTable.referralCode }).from(usersTable).where(eq(usersTable.id, userId));
-  res.status(201).json({ token, user });
+  const users = await db.select().from(usersTable).where(eq(usersTable.email, email.toLowerCase()));
+  if (!users.length) {
+    res.status(400).json({ error: "Invalid verification code." });
+    return;
+  }
+  const user = users[0];
+
+  if (user.status !== "unverified") {
+    if (user.status === "active" || user.status === "pending") {
+      res.status(400).json({ error: "Email already verified." });
+    } else {
+      res.status(400).json({ error: "Invalid account state." });
+    }
+    return;
+  }
+
+  if (!user.verificationToken || user.verificationToken !== code) {
+    res.status(400).json({ error: "Invalid verification code." });
+    return;
+  }
+
+  if (!user.verificationExpiresAt || user.verificationExpiresAt < new Date()) {
+    res.status(400).json({ error: "Verification code has expired. Please request a new one." });
+    return;
+  }
+
+  const approvalMode = await getConfig("approval_mode");
+  const newStatus = approvalMode === "manual" ? "pending" : "active";
+
+  await db.update(usersTable)
+    .set({ status: newStatus as any, verificationToken: null, verificationExpiresAt: null, verifiedAt: new Date() })
+    .where(eq(usersTable.id, user.id));
+
+  if (referredById_for(user) && newStatus === "active") {
+    await creditReferral(user.id, user.referredById);
+  }
+
+  if (newStatus === "pending") {
+    res.status(202).json({ error: "pending_approval", message: "Your email is verified. Your account is pending admin review." });
+    return;
+  }
+
+  const token = signToken(user.id);
+  res.json({
+    token,
+    user: { id: user.id, email: user.email, name: user.name, role: user.role, walletBalance: user.walletBalance, referralCode: user.referralCode },
+  });
+});
+
+function referredById_for(user: any): boolean {
+  return !!user.referredById;
+}
+
+async function creditReferral(userId: string, referredById: string | null) {
+  if (!referredById) return;
+  const referralEnabled = await getConfig("referral_enabled");
+  if (referralEnabled !== "true") return;
+  // Referral coins awarded after first order delivery, not at registration
+}
+
+router.post("/auth/resend-verification", async (req, res) => {
+  const { email } = req.body;
+  if (!email) { res.status(400).json({ error: "Email is required." }); return; }
+
+  const users = await db.select().from(usersTable).where(eq(usersTable.email, email.toLowerCase()));
+  if (users.length && users[0].status === "unverified") {
+    const code = generateVerificationCode();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await db.update(usersTable)
+      .set({ verificationToken: code, verificationExpiresAt: expiresAt })
+      .where(eq(usersTable.id, users[0].id));
+    await sendVerificationEmail(email, users[0].name, code).catch(() => {});
+  }
+
+  res.json({ message: "If your email is pending verification, a new code has been sent." });
 });
 
 router.post("/auth/login", async (req, res) => {
@@ -143,8 +211,18 @@ router.post("/auth/login", async (req, res) => {
     return;
   }
 
+  if (user.status === "unverified") {
+    res.status(403).json({ error: "unverified", email: user.email, message: "Please verify your email address before signing in." });
+    return;
+  }
+
   if (user.status === "pending") {
     res.status(403).json({ error: "pending_approval", message: "Your registration is pending review. Please wait for an administrator to approve your access." });
+    return;
+  }
+
+  if (user.status === "rejected") {
+    res.status(403).json({ error: "rejected", message: "Your account registration was not approved. Please contact support if you believe this is a mistake." });
     return;
   }
 

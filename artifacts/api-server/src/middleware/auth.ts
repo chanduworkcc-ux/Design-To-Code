@@ -30,6 +30,14 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
       return;
     }
     const user = users[0];
+    if (user.status === "unverified") {
+      res.status(403).json({ error: "unverified", message: "Please verify your email address." });
+      return;
+    }
+    if (user.status === "rejected") {
+      res.status(403).json({ error: "rejected", message: "Your account registration was not approved." });
+      return;
+    }
     if (user.status === "banned") {
       res.status(403).json({ error: `Account banned: ${user.banReason ?? "Policy violation"}` });
       return;

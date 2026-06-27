@@ -66,7 +66,9 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [pendingApproval, setPendingApproval] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const [suspended, setSuspended] = useState<{ until: string | null; reason: string } | null>(null);
+  const [rejected, setRejected] = useState(false);
   const [portalClosed, setPortalClosed] = useState<{ active: boolean; message: string }>({ active: false, message: "" });
   const [portalLoading, setPortalLoading] = useState(true);
 
@@ -91,6 +93,10 @@ export default function LoginScreen() {
       router.replace("/(tabs)");
     } catch (e: any) {
       if (e.message === "pending_approval") { setPendingApproval(true); }
+      else if (e.message?.startsWith("unverified:")) {
+        const addr = e.message.split(":")[1];
+        setUnverifiedEmail(addr || email.trim().toLowerCase());
+      } else if (e.message === "rejected") { setRejected(true); }
       else if (e.message?.startsWith("suspended:")) {
         const [, until, ...rest] = e.message.split(":");
         setSuspended({ until: until || null, reason: rest.join(":").trim() || "Suspended by administrator" });
@@ -156,6 +162,65 @@ export default function LoginScreen() {
             <Pressable
               style={{ borderRadius: 14, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 24, paddingVertical: 12 }}
               onPress={() => setSuspended(null)}
+            >
+              <Text style={{ fontSize: 14, fontFamily: "Inter_600SemiBold", color: colors.text }}>Go Back</Text>
+            </Pressable>
+          </View>
+        </FloatIn>
+      </View>
+    );
+  }
+
+  if (unverifiedEmail) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 32, backgroundColor: colors.background }}>
+        <FloatingOrb color="#10B981" size={200} style={{ top: -40, right: -60 }} delay={0} />
+        <FloatingOrb color="#2563EB" size={160} style={{ bottom: 20, left: -50 }} delay={600} />
+        <FloatIn delay={200}>
+          <View style={{ alignItems: "center", gap: 20 }}>
+            <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "#ECFDF5", alignItems: "center", justifyContent: "center" }}>
+              <Feather name="mail" size={36} color="#10B981" />
+            </View>
+            <Text style={{ fontSize: 22, fontFamily: "Inter_700Bold", color: colors.text, textAlign: "center" }}>Verify Your Email</Text>
+            <Text style={{ fontSize: 14, fontFamily: "Inter_400Regular", color: colors.mutedForeground, textAlign: "center", lineHeight: 22 }}>
+              Please verify your email address before signing in. Check your inbox for the verification code we sent.
+            </Text>
+            <Pressable
+              style={[styles.btn, { backgroundColor: "#2563EB", marginTop: 8, width: "100%" }]}
+              onPress={() => router.push({ pathname: "/(auth)/verify-email", params: { email: unverifiedEmail } })}
+            >
+              <Text style={styles.btnText}>Enter Verification Code</Text>
+            </Pressable>
+            <Pressable
+              style={{ borderRadius: 14, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 24, paddingVertical: 12, width: "100%", alignItems: "center" }}
+              onPress={() => setUnverifiedEmail(null)}
+            >
+              <Text style={{ fontSize: 14, fontFamily: "Inter_600SemiBold", color: colors.text }}>Back</Text>
+            </Pressable>
+          </View>
+        </FloatIn>
+      </View>
+    );
+  }
+
+  if (rejected) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 32, backgroundColor: colors.background }}>
+        <FloatingOrb color="#EF4444" size={200} style={{ top: -40, right: -60 }} delay={0} />
+        <FloatIn delay={200}>
+          <View style={{ alignItems: "center", gap: 20 }}>
+            <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "#FEF2F2", alignItems: "center", justifyContent: "center" }}>
+              <Feather name="x-circle" size={36} color="#EF4444" />
+            </View>
+            <Text style={{ fontSize: 22, fontFamily: "Inter_700Bold", color: colors.text, textAlign: "center" }}>Application Not Approved</Text>
+            <View style={{ backgroundColor: "#FEF2F2", borderRadius: 14, padding: 18, borderWidth: 1, borderColor: "#FECACA", width: "100%" }}>
+              <Text style={{ fontSize: 14, fontFamily: "Inter_400Regular", color: "#7F1D1D", textAlign: "center", lineHeight: 22 }}>
+                Your account registration was not approved. Please contact support if you believe this is a mistake.
+              </Text>
+            </View>
+            <Pressable
+              style={{ borderRadius: 14, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 24, paddingVertical: 12 }}
+              onPress={() => setRejected(false)}
             >
               <Text style={{ fontSize: 14, fontFamily: "Inter_600SemiBold", color: colors.text }}>Go Back</Text>
             </Pressable>

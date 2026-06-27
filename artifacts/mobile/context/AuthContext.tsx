@@ -88,8 +88,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     const data = await res.json();
     if (!res.ok) {
+      if (data.error === "unverified") {
+        throw new Error(`unverified:${data.email ?? email}`);
+      }
       if (data.error === "suspended") {
         throw new Error(`suspended:${data.suspendedUntil ?? ""}:${data.banReason ?? ""}`);
+      }
+      if (data.error === "rejected") {
+        throw new Error("rejected");
       }
       throw new Error(data.error ?? "Login failed");
     }
@@ -107,6 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify({ ...formData, deviceUuid }),
     });
     const data = await res.json();
+    if (data.requiresVerification) throw new Error(`needs_verification:${data.email}`);
     if (data.error === "pending_approval") throw new Error("pending_approval");
     if (!res.ok) throw new Error(data.error ?? "Registration failed");
     await AsyncStorage.setItem("auth_token", data.token);

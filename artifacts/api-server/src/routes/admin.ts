@@ -10,6 +10,7 @@ import {
   systemConfigTable,
   walletTransactionsTable,
   referralsTable,
+  adminAuditLogsTable,
 } from "@workspace/db/schema";
 import { eq, desc, count, sql, and, gte, lte, inArray } from "drizzle-orm";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../middleware/auth";
@@ -183,25 +184,33 @@ router.post("/admin/users/:id/unban", authMiddleware, adminMiddleware, async (re
   res.json({ user: updated });
 });
 
-router.post("/admin/users/:id/approve", authMiddleware, adminMiddleware, async (req, res) => {
+router.post("/admin/users/:id/approve", authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
+  const [before] = await db.select({ status: usersTable.status, name: usersTable.name, email: usersTable.email }).from(usersTable).where(eq(usersTable.id, req.params.id));
   const [updated] = await db
     .update(usersTable)
     .set({ status: "active", banReason: null })
     .where(eq(usersTable.id, req.params.id))
     .returning({ id: usersTable.id, status: usersTable.status });
+  if (before) {
+    await db.insert(adminAuditLogsTable).values({ id: uuidv4(), adminId: req.userId!, action: "approve_user", entityType: "user", entityId: req.params.id, previousState: before.status, newState: "active" }).catch(() => {});
+  }
   try { await insertAutoNotification(req.params.id, "Account Approved! 🎉", "Welcome to XyloCart! Your registration has been approved. You can now log in and start shopping.", "check-circle"); } catch {}
   res.json({ user: updated });
 });
 
-router.post("/admin/users/:id/reject", authMiddleware, adminMiddleware, async (req, res) => {
+router.post("/admin/users/:id/reject", authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
   const { reason } = req.body;
-  const banReason = reason || "Registration rejected by admin";
+  const rejectReason = reason || "Registration rejected by admin";
+  const [before] = await db.select({ status: usersTable.status }).from(usersTable).where(eq(usersTable.id, req.params.id));
   const [updated] = await db
     .update(usersTable)
-    .set({ status: "banned", banReason })
+    .set({ status: "rejected", banReason: rejectReason })
     .where(eq(usersTable.id, req.params.id))
     .returning({ id: usersTable.id, status: usersTable.status });
-  try { await insertAutoNotification(req.params.id, "Registration Rejected", `Your registration has been reviewed and rejected. Reason: ${banReason}`, "alert-circle"); } catch {}
+  if (before) {
+    await db.insert(adminAuditLogsTable).values({ id: uuidv4(), adminId: req.userId!, action: "reject_user", entityType: "user", entityId: req.params.id, previousState: before.status, newState: "rejected", notes: rejectReason }).catch(() => {});
+  }
+  try { await insertAutoNotification(req.params.id, "Registration Rejected", `Your registration has been reviewed and rejected. Reason: ${rejectReason}`, "alert-circle"); } catch {}
   res.json({ user: updated });
 });
 
@@ -392,12 +401,34 @@ router.get("/admin/config", authMiddleware, adminMiddleware, async (_req, res) =
 
 const configUpdateSchema = z.record(z.string(), z.string());
 
-router.put("/admin/config", authMiddleware, adminMiddleware, async (req, res) => {
+router.put("/admin/config", authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
   const parsed = configUpdateSchema.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: "Invalid config payload" }); return; }
+
   for (const [key, value] of Object.entries(parsed.data)) {
+    if (key === "approval_mode") {
+      const prev = await getConfig("approval_mode");
+      if (prev !== value) {
+        await db.insert(adminAuditLogsTable).values({
+          id: uuidv4(), adminId: req.userId!, action: "change_approval_mode",
+          entityType: "system_config", entityId: "approval_mode",
+          previousState: prev, newState: value,
+        }).catch(() => {});
+
+        if (value === "auto") {
+          const pendingUsers = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.status, "pending"));
+          if (pendingUsers.length > 0) {
+            await db.update(usersTable).set({ status: "active", banReason: null }).where(eq(usersTable.status, "pending"));
+            for (const u of pendingUsers) {
+              await insertAutoNotification(u.id, "Account Approved! 🎉", "XyloCart has switched to automatic approvals — your account is now active!", "check-circle").catch(() => {});
+            }
+          }
+        }
+      }
+    }
     await setConfig(key, value);
   }
+
   const config = await getAllConfig();
   res.json({ config });
 });

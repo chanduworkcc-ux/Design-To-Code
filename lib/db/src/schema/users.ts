@@ -3,7 +3,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
 export const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
-export const userStatusEnum = pgEnum("user_status", ["active", "suspended", "banned", "pending"]);
+export const userStatusEnum = pgEnum("user_status", ["active", "suspended", "banned", "pending", "unverified", "rejected"]);
 
 export const usersTable = pgTable("users", {
   id: text("id").primaryKey(),
@@ -19,6 +19,9 @@ export const usersTable = pgTable("users", {
   status: userStatusEnum("status").notNull().default("active"),
   banReason: text("ban_reason"),
   suspendedUntil: timestamp("suspended_until"),
+  verificationToken: text("verification_token"),
+  verificationExpiresAt: timestamp("verification_expires_at"),
+  verifiedAt: timestamp("verified_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

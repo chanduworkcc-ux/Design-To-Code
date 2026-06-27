@@ -101,7 +101,10 @@ export default function RegisterScreen() {
       });
       router.replace("/(tabs)");
     } catch (e: any) {
-      if (e.message === "pending_approval") { setPendingApproval(true); }
+      if (e.message?.startsWith("needs_verification:")) {
+        const verifyEmail = e.message.split(":")[1];
+        router.replace({ pathname: "/(auth)/verify-email", params: { email: verifyEmail } });
+      } else if (e.message === "pending_approval") { setPendingApproval(true); }
       else { setError(e.message ?? "Registration failed"); }
     } finally { setLoading(false); }
   }
