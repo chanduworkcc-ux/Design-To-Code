@@ -2,6 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -100,9 +101,7 @@ export default function RegisterScreen() {
         </Pressable>
 
         <View style={styles.logoArea}>
-          <View style={[styles.logoCircle, { backgroundColor: colors.primary }]}>
-            <Feather name="shopping-cart" size={28} color="#fff" />
-          </View>
+          <Image source={require("@/assets/logo.png")} style={styles.logoImg} resizeMode="contain" />
           <Text style={[styles.appName, { color: colors.text }]}>Create Account</Text>
           <Text style={[styles.tagline, { color: colors.mutedForeground }]}>Join XyloCart today</Text>
         </View>
@@ -205,7 +204,7 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 20, flexGrow: 1 },
   backBtn: { width: 42, height: 42, borderRadius: 12, borderWidth: 1, alignItems: "center", justifyContent: "center", marginBottom: 20 },
   logoArea: { alignItems: "center", marginBottom: 24, gap: 6 },
-  logoCircle: { width: 64, height: 64, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  logoImg: { width: 160, height: 90 },
   appName: { fontSize: 24, fontFamily: "Inter_700Bold" },
   tagline: { fontSize: 14, fontFamily: "Inter_400Regular" },
   card: { borderRadius: 20, borderWidth: 1, padding: 24, gap: 16 },
