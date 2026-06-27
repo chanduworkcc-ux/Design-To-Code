@@ -27,6 +27,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(activityLogger as any);
 app.use("/api", router);
 
+// Seed config defaults and admin account on startup.
+// Seed functions are idempotent (on-conflict-do-nothing / existence check),
+// so they never overwrite existing production data.
 seedDefaultConfig().catch((err) => logger.error({ err }, "Failed to seed config"));
 seedAdminUser().catch((err) => logger.error({ err }, "Failed to seed admin user"));
 

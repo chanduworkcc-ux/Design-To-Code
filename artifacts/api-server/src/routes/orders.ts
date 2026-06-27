@@ -1,13 +1,54 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { ordersTable, productsTable, usersTable, couponsTable, referralsTable, walletTransactionsTable } from "@workspace/db/schema";
-import { eq, desc, sql, isNull } from "drizzle-orm";
+import { ordersTable, productsTable, usersTable, couponsTable, referralsTable, walletTransactionsTable, orderSequencesTable } from "@workspace/db/schema";
+import { adminAuditLogsTable } from "@workspace/db/schema";
+import { eq, desc, sql } from "drizzle-orm";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../middleware/auth";
 import { getConfig } from "../lib/config";
+import { getIO } from "../lib/socket";
 import { z } from "zod";
 import { v4 as uuidv4 } from "uuid";
 
 const router = Router();
+
+async function generateOrderNumber(): Promise<string> {
+  const now = new Date();
+  const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+  const [row] = await db
+    .insert(orderSequencesTable)
+    .values({ month, lastVal: 1 })
+    .onConflictDoUpdate({
+      target: orderSequencesTable.month,
+      set: { lastVal: sql`${orderSequencesTable.lastVal} + 1` },
+    })
+    .returning();
+
+  return `${month}-${String(row.lastVal).padStart(4, "0")}`;
+}
+
+async function writeAuditLog(opts: {
+  adminId: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  previousState?: Record<string, unknown>;
+  newState?: Record<string, unknown>;
+  notes?: string;
+}): Promise<void> {
+  try {
+    await db.insert(adminAuditLogsTable).values({
+      id: uuidv4(),
+      adminId: opts.adminId,
+      action: opts.action,
+      entityType: opts.entityType,
+      entityId: opts.entityId,
+      previousState: opts.previousState ? JSON.stringify(opts.previousState) : null,
+      newState: opts.newState ? JSON.stringify(opts.newState) : null,
+      notes: opts.notes ?? null,
+    });
+  } catch {}
+}
 
 const placeOrderSchema = z.object({
   productId: z.string(),
@@ -91,9 +132,11 @@ router.post("/orders", authMiddleware, async (req: AuthRequest, res) => {
   }
 
   const total = parseFloat((subtotal + deliveryCharge + taxAmount + serviceCharge + maintenanceCharge - discountAmount).toFixed(2));
+  const orderNumber = await generateOrderNumber();
 
   const [order] = await db.insert(ordersTable).values({
     id: uuidv4(),
+    orderNumber,
     userId: req.userId!,
     productId,
     couponId,
@@ -116,6 +159,13 @@ router.post("/orders", authMiddleware, async (req: AuthRequest, res) => {
     .set({ stock: sql`${productsTable.stock} - 1` })
     .where(eq(productsTable.id, productId));
 
+  try {
+    getIO().to("admins").emit("new_order", {
+      order,
+      message: `New order ${orderNumber} placed`,
+    });
+  } catch {}
+
   res.status(201).json({ order, breakdown: { subtotal, deliveryCharge, taxAmount, serviceCharge, maintenanceCharge, discountAmount, total } });
 });
 
@@ -133,7 +183,6 @@ router.get("/orders/:id", authMiddleware, async (req: AuthRequest, res) => {
 // ─── Customer Cancellation: PERMANENTLY FORBIDDEN ────────────────────────────
 // Customers are strictly prohibited from cancelling orders at ANY stage.
 // All cancellation authority is exclusively reserved for administrators.
-// The customer UI replaces all cancel actions with "Contact Support".
 router.post("/orders/:id/cancel", authMiddleware, async (_req: AuthRequest, res) => {
   res.status(403).json({
     error: "CUSTOMER_CANCELLATION_FORBIDDEN",
@@ -146,12 +195,16 @@ router.get("/admin/orders", authMiddleware, adminMiddleware, async (_req, res) =
   res.json({ orders });
 });
 
+router.get("/admin/audit-logs", authMiddleware, adminMiddleware, async (_req, res) => {
+  const logs = await db.select().from(adminAuditLogsTable).orderBy(desc(adminAuditLogsTable.createdAt)).limit(200);
+  res.json({ logs });
+});
+
 // ─── Admin Order Status — Absolute Override ───────────────────────────────────
-// Admin has FULL CRUD authority over all orders at every stage.
+// Admin has FULL authority over all orders at every stage.
 // Forward pipeline: pending → confirmed → shipped → delivered
-// Admin can also cancel ANY active order at any stage (full override).
-// Notification payload is returned for each transition so the mobile app can
-// display the appropriate in-app alert to the customer.
+// Admin can cancel any active order.
+// Once an order reaches "delivered" or "cancelled", isLocked = true — no further updates.
 const STATUS_PIPELINE = ["pending", "confirmed", "shipped", "delivered", "cancelled"];
 
 const NOTIFICATION_TEMPLATES: Record<string, { title: string; body: string }> = {
@@ -177,7 +230,7 @@ const NOTIFICATION_TEMPLATES: Record<string, { title: string; body: string }> = 
   },
 };
 
-router.put("/admin/orders/:id/status", authMiddleware, adminMiddleware, async (req, res) => {
+router.put("/admin/orders/:id/status", authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
   const { status, courierPartner, trackingNumber, utrNumber, cancellationReason } = req.body;
 
   if (!STATUS_PIPELINE.includes(status)) {
@@ -189,16 +242,18 @@ router.put("/admin/orders/:id/status", authMiddleware, adminMiddleware, async (r
   if (!orders.length) { res.status(404).json({ error: "Order not found" }); return; }
   const order = orders[0];
 
-  if (order.status === "delivered" || order.status === "cancelled") {
-    res.status(400).json({ error: `Order is already ${order.status}. No further updates are possible.` });
+  // ── Immutable lock check ────────────────────────────────────────────────────
+  if (order.isLocked) {
+    res.status(409).json({
+      error: "ORDER_LOCKED",
+      message: `Order ${order.orderNumber ?? order.id} is locked (${order.status}). No further updates are permitted. All changes are permanently recorded in the audit log.`,
+    });
     return;
   }
 
   const currentIdx = STATUS_PIPELINE.indexOf(order.status);
   const newIdx = STATUS_PIPELINE.indexOf(status);
 
-  // Admin can cancel from any active stage (absolute override).
-  // For forward progression, enforce linear pipeline (no stage-skipping).
   if (status !== "cancelled" && newIdx !== currentIdx + 1) {
     res.status(400).json({
       error: "INVALID_TRANSITION",
@@ -207,7 +262,14 @@ router.put("/admin/orders/:id/status", authMiddleware, adminMiddleware, async (r
     return;
   }
 
-  const updateData: Record<string, any> = { status, updatedAt: new Date() };
+  const terminalStatuses = ["delivered", "cancelled"];
+  const willLock = terminalStatuses.includes(status);
+
+  const updateData: Record<string, any> = {
+    status,
+    isLocked: willLock,
+    updatedAt: new Date(),
+  };
   if (status === "shipped" && courierPartner) updateData.courierPartner = courierPartner;
   if (status === "shipped" && trackingNumber) updateData.trackingNumber = trackingNumber;
   if (status === "cancelled" && utrNumber) updateData.utrNumber = utrNumber;
@@ -219,9 +281,18 @@ router.put("/admin/orders/:id/status", authMiddleware, adminMiddleware, async (r
     .where(eq(ordersTable.id, req.params.id))
     .returning();
 
-  // ── Referral reward: fire when an order is delivered ─────────────────────
-  // If the customer who just received delivery was referred by someone,
-  // and their referral hasn't been rewarded yet, credit the referrer now.
+  // Write audit log entry
+  await writeAuditLog({
+    adminId: req.userId!,
+    action: "ORDER_STATUS_UPDATE",
+    entityType: "order",
+    entityId: order.id,
+    previousState: { status: order.status, isLocked: order.isLocked },
+    newState: { status, isLocked: willLock, courierPartner, trackingNumber },
+    notes: cancellationReason ?? undefined,
+  });
+
+  // ── Referral reward: fire when order is delivered ─────────────────────────
   if (status === "delivered") {
     const [pendingReferral] = await db
       .select()
@@ -233,7 +304,6 @@ router.put("/admin/orders/:id/status", authMiddleware, adminMiddleware, async (r
       const coins = pendingReferral.coinsAwarded;
       const referrerId = pendingReferral.referrerId;
 
-      // Credit coins to the referrer's wallet
       const [referrer] = await db.select().from(usersTable).where(eq(usersTable.id, referrerId));
       if (referrer) {
         await db.update(usersTable)
@@ -245,22 +315,30 @@ router.put("/admin/orders/:id/status", authMiddleware, adminMiddleware, async (r
           userId: referrerId,
           type: "credit",
           coins,
-          description: `Referral reward — your referral's order #${order.id.slice(0, 8).toUpperCase()} was delivered`,
+          description: `Referral reward — your referral's order ${order.orderNumber ?? order.id.slice(0, 8).toUpperCase()} was delivered`,
           referenceId: order.id,
         });
 
-        // Mark referral as rewarded so it's never double-credited
         await db.update(referralsTable)
           .set({ rewardedAt: new Date() })
           .where(eq(referralsTable.id, pendingReferral.id));
       }
     }
   }
-  // ─────────────────────────────────────────────────────────────────────────
 
-  // Return the notification template so the client can display the in-app alert
+  // ── Real-time push to customer ────────────────────────────────────────────
+  try {
+    const notification = NOTIFICATION_TEMPLATES[status] ?? null;
+    getIO().to(`user:${order.userId}`).emit("order_update", {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      status,
+      isLocked: willLock,
+      notification,
+    });
+  } catch {}
+
   const notification = NOTIFICATION_TEMPLATES[status] ?? null;
-
   res.json({ order: updated, notification });
 });
 

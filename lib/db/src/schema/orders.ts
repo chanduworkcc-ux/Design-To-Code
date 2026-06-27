@@ -1,4 +1,4 @@
-import { pgTable, text, integer, real, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, real, boolean, timestamp, pgEnum } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -8,6 +8,7 @@ export const paymentMethodEnum = pgEnum("payment_method", ["cod", "razorpay", "p
 
 export const ordersTable = pgTable("orders", {
   id: text("id").primaryKey(),
+  orderNumber: text("order_number").unique(),
   userId: text("user_id").notNull(),
   productId: text("product_id").notNull(),
   couponId: text("coupon_id"),
@@ -23,10 +24,18 @@ export const ordersTable = pgTable("orders", {
   discountAmount: real("discount_amount").notNull().default(0),
   total: real("total").notNull(),
   shippingAddress: text("shipping_address"),
+  courierPartner: text("courier_partner"),
+  trackingNumber: text("tracking_number"),
   utrNumber: text("utr_number"),
   cancellationReason: text("cancellation_reason"),
+  isLocked: boolean("is_locked").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const orderSequencesTable = pgTable("order_sequences", {
+  month: text("month").primaryKey(),
+  lastVal: integer("last_val").notNull().default(0),
 });
 
 export const insertOrderSchema = createInsertSchema(ordersTable).omit({ id: true, createdAt: true, updatedAt: true });

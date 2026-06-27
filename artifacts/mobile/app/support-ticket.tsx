@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -14,8 +14,12 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { io, type Socket } from "socket.io-client";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+
+const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
+const SOCKET_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
 type TicketCategory = "order_issue" | "payment" | "product" | "account" | "other";
 type TicketStatus = "open" | "in_progress" | "resolved" | "closed";
@@ -60,6 +64,9 @@ export default function SupportTicketScreen() {
   const [category, setCategory] = useState<TicketCategory>("order_issue");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [liveUpdate, setLiveUpdate] = useState<string | null>(null);
+
+  const socketRef = useRef<Socket | null>(null);
 
   const fetchTickets = useCallback(async () => {
     try {
@@ -70,6 +77,37 @@ export default function SupportTicketScreen() {
   }, [apiRequest]);
 
   useEffect(() => { fetchTickets(); }, [fetchTickets]);
+
+  // ── WebSocket: live ticket status updates ───────────────────────────────────
+  useEffect(() => {
+    if (!user) return;
+
+    const socket = io(SOCKET_URL, {
+      path: "/api/socket.io",
+      query: { userId: user.id },
+      transports: ["websocket", "polling"],
+    });
+    socketRef.current = socket;
+
+    socket.on("ticket_update", (data: { ticketId: string; status: string; message: string }) => {
+      setTickets((prev) =>
+        prev.map((t) =>
+          t.id === data.ticketId ? { ...t, status: data.status as TicketStatus } : t
+        )
+      );
+      setLiveUpdate(data.message);
+      setTimeout(() => setLiveUpdate(null), 4000);
+    });
+
+    socket.on("ticket_note", (data: { ticketId: string; isAdmin: boolean }) => {
+      if (data.isAdmin) {
+        setLiveUpdate("Admin replied to your ticket");
+        setTimeout(() => setLiveUpdate(null), 4000);
+      }
+    });
+
+    return () => { socket.disconnect(); };
+  }, [user]);
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -138,6 +176,14 @@ export default function SupportTicketScreen() {
           </Text>
         </Pressable>
       </View>
+
+      {/* Live update toast */}
+      {liveUpdate && (
+        <View style={[styles.liveToast, { backgroundColor: colors.primary }]}>
+          <Feather name="zap" size={13} color="#fff" />
+          <Text style={styles.liveToastText}>{liveUpdate}</Text>
+        </View>
+      )}
 
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 40 }]}
@@ -241,6 +287,8 @@ const styles = StyleSheet.create({
   headerTitle: { flex: 1, fontSize: 18, fontFamily: "Inter_700Bold" },
   newBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 },
   newBtnText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  liveToast: { flexDirection: "row", alignItems: "center", gap: 6, marginHorizontal: 16, marginTop: 8, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10 },
+  liveToastText: { color: "#fff", fontSize: 13, fontFamily: "Inter_500Medium", flex: 1 },
   content: { padding: 16, gap: 12 },
   center: { alignItems: "center", gap: 12, paddingVertical: 60 },
   emptyTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold", textAlign: "center" },
