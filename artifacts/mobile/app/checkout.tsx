@@ -34,9 +34,50 @@ interface SavedAddress {
   isDefault: boolean;
 }
 
-function formatAddress(a: SavedAddress) {
-  return `${a.fullName}, ${a.phone}\n${[a.line1, a.line2, a.city, a.state, a.pincode].filter(Boolean).join(", ")}`;
+interface ShippingForm {
+  fullName: string;
+  mobile: string;
+  email: string;
+  line1: string;
+  landmark: string;
+  pincode: string;
+  city: string;
+  state: string;
 }
+
+const EMPTY_FORM: ShippingForm = {
+  fullName: "", mobile: "", email: "", line1: "", landmark: "", pincode: "", city: "", state: "",
+};
+
+function FormField({
+  label, value, onChange, placeholder, keyboard, required, colors, error,
+}: {
+  label: string; value: string; onChange: (v: string) => void;
+  placeholder?: string; keyboard?: any; required?: boolean; colors: any; error?: boolean;
+}) {
+  return (
+    <View style={[fieldStyles.group]}>
+      <Text style={[fieldStyles.label, { color: colors.mutedForeground }]}>
+        {label}{required && <Text style={{ color: "#EF4444" }}> *</Text>}
+      </Text>
+      <TextInput
+        style={[fieldStyles.input, { color: colors.text, borderColor: error ? "#EF4444" : colors.border, backgroundColor: colors.card }]}
+        value={value}
+        onChangeText={onChange}
+        placeholder={placeholder}
+        placeholderTextColor={colors.mutedForeground}
+        keyboardType={keyboard ?? "default"}
+        autoCorrect={false}
+      />
+    </View>
+  );
+}
+
+const fieldStyles = StyleSheet.create({
+  group: { marginBottom: 12 },
+  label: { fontSize: 11, fontFamily: "Inter_600SemiBold", letterSpacing: 0.4, marginBottom: 5 },
+  input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 13, paddingVertical: 11, fontSize: 14, fontFamily: "Inter_400Regular" },
+});
 
 export default function CheckoutScreen() {
   const colors = useColors();
@@ -44,32 +85,58 @@ export default function CheckoutScreen() {
   const router = useRouter();
   const { cart, cartTotal, clearCart } = useApp();
   const { user, apiRequest } = useAuth();
-  const [address, setAddress] = useState("");
+  const topPadding = Platform.OS === "web" ? 0 : insets.top;
+
+  const [form, setForm] = useState<ShippingForm>({ ...EMPTY_FORM });
+  const [errors, setErrors] = useState<Partial<Record<keyof ShippingForm, boolean>>>({});
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [showAddressPicker, setShowAddressPicker] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
+  const [couponCode, setCouponCode] = useState("");
+  const [placing, setPlacing] = useState(false);
+  const [checkingStock, setCheckingStock] = useState(false);
+
+  const product = cart[0];
 
   useEffect(() => {
+    if (!user) return;
     apiRequest("/addresses").then(async (res) => {
       if (res.ok) {
         const d = await res.json();
         const addrs: SavedAddress[] = d.addresses ?? [];
         setSavedAddresses(addrs);
         const def = addrs.find((a) => a.isDefault) ?? addrs[0];
-        if (def && !address) setAddress(formatAddress(def));
+        if (def) applySavedAddress(def);
       }
     }).catch(() => {});
-  }, []);
-  const [couponCode, setCouponCode] = useState("");
-  const [placing, setPlacing] = useState(false);
-  const topPadding = Platform.OS === "web" ? 0 : insets.top;
+    // Pre-fill email/name from user profile
+    if (user) {
+      setForm((f) => ({
+        ...f,
+        fullName: f.fullName || user.name || "",
+        email: f.email || user.email || "",
+      }));
+    }
+  }, [user]);
 
-  const product = cart[0];
+  function applySavedAddress(a: SavedAddress) {
+    setForm((f) => ({
+      ...f,
+      fullName: a.fullName,
+      mobile: a.phone,
+      line1: a.line1,
+      landmark: a.line2 ?? "",
+      city: a.city,
+      state: a.state,
+      pincode: a.pincode,
+    }));
+    setErrors({});
+  }
 
   if (!product) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background }]}>
-        <View style={[styles.header, { paddingTop: topPadding + 12 }]}>
+        <View style={[styles.header, { paddingTop: topPadding + 12, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
           <Pressable style={[styles.backBtn, { borderColor: colors.border }]} onPress={() => router.back()}>
             <Feather name="arrow-left" size={20} color={colors.text} />
           </Pressable>
@@ -86,6 +153,35 @@ export default function CheckoutScreen() {
     );
   }
 
+  function validate(): boolean {
+    const required: (keyof ShippingForm)[] = ["fullName", "mobile", "email", "line1", "pincode", "city", "state"];
+    const newErrors: Partial<Record<keyof ShippingForm, boolean>> = {};
+    let valid = true;
+    for (const key of required) {
+      if (!form[key].trim()) {
+        newErrors[key] = true;
+        valid = false;
+      }
+    }
+    // Email format
+    if (form.email.trim() && !/\S+@\S+\.\S+/.test(form.email.trim())) {
+      newErrors.email = true;
+      valid = false;
+    }
+    // Mobile: 10 digits
+    if (form.mobile.trim() && !/^\d{10}$/.test(form.mobile.replace(/\s/g, ""))) {
+      newErrors.mobile = true;
+      valid = false;
+    }
+    // Pincode: 6 digits
+    if (form.pincode.trim() && !/^\d{6}$/.test(form.pincode.trim())) {
+      newErrors.pincode = true;
+      valid = false;
+    }
+    setErrors(newErrors);
+    return valid;
+  }
+
   async function handlePlaceOrder() {
     if (!user) {
       Alert.alert("Sign In Required", "Please sign in to place an order.", [
@@ -94,10 +190,42 @@ export default function CheckoutScreen() {
       ]);
       return;
     }
-    if (!address.trim() || address.trim().length < 10) {
-      Alert.alert("Invalid Address", "Please enter a complete shipping address (at least 10 characters).");
+    if (!validate()) {
+      Alert.alert("Missing Information", "Please fill in all required fields correctly before placing your order.");
       return;
     }
+
+    // Real-time stock check
+    setCheckingStock(true);
+    try {
+      const stockRes = await apiRequest(`/products/${product.id}`);
+      if (stockRes.ok) {
+        const stockData = await stockRes.json();
+        const liveProduct = stockData.product;
+        if (!liveProduct || liveProduct.stock === 0 || !liveProduct.isActive) {
+          Alert.alert(
+            "Item Unavailable",
+            `Sorry, "${product.name}" is not available right now. Please remove it to proceed.`,
+          );
+          setCheckingStock(false);
+          return;
+        }
+      }
+    } catch {
+      // If stock check fails, proceed — the server will validate
+    }
+    setCheckingStock(false);
+
+    const shippingAddress = JSON.stringify({
+      fullName: form.fullName.trim(),
+      mobile: form.mobile.trim(),
+      email: form.email.trim(),
+      line1: form.line1.trim(),
+      landmark: form.landmark.trim(),
+      pincode: form.pincode.trim(),
+      city: form.city.trim(),
+      state: form.state.trim(),
+    });
 
     setPlacing(true);
     try {
@@ -107,7 +235,7 @@ export default function CheckoutScreen() {
           productId: product.id,
           paymentMethod,
           couponCode: couponCode.trim() || undefined,
-          shippingAddress: address.trim(),
+          shippingAddress,
           items: [{ id: product.id, quantity: 1 }],
         }),
       });
@@ -120,15 +248,19 @@ export default function CheckoutScreen() {
           router.replace("/(tabs)" as any);
         } else {
           Alert.alert(
-            "Order Placed!",
+            "Order Placed! 🎉",
             `Your order has been placed successfully.\n\nTotal: ₹${Number(total).toLocaleString("en-IN")}`,
             [{ text: "OK", onPress: () => router.replace("/(tabs)" as any) }]
           );
         }
       } else {
         const msg = data.error ?? "Failed to place order. Please try again.";
-        if (Platform.OS === "web") {
-          alert(msg);
+        // Check if it's a stock-related error from server
+        if (msg.toLowerCase().includes("stock") || msg.toLowerCase().includes("available")) {
+          Alert.alert(
+            "Item Unavailable",
+            `Sorry, "${product.name}" is not available right now. Please remove it to proceed.`,
+          );
         } else {
           Alert.alert("Order Failed", msg);
         }
@@ -145,6 +277,8 @@ export default function CheckoutScreen() {
     { key: "phonepe", label: "PhonePe", icon: "smartphone", desc: "Pay via PhonePe UPI" },
   ];
 
+  const isLoading = placing || checkingStock;
+
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -156,12 +290,13 @@ export default function CheckoutScreen() {
         </View>
 
         <ScrollView
-          contentContainerStyle={[styles.scroll, { paddingBottom: 120 + insets.bottom }]}
+          contentContainerStyle={[styles.scroll, { paddingBottom: 130 + insets.bottom }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
+          {/* Order Summary */}
           <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>ORDER SUMMARY</Text>
-          <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.productName, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>
             <Text style={[styles.productCat, { color: colors.mutedForeground }]}>{product.category} · Qty: 1</Text>
             <View style={styles.priceRow}>
@@ -170,39 +305,52 @@ export default function CheckoutScreen() {
             </View>
           </View>
 
-          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>SHIPPING ADDRESS</Text>
-          {savedAddresses.length > 0 && (
-            <Pressable
-              style={[styles.savedAddrBtn, { backgroundColor: colors.accent, borderColor: colors.border }]}
-              onPress={() => setShowAddressPicker(true)}
-            >
-              <Feather name="map-pin" size={14} color={colors.primary} />
-              <Text style={[styles.savedAddrText, { color: colors.primary }]}>Use Saved Address</Text>
-              <Feather name="chevron-down" size={14} color={colors.primary} />
-            </Pressable>
-          )}
-          <View style={[styles.inputCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <TextInput
-              style={[styles.addressInput, { color: colors.text }]}
-              placeholder="Enter your full delivery address..."
-              placeholderTextColor={colors.mutedForeground}
-              value={address}
-              onChangeText={setAddress}
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-            />
+          {/* Shipping Address */}
+          <View style={styles.sectionHeaderRow}>
+            <Text style={[styles.sectionLabel, { color: colors.mutedForeground, marginBottom: 0 }]}>SHIPPING DETAILS</Text>
+            {savedAddresses.length > 0 && (
+              <Pressable
+                style={[styles.useSavedBtn, { backgroundColor: colors.accent }]}
+                onPress={() => setShowAddressPicker(true)}
+              >
+                <Feather name="map-pin" size={12} color={colors.primary} />
+                <Text style={[styles.useSavedText, { color: colors.primary }]}>Use Saved</Text>
+              </Pressable>
+            )}
           </View>
 
+          <View style={[styles.card, { backgroundColor: colors.background, borderColor: colors.border, padding: 14 }]}>
+            <View style={styles.row2}>
+              <View style={{ flex: 1 }}>
+                <FormField label="Full Name" value={form.fullName} onChange={(v) => setForm({ ...form, fullName: v })} placeholder="Rajesh Kumar" required colors={colors} error={errors.fullName} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <FormField label="Mobile Number" value={form.mobile} onChange={(v) => setForm({ ...form, mobile: v })} placeholder="9876543210" keyboard="phone-pad" required colors={colors} error={errors.mobile} />
+              </View>
+            </View>
+            <FormField label="Email ID" value={form.email} onChange={(v) => setForm({ ...form, email: v })} placeholder="you@example.com" keyboard="email-address" required colors={colors} error={errors.email} />
+            <FormField label="Complete Address" value={form.line1} onChange={(v) => setForm({ ...form, line1: v })} placeholder="House/Flat No., Building, Street" required colors={colors} error={errors.line1} />
+            <FormField label="Landmark" value={form.landmark} onChange={(v) => setForm({ ...form, landmark: v })} placeholder="Near metro station (optional)" colors={colors} />
+            <View style={styles.row3}>
+              <View style={{ flex: 1 }}>
+                <FormField label="Pin Code" value={form.pincode} onChange={(v) => setForm({ ...form, pincode: v })} placeholder="400001" keyboard="numeric" required colors={colors} error={errors.pincode} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <FormField label="City" value={form.city} onChange={(v) => setForm({ ...form, city: v })} placeholder="Mumbai" required colors={colors} error={errors.city} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <FormField label="State" value={form.state} onChange={(v) => setForm({ ...form, state: v })} placeholder="Maharashtra" required colors={colors} error={errors.state} />
+              </View>
+            </View>
+          </View>
+
+          {/* Payment Method */}
           <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>PAYMENT METHOD</Text>
           <View style={[styles.paymentGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
             {paymentOptions.map((opt, i) => (
               <React.Fragment key={opt.key}>
                 {i > 0 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
-                <Pressable
-                  style={styles.paymentOption}
-                  onPress={() => setPaymentMethod(opt.key)}
-                >
+                <Pressable style={styles.paymentOption} onPress={() => setPaymentMethod(opt.key)}>
                   <View style={[styles.paymentIcon, { backgroundColor: paymentMethod === opt.key ? colors.primary : colors.accent }]}>
                     <Feather name={opt.icon as any} size={16} color={paymentMethod === opt.key ? "#fff" : colors.primary} />
                   </View>
@@ -218,6 +366,7 @@ export default function CheckoutScreen() {
             ))}
           </View>
 
+          {/* Coupon */}
           <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>COUPON CODE (OPTIONAL)</Text>
           <View style={[styles.couponRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Feather name="tag" size={16} color={colors.mutedForeground} />
@@ -229,11 +378,7 @@ export default function CheckoutScreen() {
               onChangeText={(v) => setCouponCode(v.toUpperCase())}
               autoCapitalize="characters"
             />
-            {!!couponCode && (
-              <Pressable onPress={() => setCouponCode("")}>
-                <Feather name="x" size={16} color={colors.mutedForeground} />
-              </Pressable>
-            )}
+            {!!couponCode && <Pressable onPress={() => setCouponCode("")}><Feather name="x" size={16} color={colors.mutedForeground} /></Pressable>}
           </View>
 
           <View style={[styles.policyBox, { backgroundColor: "#FEF3C7", borderColor: "#F59E0B" }]}>
@@ -259,11 +404,11 @@ export default function CheckoutScreen() {
                   <Pressable
                     key={a.id}
                     style={[styles.addrOption, { borderColor: colors.border }]}
-                    onPress={() => { setAddress(formatAddress(a)); setShowAddressPicker(false); }}
+                    onPress={() => { applySavedAddress(a); setShowAddressPicker(false); }}
                   >
                     <View style={[styles.addrLabelBadge, { backgroundColor: colors.accent }]}>
                       <Text style={[styles.addrLabelText, { color: colors.primary }]}>{a.label}</Text>
-                      {a.isDefault && <Text style={[styles.addrDefault, { color: colors.primary }]}>Default</Text>}
+                      {a.isDefault && <Text style={[styles.addrDefault, { color: colors.primary }]}> · Default</Text>}
                     </View>
                     <Text style={[styles.addrName, { color: colors.text }]}>{a.fullName} · {a.phone}</Text>
                     <Text style={[styles.addrLine, { color: colors.mutedForeground }]}>
@@ -289,11 +434,11 @@ export default function CheckoutScreen() {
             <Text style={[styles.totalAmount, { color: colors.text }]}>₹{Number(cartTotal).toLocaleString("en-IN")}</Text>
           </View>
           <Pressable
-            style={[styles.placeOrderBtn, { backgroundColor: colors.primary, opacity: placing ? 0.7 : 1 }]}
+            style={[styles.placeOrderBtn, { backgroundColor: colors.primary, opacity: isLoading ? 0.7 : 1 }]}
             onPress={handlePlaceOrder}
-            disabled={placing}
+            disabled={isLoading}
           >
-            {placing ? (
+            {isLoading ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <>
@@ -317,16 +462,19 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 16, fontFamily: "Inter_500Medium" },
   backToShopBtn: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 },
   backToShopText: { color: "#fff", fontSize: 15, fontFamily: "Inter_600SemiBold" },
-  scroll: { padding: 16, gap: 0 },
-  sectionLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", letterSpacing: 1, marginBottom: 8, marginTop: 16 },
-  summaryCard: { borderRadius: 14, borderWidth: 1, padding: 14, gap: 6 },
+  scroll: { padding: 16 },
+  sectionLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", letterSpacing: 1, marginBottom: 8, marginTop: 14 },
+  sectionHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 14, marginBottom: 8 },
+  useSavedBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
+  useSavedText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  card: { borderRadius: 14, borderWidth: 1, padding: 14, gap: 6 },
+  row2: { flexDirection: "row", gap: 10 },
+  row3: { flexDirection: "row", gap: 8 },
   productName: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
   productCat: { fontSize: 12, fontFamily: "Inter_400Regular" },
   priceRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 4 },
   priceLabel: { fontSize: 14, fontFamily: "Inter_400Regular" },
   priceValue: { fontSize: 14, fontFamily: "Inter_700Bold" },
-  inputCard: { borderRadius: 14, borderWidth: 1, padding: 12 },
-  addressInput: { fontSize: 14, fontFamily: "Inter_400Regular", minHeight: 90 },
   paymentGroup: { borderRadius: 14, borderWidth: 1, overflow: "hidden" },
   divider: { height: 1 },
   paymentOption: { flexDirection: "row", alignItems: "center", padding: 14, gap: 12 },
@@ -346,14 +494,12 @@ const styles = StyleSheet.create({
   totalAmount: { fontSize: 22, fontFamily: "Inter_700Bold" },
   placeOrderBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 14, paddingVertical: 16 },
   placeOrderText: { color: "#fff", fontSize: 16, fontFamily: "Inter_600SemiBold" },
-  savedAddrBtn: { flexDirection: "row", alignItems: "center", gap: 6, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 8, alignSelf: "flex-start" },
-  savedAddrText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   pickerOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
   pickerSheet: { borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: "70%", paddingTop: 8 },
   pickerHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 12 },
   pickerTitle: { fontSize: 17, fontFamily: "Inter_700Bold" },
   addrOption: { borderWidth: 1, borderRadius: 12, padding: 12, gap: 4 },
-  addrLabelBadge: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, marginBottom: 4 },
+  addrLabelBadge: { flexDirection: "row", alignItems: "center", alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, marginBottom: 4 },
   addrLabelText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
   addrDefault: { fontSize: 10, fontFamily: "Inter_500Medium", opacity: 0.7 },
   addrName: { fontSize: 14, fontFamily: "Inter_600SemiBold" },

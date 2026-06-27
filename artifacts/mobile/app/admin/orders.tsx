@@ -26,8 +26,29 @@ interface Order {
   total: number;
   quantity: number;
   createdAt: string;
+  shippingAddress?: string;
   utrNumber?: string;
   cancellationReason?: string;
+}
+
+interface ShippingInfo {
+  fullName?: string;
+  mobile?: string;
+  email?: string;
+  line1?: string;
+  landmark?: string;
+  pincode?: string;
+  city?: string;
+  state?: string;
+}
+
+function parseShipping(raw?: string): ShippingInfo | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (typeof parsed === "object" && parsed !== null) return parsed as ShippingInfo;
+  } catch {}
+  return null;
 }
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; label: string; icon: string }> = {
@@ -229,6 +250,43 @@ export default function OrdersScreen() {
                       <Text style={styles.metaLabel}>Pay Status: <Text style={styles.metaValue}>{order.paymentStatus}</Text></Text>
                     </View>
 
+                    {/* Shipping Info Card */}
+                    {(() => {
+                      const ship = parseShipping(order.shippingAddress);
+                      if (ship) {
+                        return (
+                          <View style={styles.shipCard}>
+                            <View style={styles.shipCardHeader}>
+                              <Feather name="map-pin" size={13} color="#2563EB" />
+                              <Text style={styles.shipCardTitle}>Shipping Details</Text>
+                            </View>
+                            <View style={styles.shipGrid}>
+                              {ship?.fullName ? <View style={styles.shipField}><Text style={styles.shipKey}>Name</Text><Text style={styles.shipVal}>{ship.fullName}</Text></View> : null}
+                              {ship?.mobile ? <View style={styles.shipField}><Text style={styles.shipKey}>Mobile</Text><Text style={styles.shipVal}>{ship.mobile}</Text></View> : null}
+                              {ship?.email ? <View style={[styles.shipField, styles.shipFieldFull]}><Text style={styles.shipKey}>Email</Text><Text style={styles.shipVal}>{ship.email}</Text></View> : null}
+                              {ship?.line1 ? <View style={[styles.shipField, styles.shipFieldFull]}><Text style={styles.shipKey}>Address</Text><Text style={styles.shipVal}>{ship.line1}</Text></View> : null}
+                              {ship?.landmark ? <View style={[styles.shipField, styles.shipFieldFull]}><Text style={styles.shipKey}>Landmark</Text><Text style={styles.shipVal}>{ship.landmark}</Text></View> : null}
+                              {ship?.pincode ? <View style={styles.shipField}><Text style={styles.shipKey}>Pincode</Text><Text style={styles.shipVal}>{ship.pincode}</Text></View> : null}
+                              {ship?.city ? <View style={styles.shipField}><Text style={styles.shipKey}>City</Text><Text style={styles.shipVal}>{ship.city}</Text></View> : null}
+                              {ship?.state ? <View style={styles.shipField}><Text style={styles.shipKey}>State</Text><Text style={styles.shipVal}>{ship.state}</Text></View> : null}
+                            </View>
+                          </View>
+                        );
+                      }
+                      if (order.shippingAddress) {
+                        return (
+                          <View style={styles.shipCard}>
+                            <View style={styles.shipCardHeader}>
+                              <Feather name="map-pin" size={13} color="#2563EB" />
+                              <Text style={styles.shipCardTitle}>Shipping Address</Text>
+                            </View>
+                            <Text style={styles.shipVal}>{order.shippingAddress}</Text>
+                          </View>
+                        );
+                      }
+                      return null;
+                    })()}
+
                     {/* UTR / Cancellation info for cancelled orders */}
                     {order.status === "cancelled" && (order.utrNumber || order.cancellationReason) && (
                       <View style={styles.utrBox}>
@@ -402,4 +460,12 @@ const styles = StyleSheet.create({
   notifLabel: { fontSize: 9, fontFamily: "Inter_600SemiBold", color: "#93C5FD", letterSpacing: 0.6, textTransform: "uppercase" },
   notifTitle: { fontSize: 13, fontFamily: "Inter_700Bold", color: "#fff", marginTop: 1 },
   notifBody: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#CBD5E1", lineHeight: 16, marginTop: 2 },
+  shipCard: { backgroundColor: "#EFF6FF", borderRadius: 12, borderWidth: 1, borderColor: "#BFDBFE", padding: 12, gap: 8 },
+  shipCardHeader: { flexDirection: "row", alignItems: "center", gap: 6 },
+  shipCardTitle: { fontSize: 12, fontFamily: "Inter_700Bold", color: "#1D4ED8" },
+  shipGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  shipField: { minWidth: "45%", flex: 1 },
+  shipFieldFull: { minWidth: "100%", flex: undefined, width: "100%" },
+  shipKey: { fontSize: 10, fontFamily: "Inter_600SemiBold", color: "#3B82F6", letterSpacing: 0.3, marginBottom: 2 },
+  shipVal: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#0F1740" },
 });
