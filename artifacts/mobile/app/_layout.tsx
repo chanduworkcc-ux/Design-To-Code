@@ -8,10 +8,12 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
+  Easing,
   Image,
   StyleSheet,
   Text,
@@ -28,6 +30,8 @@ import { NotificationProvider } from "@/context/NotificationContext";
 import { SocketProvider } from "@/context/SocketContext";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import MaintenanceScreen from "./maintenance";
+
+const LOCAL_LOGO = require("@/assets/logo-transparent.png");
 
 function PushNotificationInit() {
   const { token } = useAuth();
@@ -49,60 +53,206 @@ function SocketInit({ children }: { children: React.ReactNode }) {
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
-const LOCAL_LOGO = require("@/assets/logo.png");
+const MIN_SPLASH_MS = 5000;
+const MAX_SPLASH_MS = 15000;
+
+function Ring({
+  size,
+  borderColor,
+  borderWidth,
+  duration,
+  rotateAxis,
+  delay = 0,
+}: {
+  size: number;
+  borderColor: string;
+  borderWidth: number;
+  duration: number;
+  rotateAxis: "X" | "Y" | "Z";
+  delay?: number;
+}) {
+  const rotation = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.timing(rotation, {
+          toValue: 1,
+          duration,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, []);
+
+  const interpolated = rotation.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] });
+
+  const transform =
+    rotateAxis === "X"
+      ? [{ perspective: 600 }, { rotateX: interpolated }]
+      : rotateAxis === "Y"
+      ? [{ perspective: 600 }, { rotateY: interpolated }]
+      : [{ rotateZ: interpolated }];
+
+  return (
+    <Animated.View
+      style={{
+        position: "absolute",
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        borderWidth,
+        borderColor,
+        transform,
+      }}
+    />
+  );
+}
+
+function GlowOrb({ size, color, opacity, delay }: { size: number; color: string; opacity: number; delay: number }) {
+  const pulse = useRef(new Animated.Value(0.6)).current;
+
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.timing(pulse, { toValue: 1.2, duration: 900, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0.6, duration: 900, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, []);
+
+  return (
+    <Animated.View
+      style={{
+        position: "absolute",
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        backgroundColor: color,
+        opacity: Animated.multiply(pulse, opacity),
+        transform: [{ scale: pulse }],
+      }}
+    />
+  );
+}
 
 function AppSplash({ onDone, logoUrl }: { onDone: () => void; logoUrl: string | null }) {
   const bgOpacity = useRef(new Animated.Value(1)).current;
-  const logoScale = useRef(new Animated.Value(0.78)).current;
+  const logoScale = useRef(new Animated.Value(0.7)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
+  const brandOpacity = useRef(new Animated.Value(0)).current;
+  const ringsOpacity = useRef(new Animated.Value(0)).current;
+  const doneRef = useRef(false);
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(logoOpacity, { toValue: 1, duration: 480, useNativeDriver: true }),
-      Animated.spring(logoScale, { toValue: 1, friction: 6, tension: 80, useNativeDriver: true }),
-    ]).start(() => {
-      setTimeout(() => {
-        Animated.timing(bgOpacity, { toValue: 0, duration: 420, useNativeDriver: true })
-          .start(() => onDone());
-      }, 2200);
-    });
+    const fadeIn = Animated.parallel([
+      Animated.timing(logoOpacity, { toValue: 1, duration: 600, useNativeDriver: true }),
+      Animated.spring(logoScale, { toValue: 1, friction: 7, tension: 60, useNativeDriver: true }),
+      Animated.timing(ringsOpacity, { toValue: 1, duration: 800, delay: 300, useNativeDriver: true }),
+      Animated.timing(brandOpacity, { toValue: 1, duration: 700, delay: 500, useNativeDriver: true }),
+    ]);
+
+    fadeIn.start();
+
+    const minTimer = setTimeout(() => {
+      if (!doneRef.current) dismiss();
+    }, MIN_SPLASH_MS);
+
+    const maxTimer = setTimeout(() => {
+      dismiss();
+    }, MAX_SPLASH_MS);
+
+    return () => {
+      clearTimeout(minTimer);
+      clearTimeout(maxTimer);
+    };
   }, []);
+
+  function dismiss() {
+    if (doneRef.current) return;
+    doneRef.current = true;
+    Animated.timing(bgOpacity, { toValue: 0, duration: 500, useNativeDriver: true }).start(() => onDone());
+  }
 
   const logoSource = logoUrl ? { uri: logoUrl } : LOCAL_LOGO;
 
   return (
     <Animated.View style={[styles.splashRoot, { opacity: bgOpacity }]}>
-      <Animated.View style={[styles.splashLogoWrap, { opacity: logoOpacity, transform: [{ scale: logoScale }] }]}>
-        <Image source={logoSource} style={styles.splashLogo} resizeMode="contain" />
-      </Animated.View>
-      <View style={styles.dotsRow}>
-        {[0, 1, 2].map((i) => <PulseDot key={i} delay={i * 180} />)}
+      <LinearGradient
+        colors={["#0A0F2E", "#0E1A4A", "#162260"]}
+        start={{ x: 0.2, y: 0 }}
+        end={{ x: 0.8, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+
+      {/* Subtle ambient glow blobs */}
+      <View style={styles.orbContainer}>
+        <GlowOrb size={220} color="#3B82F6" opacity={0.06} delay={0} />
+        <GlowOrb size={160} color="#6366F1" opacity={0.08} delay={400} />
       </View>
-      <Animated.View style={[styles.splashByWrap, { opacity: logoOpacity }]}>
-        <Text style={styles.splashBy}>by</Text>
-        <Text style={styles.splashBrand}>FX PRIME 26</Text>
+
+      {/* 3D rings container */}
+      <Animated.View style={[styles.ringsWrap, { opacity: ringsOpacity }]}>
+        <Ring size={200} borderColor="rgba(99,102,241,0.85)" borderWidth={2.5} duration={2800} rotateAxis="Y" delay={0} />
+        <Ring size={170} borderColor="rgba(59,130,246,0.7)" borderWidth={2} duration={2100} rotateAxis="X" delay={150} />
+        <Ring size={140} borderColor="rgba(139,92,246,0.6)" borderWidth={1.5} duration={1700} rotateAxis="Z" delay={80} />
+        <Ring size={230} borderColor="rgba(96,165,250,0.3)" borderWidth={1} duration={3500} rotateAxis="Y" delay={200} />
+      </Animated.View>
+
+      {/* Logo */}
+      <Animated.View style={[styles.logoWrap, { opacity: logoOpacity, transform: [{ scale: logoScale }] }]}>
+        <Image source={logoSource} style={styles.logoImg} resizeMode="contain" />
+      </Animated.View>
+
+      {/* Brand line */}
+      <Animated.View style={[styles.brandWrap, { opacity: brandOpacity }]}>
+        <Text style={styles.brandBy}>by</Text>
+        <Text style={styles.brandName}>FX PRIME 26</Text>
+      </Animated.View>
+
+      {/* Loading dots */}
+      <Animated.View style={[styles.dotsRow, { opacity: brandOpacity }]}>
+        {[0, 1, 2].map((i) => <PulseDot key={i} delay={i * 200} />)}
       </Animated.View>
     </Animated.View>
   );
 }
 
 function PulseDot({ delay }: { delay: number }) {
-  const opacity = useRef(new Animated.Value(0.3)).current;
+  const opacity = useRef(new Animated.Value(0.25)).current;
+  const scale = useRef(new Animated.Value(0.8)).current;
+
   useEffect(() => {
     const anim = Animated.loop(
       Animated.sequence([
         Animated.delay(delay),
-        Animated.timing(opacity, { toValue: 1, duration: 380, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.3, duration: 380, useNativeDriver: true }),
+        Animated.parallel([
+          Animated.timing(opacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+          Animated.timing(scale, { toValue: 1.2, duration: 400, useNativeDriver: true }),
+        ]),
+        Animated.parallel([
+          Animated.timing(opacity, { toValue: 0.25, duration: 400, useNativeDriver: true }),
+          Animated.timing(scale, { toValue: 0.8, duration: 400, useNativeDriver: true }),
+        ]),
       ])
     );
     anim.start();
     return () => anim.stop();
   }, []);
-  return <Animated.View style={[styles.dot, { opacity }]} />;
+
+  return (
+    <Animated.View style={[styles.dot, { opacity, transform: [{ scale }] }]} />
+  );
 }
 
 function RootLayoutNav() {
@@ -207,16 +357,61 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   splashRoot: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "#EEF2FF",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 9999,
   },
-  splashLogoWrap: { alignItems: "center", justifyContent: "center" },
-  splashLogo: { width: width * 0.62, height: width * 0.62 * 0.56 },
-  dotsRow: { flexDirection: "row", gap: 8, marginTop: 40 },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#2563EB" },
-  splashByWrap: { position: "absolute", bottom: 52, alignItems: "center", gap: 2 },
-  splashBy: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#94A3B8", letterSpacing: 1 },
-  splashBrand: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#1E3A8A", letterSpacing: 4 },
+  orbContainer: {
+    position: "absolute",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+    height: "100%",
+  },
+  ringsWrap: {
+    position: "absolute",
+    width: 240,
+    height: 240,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  logoWrap: {
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
+  },
+  logoImg: {
+    width: width * 0.52,
+    height: width * 0.52 * 0.52,
+  },
+  brandWrap: {
+    position: "absolute",
+    bottom: height * 0.1,
+    alignItems: "center",
+    gap: 3,
+  },
+  brandBy: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    color: "rgba(148,163,184,0.7)",
+    letterSpacing: 1.5,
+  },
+  brandName: {
+    fontSize: 16,
+    fontFamily: "Inter_700Bold",
+    color: "#93C5FD",
+    letterSpacing: 5,
+  },
+  dotsRow: {
+    position: "absolute",
+    bottom: height * 0.1 + 56,
+    flexDirection: "row",
+    gap: 8,
+  },
+  dot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: "#6366F1",
+  },
 });

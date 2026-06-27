@@ -3,12 +3,32 @@ import { db } from "@workspace/db";
 import { notificationsTable, pushTokensTable, usersTable } from "@workspace/db/schema";
 import { eq, desc, or, lt, gte } from "drizzle-orm";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../middleware/auth";
+import { getConfig } from "../lib/config";
 import { z } from "zod";
 import { v4 as uuidv4 } from "uuid";
 
 const router = Router();
 
-// ─── Auto-notification helper (used by admin routes) ─────────────────────────
+async function sendSmsNotification(to: string, body: string): Promise<void> {
+  const accountSid = await getConfig("twilio_account_sid");
+  const authToken = await getConfig("twilio_auth_token");
+  const fromNumber = await getConfig("twilio_phone_number");
+
+  if (!accountSid || !authToken || !fromNumber) return;
+
+  const cleanPhone = to.replace(/\D/g, "");
+  const e164 = cleanPhone.startsWith("91") ? `+${cleanPhone}` : `+91${cleanPhone}`;
+
+  const credentials = Buffer.from(`${accountSid}:${authToken}`).toString("base64");
+  await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${credentials}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({ To: e164, From: fromNumber, Body: body }).toString(),
+  });
+}
 
 export async function insertAutoNotification(
   userId: string,
@@ -25,35 +45,28 @@ export async function insertAutoNotification(
     iconName,
   });
 
-  const tokens = await db
-    .select({ token: pushTokensTable.token })
-    .from(pushTokensTable)
-    .where(eq(pushTokensTable.userId, userId));
+  const smsEnabled = await getConfig("sms_enabled");
 
-  const expoPushTokens = tokens
-    .map((t) => t.token)
-    .filter((t) => t.startsWith("ExponentPushToken[") || t.startsWith("ExpoPushToken["));
-
-  if (expoPushTokens.length > 0) {
-    const messages = expoPushTokens.map((to) => ({ to, title, body, sound: "default", data: { iconName } }));
+  if (smsEnabled === "true") {
     try {
-      await fetch("https://exp.host/--/api/v2/push/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json", "Accept-Encoding": "gzip, deflate" },
-        body: JSON.stringify(messages),
-      });
+      const [userRow] = await db
+        .select({ mobileNumber: usersTable.mobileNumber })
+        .from(usersTable)
+        .where(eq(usersTable.id, userId));
+
+      if (userRow?.mobileNumber) {
+        const smsBody = `${title}\n${body}`;
+        await sendSmsNotification(userRow.mobileNumber, smsBody);
+      }
     } catch {}
   }
 }
 
-// ─── Register push token ──────────────────────────────────────────────────────
-
-const registerTokenSchema = z.object({
-  token: z.string().min(10),
-  platform: z.string().optional(),
-});
-
 router.post("/notifications/register-token", authMiddleware, async (req: AuthRequest, res) => {
+  const registerTokenSchema = z.object({
+    token: z.string().min(10),
+    platform: z.string().optional(),
+  });
   const parsed = registerTokenSchema.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: "Invalid token" }); return; }
   const { token, platform = "unknown" } = parsed.data;
@@ -69,8 +82,6 @@ router.post("/notifications/register-token", authMiddleware, async (req: AuthReq
   }
   res.json({ ok: true });
 });
-
-// ─── Get user notifications ───────────────────────────────────────────────────
 
 router.get("/notifications", authMiddleware, async (req: AuthRequest, res) => {
   const userId = req.userId!;
@@ -100,8 +111,6 @@ router.get("/notifications", authMiddleware, async (req: AuthRequest, res) => {
   res.json({ notifications });
 });
 
-// ─── Admin: list all notifications ───────────────────────────────────────────
-
 router.get("/admin/notifications", authMiddleware, adminMiddleware, async (_req, res) => {
   const notifications = await db
     .select()
@@ -110,8 +119,6 @@ router.get("/admin/notifications", authMiddleware, adminMiddleware, async (_req,
     .limit(100);
   res.json({ notifications });
 });
-
-// ─── Admin: send notification ─────────────────────────────────────────────────
 
 const sendNotifSchema = z.object({
   title: z.string().min(1),
@@ -140,56 +147,33 @@ router.post("/admin/notifications/send", authMiddleware, adminMiddleware, async 
     iconName,
   }).returning();
 
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const smsEnabled = await getConfig("sms_enabled");
 
-  let tokens: { token: string }[] = [];
-  if (targetType === "all") {
-    tokens = await db.select({ token: pushTokensTable.token }).from(pushTokensTable);
-  } else if (targetType === "user" && targetUserId) {
-    tokens = await db
-      .select({ token: pushTokensTable.token })
-      .from(pushTokensTable)
-      .where(eq(pushTokensTable.userId, targetUserId));
-  } else if (targetType === "new_users") {
-    const newUserIds = await db
-      .select({ id: usersTable.id })
-      .from(usersTable)
-      .where(gte(usersTable.createdAt, thirtyDaysAgo));
-    if (newUserIds.length) {
-      tokens = await db
-        .select({ token: pushTokensTable.token })
-        .from(pushTokensTable);
-    }
-  } else if (targetType === "old_users") {
-    const oldUserIds = await db
-      .select({ id: usersTable.id })
-      .from(usersTable)
-      .where(lt(usersTable.createdAt, thirtyDaysAgo));
-    if (oldUserIds.length) {
-      tokens = await db
-        .select({ token: pushTokensTable.token })
-        .from(pushTokensTable);
-    }
+  if (smsEnabled === "true") {
+    try {
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      let userRows: { mobileNumber: string | null }[] = [];
+
+      if (targetType === "all") {
+        userRows = await db.select({ mobileNumber: usersTable.mobileNumber }).from(usersTable);
+      } else if (targetType === "user" && targetUserId) {
+        userRows = await db.select({ mobileNumber: usersTable.mobileNumber }).from(usersTable).where(eq(usersTable.id, targetUserId));
+      } else if (targetType === "new_users") {
+        userRows = await db.select({ mobileNumber: usersTable.mobileNumber }).from(usersTable).where(gte(usersTable.createdAt, thirtyDaysAgo));
+      } else if (targetType === "old_users") {
+        userRows = await db.select({ mobileNumber: usersTable.mobileNumber }).from(usersTable).where(lt(usersTable.createdAt, thirtyDaysAgo));
+      }
+
+      const smsBody = `${title}\n${body}`;
+      await Promise.allSettled(
+        userRows
+          .filter((u) => u.mobileNumber)
+          .map((u) => sendSmsNotification(u.mobileNumber!, smsBody))
+      );
+    } catch {}
   }
 
-  if (tokens.length > 0) {
-    const expoPushTokens = tokens.map((t) => t.token)
-      .filter((t) => t.startsWith("ExponentPushToken[") || t.startsWith("ExpoPushToken["));
-    if (expoPushTokens.length > 0) {
-      const messages = expoPushTokens.map((to) => ({
-        to, title, body, sound: "default", data: { iconName, targetType, targetUserId },
-      }));
-      try {
-        await fetch("https://exp.host/--/api/v2/push/send", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Accept: "application/json", "Accept-Encoding": "gzip, deflate" },
-          body: JSON.stringify(messages),
-        });
-      } catch {}
-    }
-  }
-
-  res.json({ notification, tokenCount: tokens.length });
+  res.json({ notification, smsEnabled });
 });
 
 export default router;

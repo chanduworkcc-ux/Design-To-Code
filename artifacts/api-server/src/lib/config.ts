@@ -20,6 +20,7 @@ const DEFAULTS: Record<string, string> = {
   phonepe_merchant_id: "",
   phonepe_api_key: "",
   cod_enabled: "true",
+  active_payment_gateway: "cod",
   login_enabled: "true",
   registration_enabled: "true",
   maintenance_mode: "false",
@@ -27,6 +28,10 @@ const DEFAULTS: Record<string, string> = {
   login_closed_message: "Logins are temporarily paused. Please try again later or contact support.",
   registration_closed_message: "New registrations are currently closed. Please check back soon.",
   min_app_version: "1.0.0",
+  sms_enabled: "false",
+  twilio_account_sid: "",
+  twilio_auth_token: "",
+  twilio_phone_number: "",
 };
 
 export async function getConfig(key: string): Promise<string> {

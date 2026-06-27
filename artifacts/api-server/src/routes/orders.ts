@@ -69,9 +69,28 @@ router.post("/orders", authMiddleware, async (req: AuthRequest, res) => {
     return;
   }
 
+  const activeGateway = await getConfig("active_payment_gateway");
+  const effectiveGateway = activeGateway || "cod";
+
+  if (paymentMethod !== effectiveGateway) {
+    const labels: Record<string, string> = { cod: "Cash on Delivery", razorpay: "Razorpay", phonepe: "PhonePe" };
+    res.status(400).json({ error: `Only ${labels[effectiveGateway] ?? effectiveGateway} is currently accepted. Please select the correct payment method.` });
+    return;
+  }
+
   if (paymentMethod === "cod") {
     const codEnabled = await getConfig("cod_enabled");
     if (codEnabled === "false") { res.status(400).json({ error: "Cash on Delivery is currently unavailable." }); return; }
+  }
+
+  if (paymentMethod === "razorpay") {
+    const razorpayEnabled = await getConfig("razorpay_enabled");
+    if (razorpayEnabled !== "true") { res.status(400).json({ error: "Razorpay payments are not currently available." }); return; }
+  }
+
+  if (paymentMethod === "phonepe") {
+    const phonepeEnabled = await getConfig("phonepe_enabled");
+    if (phonepeEnabled !== "true") { res.status(400).json({ error: "PhonePe payments are not currently available." }); return; }
   }
 
   const products = await db.select().from(productsTable).where(eq(productsTable.id, productId));

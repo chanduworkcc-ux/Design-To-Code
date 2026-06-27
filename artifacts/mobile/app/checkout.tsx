@@ -19,6 +19,8 @@ import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 
+const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
+
 type PaymentMethod = "cod" | "razorpay" | "phonepe";
 
 interface SavedAddress {
@@ -48,6 +50,12 @@ interface ShippingForm {
 const EMPTY_FORM: ShippingForm = {
   fullName: "", mobile: "", email: "", line1: "", landmark: "", pincode: "", city: "", state: "",
 };
+
+const ALL_PAYMENT_OPTIONS: { key: PaymentMethod; label: string; icon: string; desc: string }[] = [
+  { key: "cod", label: "Cash on Delivery", icon: "truck", desc: "Pay when your order arrives" },
+  { key: "razorpay", label: "Razorpay", icon: "credit-card", desc: "Pay securely via Razorpay" },
+  { key: "phonepe", label: "PhonePe", icon: "smartphone", desc: "Pay via PhonePe UPI" },
+];
 
 function FormField({
   label, value, onChange, placeholder, keyboard, required, colors, error,
@@ -95,8 +103,25 @@ export default function CheckoutScreen() {
   const [couponCode, setCouponCode] = useState("");
   const [placing, setPlacing] = useState(false);
   const [checkingStock, setCheckingStock] = useState(false);
+  const [activeGateway, setActiveGateway] = useState<PaymentMethod>("cod");
+  const [gatewayLoading, setGatewayLoading] = useState(true);
 
   const product = cart[0];
+
+  useEffect(() => {
+    fetch(`${BASE_URL}/config/public`)
+      .then((r) => r.json())
+      .then((d) => {
+        const gw = (d.active_payment_gateway as PaymentMethod) || "cod";
+        setActiveGateway(gw);
+        setPaymentMethod(gw);
+      })
+      .catch(() => {
+        setActiveGateway("cod");
+        setPaymentMethod("cod");
+      })
+      .finally(() => setGatewayLoading(false));
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -109,7 +134,6 @@ export default function CheckoutScreen() {
         if (def) applySavedAddress(def);
       }
     }).catch(() => {});
-    // Pre-fill email/name from user profile
     if (user) {
       setForm((f) => ({
         ...f,
@@ -163,17 +187,14 @@ export default function CheckoutScreen() {
         valid = false;
       }
     }
-    // Email format
     if (form.email.trim() && !/\S+@\S+\.\S+/.test(form.email.trim())) {
       newErrors.email = true;
       valid = false;
     }
-    // Mobile: 10 digits
     if (form.mobile.trim() && !/^\d{10}$/.test(form.mobile.replace(/\s/g, ""))) {
       newErrors.mobile = true;
       valid = false;
     }
-    // Pincode: 6 digits
     if (form.pincode.trim() && !/^\d{6}$/.test(form.pincode.trim())) {
       newErrors.pincode = true;
       valid = false;
@@ -195,10 +216,15 @@ export default function CheckoutScreen() {
       return;
     }
 
-    // Real-time stock check
     setCheckingStock(true);
     try {
-      const stockRes = await apiRequest(`/products/${product.id}`);
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+      const stockRes = await fetch(`${BASE_URL}/products/${product.id}`, {
+        signal: controller.signal,
+        headers: { "Content-Type": "application/json" },
+      });
+      clearTimeout(timer);
       if (stockRes.ok) {
         const stockData = await stockRes.json();
         const liveProduct = stockData.product;
@@ -212,7 +238,7 @@ export default function CheckoutScreen() {
         }
       }
     } catch {
-      // If stock check fails, proceed — the server will validate
+      // Stock check timeout or failure — server will re-validate
     }
     setCheckingStock(false);
 
@@ -229,16 +255,19 @@ export default function CheckoutScreen() {
 
     setPlacing(true);
     try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 20000);
       const res = await apiRequest("/orders", {
         method: "POST",
         body: JSON.stringify({
           productId: product.id,
-          paymentMethod,
+          paymentMethod: activeGateway,
           couponCode: couponCode.trim() || undefined,
           shippingAddress,
           items: [{ id: product.id, quantity: 1 }],
         }),
       });
+      clearTimeout(timer);
       const data = await res.json();
       if (res.ok) {
         await clearCart();
@@ -255,29 +284,25 @@ export default function CheckoutScreen() {
         }
       } else {
         const msg = data.error ?? "Failed to place order. Please try again.";
-        // Check if it's a stock-related error from server
         if (msg.toLowerCase().includes("stock") || msg.toLowerCase().includes("available")) {
-          Alert.alert(
-            "Item Unavailable",
-            `Sorry, "${product.name}" is not available right now. Please remove it to proceed.`,
-          );
+          Alert.alert("Item Unavailable", `Sorry, "${product.name}" is not available right now.`);
         } else {
           Alert.alert("Order Failed", msg);
         }
       }
-    } catch {
-      Alert.alert("Network Error", "Could not connect to server. Please try again.");
+    } catch (err: any) {
+      if (err?.name === "AbortError") {
+        Alert.alert("Request Timed Out", "The server took too long to respond. Please check your connection and try again.");
+      } else {
+        Alert.alert("Network Error", "Could not connect to server. Please try again.");
+      }
+    } finally {
+      setPlacing(false);
     }
-    setPlacing(false);
   }
 
-  const paymentOptions: { key: PaymentMethod; label: string; icon: string; desc: string }[] = [
-    { key: "cod", label: "Cash on Delivery", icon: "truck", desc: "Pay when your order arrives" },
-    { key: "razorpay", label: "Razorpay", icon: "credit-card", desc: "Pay securely via Razorpay" },
-    { key: "phonepe", label: "PhonePe", icon: "smartphone", desc: "Pay via PhonePe UPI" },
-  ];
-
-  const isLoading = placing || checkingStock;
+  const visiblePaymentOption = ALL_PAYMENT_OPTIONS.find((o) => o.key === activeGateway) ?? ALL_PAYMENT_OPTIONS[0];
+  const isLoading = placing || checkingStock || gatewayLoading;
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
@@ -344,27 +369,28 @@ export default function CheckoutScreen() {
             </View>
           </View>
 
-          {/* Payment Method */}
+          {/* Payment Method — only admin-selected gateway */}
           <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>PAYMENT METHOD</Text>
-          <View style={[styles.paymentGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            {paymentOptions.map((opt, i) => (
-              <React.Fragment key={opt.key}>
-                {i > 0 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
-                <Pressable style={styles.paymentOption} onPress={() => setPaymentMethod(opt.key)}>
-                  <View style={[styles.paymentIcon, { backgroundColor: paymentMethod === opt.key ? colors.primary : colors.accent }]}>
-                    <Feather name={opt.icon as any} size={16} color={paymentMethod === opt.key ? "#fff" : colors.primary} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.paymentLabel, { color: colors.text }]}>{opt.label}</Text>
-                    <Text style={[styles.paymentDesc, { color: colors.mutedForeground }]}>{opt.desc}</Text>
-                  </View>
-                  <View style={[styles.radio, { borderColor: paymentMethod === opt.key ? colors.primary : colors.border }]}>
-                    {paymentMethod === opt.key && <View style={[styles.radioFill, { backgroundColor: colors.primary }]} />}
-                  </View>
-                </Pressable>
-              </React.Fragment>
-            ))}
-          </View>
+          {gatewayLoading ? (
+            <View style={[styles.paymentGroup, { backgroundColor: colors.card, borderColor: colors.border, alignItems: "center", justifyContent: "center", padding: 20 }]}>
+              <ActivityIndicator color={colors.primary} />
+            </View>
+          ) : (
+            <View style={[styles.paymentGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={styles.paymentOption}>
+                <View style={[styles.paymentIcon, { backgroundColor: colors.primary }]}>
+                  <Feather name={visiblePaymentOption.icon as any} size={16} color="#fff" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.paymentLabel, { color: colors.text }]}>{visiblePaymentOption.label}</Text>
+                  <Text style={[styles.paymentDesc, { color: colors.mutedForeground }]}>{visiblePaymentOption.desc}</Text>
+                </View>
+                <View style={[styles.radio, { borderColor: colors.primary }]}>
+                  <View style={[styles.radioFill, { backgroundColor: colors.primary }]} />
+                </View>
+              </View>
+            </View>
+          )}
 
           {/* Coupon */}
           <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>COUPON CODE (OPTIONAL)</Text>
@@ -476,7 +502,6 @@ const styles = StyleSheet.create({
   priceLabel: { fontSize: 14, fontFamily: "Inter_400Regular" },
   priceValue: { fontSize: 14, fontFamily: "Inter_700Bold" },
   paymentGroup: { borderRadius: 14, borderWidth: 1, overflow: "hidden" },
-  divider: { height: 1 },
   paymentOption: { flexDirection: "row", alignItems: "center", padding: 14, gap: 12 },
   paymentIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   paymentLabel: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
@@ -499,11 +524,11 @@ const styles = StyleSheet.create({
   pickerHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 12 },
   pickerTitle: { fontSize: 17, fontFamily: "Inter_700Bold" },
   addrOption: { borderWidth: 1, borderRadius: 12, padding: 12, gap: 4 },
-  addrLabelBadge: { flexDirection: "row", alignItems: "center", alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, marginBottom: 4 },
-  addrLabelText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
-  addrDefault: { fontSize: 10, fontFamily: "Inter_500Medium", opacity: 0.7 },
-  addrName: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
-  addrLine: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 18 },
-  addNewAddrBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderWidth: 1, borderRadius: 12, borderStyle: "dashed", paddingVertical: 12 },
+  addrLabelBadge: { flexDirection: "row", alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  addrLabelText: { fontSize: 11, fontFamily: "Inter_700Bold" },
+  addrDefault: { fontSize: 11, fontFamily: "Inter_400Regular" },
+  addrName: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  addrLine: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  addNewAddrBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderWidth: 1.5, borderRadius: 12, borderStyle: "dashed", padding: 14 },
   addNewAddrText: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
 });

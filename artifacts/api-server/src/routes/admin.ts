@@ -475,6 +475,8 @@ router.get("/config/public", async (_req, res) => {
     login_enabled, registration_enabled,
     login_closed_message, registration_closed_message,
     logo_url,
+    cod_enabled, razorpay_enabled, phonepe_enabled,
+    active_payment_gateway,
   ] = await Promise.all([
     getConfig("maintenance_mode"),
     getConfig("maintenance_message"),
@@ -483,6 +485,10 @@ router.get("/config/public", async (_req, res) => {
     getConfig("login_closed_message"),
     getConfig("registration_closed_message"),
     getConfig("logo_url"),
+    getConfig("cod_enabled"),
+    getConfig("razorpay_enabled"),
+    getConfig("phonepe_enabled"),
+    getConfig("active_payment_gateway"),
   ]);
   res.json({
     maintenance_mode,
@@ -492,6 +498,10 @@ router.get("/config/public", async (_req, res) => {
     login_closed_message,
     registration_closed_message,
     logo_url: logo_url || null,
+    cod_enabled,
+    razorpay_enabled,
+    phonepe_enabled,
+    active_payment_gateway: active_payment_gateway || "cod",
   });
 });
 

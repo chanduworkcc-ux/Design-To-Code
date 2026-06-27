@@ -546,6 +546,104 @@ export default function SettingsScreen() {
             </View>
           </View>
 
+          {/* Active Payment Gateway */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>ACTIVE PAYMENT GATEWAY</Text>
+            <Text style={[styles.configDesc, { marginBottom: 10, marginLeft: 4 }]}>
+              Only the selected gateway will be shown to customers at checkout.
+            </Text>
+            <View style={styles.card}>
+              {(["cod", "razorpay", "phonepe"] as const).map((gw, i, arr) => {
+                const labels: Record<string, string> = { cod: "Cash on Delivery", razorpay: "Razorpay", phonepe: "PhonePe" };
+                const descs: Record<string, string> = { cod: "No payment required — customer pays on delivery", razorpay: "Online payment via Razorpay", phonepe: "UPI payment via PhonePe" };
+                const isActive = (edited["active_payment_gateway"] ?? "cod") === gw;
+                return (
+                  <React.Fragment key={gw}>
+                    <Pressable
+                      style={styles.toggleRow}
+                      onPress={() => setEdited((prev) => ({ ...prev, active_payment_gateway: gw }))}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.configLabel}>{labels[gw]}</Text>
+                        <Text style={styles.configDesc}>{descs[gw]}</Text>
+                      </View>
+                      <View style={[styles.gwRadio, { borderColor: isActive ? "#2563EB" : "#D1D5DB" }]}>
+                        {isActive && <View style={styles.gwRadioFill} />}
+                      </View>
+                    </Pressable>
+                    {i < arr.length - 1 && <View style={styles.divider} />}
+                  </React.Fragment>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* SMS Notifications */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>SMS NOTIFICATIONS (TWILIO)</Text>
+            <View style={styles.card}>
+              <View style={styles.toggleRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.configLabel}>Enable SMS Notifications</Text>
+                  <Text style={styles.configDesc}>Send order updates directly to customers via SMS</Text>
+                </View>
+                <Switch
+                  value={(edited["sms_enabled"] ?? "false") === "true"}
+                  onValueChange={(v) => setEdited((prev) => ({ ...prev, sms_enabled: v ? "true" : "false" }))}
+                  trackColor={{ true: "#2563EB", false: "#D1D5DB" }}
+                  thumbColor="#fff"
+                />
+              </View>
+              {(edited["sms_enabled"] ?? "false") === "true" && (
+                <>
+                  <View style={styles.divider} />
+                  <View style={styles.textInputRow}>
+                    <Text style={styles.configLabel}>Twilio Account SID *</Text>
+                    <Text style={styles.configDesc}>Your Twilio Account SID from the console</Text>
+                    <TextInput
+                      style={styles.textInput}
+                      value={edited["twilio_account_sid"] ?? ""}
+                      onChangeText={(v) => setEdited((prev) => ({ ...prev, twilio_account_sid: v }))}
+                      placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                      placeholderTextColor="#9CA3AF"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                  </View>
+                  <View style={styles.divider} />
+                  <View style={styles.textInputRow}>
+                    <Text style={styles.configLabel}>Twilio Auth Token *</Text>
+                    <Text style={styles.configDesc}>Your Twilio Auth Token (keep this secret)</Text>
+                    <TextInput
+                      style={styles.textInput}
+                      value={edited["twilio_auth_token"] ?? ""}
+                      onChangeText={(v) => setEdited((prev) => ({ ...prev, twilio_auth_token: v }))}
+                      placeholder="••••••••••••••••••••••••••••••••"
+                      placeholderTextColor="#9CA3AF"
+                      secureTextEntry
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                  </View>
+                  <View style={styles.divider} />
+                  <View style={styles.textInputRow}>
+                    <Text style={styles.configLabel}>Twilio Phone Number *</Text>
+                    <Text style={styles.configDesc}>Your Twilio sender number in E.164 format (e.g. +1415XXXXXXX)</Text>
+                    <TextInput
+                      style={styles.textInput}
+                      value={edited["twilio_phone_number"] ?? ""}
+                      onChangeText={(v) => setEdited((prev) => ({ ...prev, twilio_phone_number: v }))}
+                      placeholder="+14155552671"
+                      placeholderTextColor="#9CA3AF"
+                      keyboardType="phone-pad"
+                      autoCapitalize="none"
+                    />
+                  </View>
+                </>
+              )}
+            </View>
+          </View>
+
           {hasChanges && (
             <Pressable style={[styles.saveBtnLarge, { opacity: saving ? 0.6 : 1 }]} onPress={handleSave} disabled={saving}>
               {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnLargeText}>Save All Changes</Text>}
@@ -613,4 +711,8 @@ const styles = StyleSheet.create({
   // Option 2: Inline errors
   inlineError: { flexDirection: "row", alignItems: "flex-start", gap: 8, margin: 16, marginTop: 0, backgroundColor: "#FEF2F2", borderRadius: 10, padding: 12, borderWidth: 1, borderColor: "#FECACA" },
   inlineErrorText: { flex: 1, fontSize: 13, fontFamily: "Inter_500Medium", color: "#DC2626", lineHeight: 18 },
+
+  // Active gateway radio
+  gwRadio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, alignItems: "center", justifyContent: "center" },
+  gwRadioFill: { width: 11, height: 11, borderRadius: 5.5, backgroundColor: "#2563EB" },
 });
