@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import rateLimit from "express-rate-limit";
@@ -53,5 +53,10 @@ app.use("/api", router);
 
 seedDefaultConfig().catch((err) => logger.error({ err }, "Failed to seed config"));
 seedAdminUser().catch((err) => logger.error({ err }, "Failed to seed admin user"));
+
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  logger.error({ err }, "Unhandled error");
+  res.status(500).json({ error: err.message ?? "Internal server error" });
+});
 
 export default app;
