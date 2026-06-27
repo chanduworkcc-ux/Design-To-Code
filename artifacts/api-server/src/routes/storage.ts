@@ -1,9 +1,13 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { Readable } from "stream";
 import { z } from "zod";
-import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
+import multer from "multer";
+import { randomUUID } from "crypto";
+import { ObjectStorageService, ObjectNotFoundError, objectStorageClient } from "../lib/objectStorage";
 import { authMiddleware, adminMiddleware } from "../middleware/auth";
 import { setConfig } from "../lib/config";
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
@@ -12,6 +16,36 @@ const RequestUploadUrlBody = z.object({
   name: z.string().min(1),
   size: z.number().positive(),
   contentType: z.string().min(1),
+});
+
+router.post("/storage/uploads/image", authMiddleware, adminMiddleware, upload.single("image"), async (req: Request, res: Response) => {
+  if (!req.file) {
+    res.status(400).json({ error: "No image file provided." });
+    return;
+  }
+  try {
+    const privateDir = process.env.PRIVATE_OBJECT_DIR ?? "";
+    if (!privateDir) {
+      res.status(503).json({ error: "Object storage not configured." });
+      return;
+    }
+    const ext = req.file.mimetype.split("/")[1] ?? "jpg";
+    const objectId = randomUUID();
+    const objectPath = `${privateDir}/uploads/${objectId}.${ext}`;
+    const parts = objectPath.startsWith("/") ? objectPath.slice(1).split("/") : objectPath.split("/");
+    const bucketName = parts[0];
+    const objectName = parts.slice(1).join("/");
+    const bucket = objectStorageClient.bucket(bucketName);
+    const file = bucket.file(objectName);
+    await file.save(req.file.buffer, { contentType: req.file.mimetype });
+    const servingPath = `/objects/uploads/${objectId}.${ext}`;
+    const baseUrl = process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : "";
+    const imageUrl = `${baseUrl}/api/storage${servingPath}`;
+    res.json({ imageUrl, objectPath: servingPath });
+  } catch (error) {
+    console.error("Image upload error", error);
+    res.status(500).json({ error: "Failed to upload image." });
+  }
 });
 
 router.post("/storage/uploads/request-url", authMiddleware, adminMiddleware, async (req: Request, res: Response) => {

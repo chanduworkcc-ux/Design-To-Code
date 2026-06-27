@@ -11,3 +11,4 @@ export * from "./notifications";
 export * from "./audit";
 export * from "./push-tokens";
 export * from "./password-reset";
+export * from "./addresses";

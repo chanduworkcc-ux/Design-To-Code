@@ -1,9 +1,11 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -52,6 +54,7 @@ export default function ProductsScreen() {
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
   const topPadding = Platform.OS === "web" ? 0 : insets.top;
 
@@ -149,6 +152,49 @@ export default function ProductsScreen() {
       const d = await res.json();
       setProducts((prev) => prev.map((x) => (x.id === p.id ? d.product : x)));
     }
+  }
+
+  async function pickImageFromGallery() {
+    if (Platform.OS !== "web") {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission Required", "Please allow access to your photo library to upload images.");
+        return;
+      }
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets?.[0]) return;
+    const asset = result.assets[0];
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      if (Platform.OS === "web") {
+        const resp = await fetch(asset.uri);
+        const blob = await resp.blob();
+        formData.append("image", blob, "product.jpg");
+      } else {
+        formData.append("image", { uri: asset.uri, name: "product.jpg", type: asset.mimeType ?? "image/jpeg" } as any);
+      }
+      const res = await apiRequest("/storage/uploads/image", {
+        method: "POST",
+        body: formData,
+      });
+      if (res.ok) {
+        const d = await res.json();
+        setForm((f) => ({ ...f, imageUrl: d.imageUrl }));
+      } else {
+        const err = await res.json();
+        Alert.alert("Upload Failed", err.error ?? "Could not upload image. You can still paste an image URL manually.");
+      }
+    } catch {
+      Alert.alert("Upload Failed", "Could not upload image. You can still paste an image URL manually.");
+    }
+    setUploadingImage(false);
   }
 
   async function handleAddStock(p: Product) {
@@ -378,7 +424,41 @@ export default function ProductsScreen() {
             <FormField label="Discount (%)" value={form.discount} onChangeText={(v) => setForm({ ...form, discount: v })} placeholder="20 (optional)" keyboardType="numeric" />
             <FormField label="Rating (0–5)" value={form.rating} onChangeText={(v) => setForm({ ...form, rating: v })} placeholder="4.5" keyboardType="numeric" />
             <FormField label="Stock" value={form.stock} onChangeText={(v) => setForm({ ...form, stock: v })} placeholder="100" keyboardType="numeric" />
-            <FormField label="Image URL" value={form.imageUrl} onChangeText={(v) => setForm({ ...form, imageUrl: v })} placeholder="https://..." />
+            {/* Image Picker */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Product Image</Text>
+              <Pressable
+                style={styles.imagePicker}
+                onPress={pickImageFromGallery}
+                disabled={uploadingImage}
+              >
+                {uploadingImage ? (
+                  <ActivityIndicator color="#2563EB" />
+                ) : form.imageUrl ? (
+                  <Image source={{ uri: form.imageUrl }} style={styles.imagePreview} />
+                ) : (
+                  <View style={styles.imagePlaceholder}>
+                    <Feather name="image" size={28} color="#9CA3AF" />
+                    <Text style={styles.imagePlaceholderText}>Tap to pick from Gallery</Text>
+                  </View>
+                )}
+              </Pressable>
+              {form.imageUrl ? (
+                <Pressable style={styles.changeImageBtn} onPress={pickImageFromGallery} disabled={uploadingImage}>
+                  <Feather name="camera" size={14} color="#2563EB" />
+                  <Text style={styles.changeImageText}>Change Image</Text>
+                </Pressable>
+              ) : null}
+              <Text style={styles.imageUrlHint}>Or paste URL:</Text>
+              <TextInput
+                style={styles.fieldInput}
+                value={form.imageUrl}
+                onChangeText={(v) => setForm({ ...form, imageUrl: v })}
+                placeholder="https://..."
+                placeholderTextColor="#9CA3AF"
+                keyboardType="url"
+              />
+            </View>
             <FormField label="Description" value={form.description} onChangeText={(v) => setForm({ ...form, description: v })} placeholder="Product description..." multiline />
             <View style={styles.toggleRow}>
               <Text style={styles.fieldLabel}>Active</Text>
@@ -474,4 +554,11 @@ const styles = StyleSheet.create({
   toggleThumb: { width: 22, height: 22, borderRadius: 11, backgroundColor: "#fff" },
   saveBtn: { backgroundColor: "#2563EB", borderRadius: 14, paddingVertical: 16, alignItems: "center", marginTop: 8 },
   saveBtnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_600SemiBold" },
+  imagePicker: { borderRadius: 12, borderWidth: 1.5, borderColor: "#E5EAF8", borderStyle: "dashed", backgroundColor: "#F9FAFB", height: 140, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  imagePreview: { width: "100%", height: "100%", resizeMode: "cover" },
+  imagePlaceholder: { alignItems: "center", gap: 8 },
+  imagePlaceholderText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#9CA3AF" },
+  changeImageBtn: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8 },
+  changeImageText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#2563EB" },
+  imageUrlHint: { fontSize: 11, fontFamily: "Inter_500Medium", color: "#9CA3AF", marginTop: 10, marginBottom: 4 },
 });

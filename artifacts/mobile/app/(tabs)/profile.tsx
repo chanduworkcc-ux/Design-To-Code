@@ -174,7 +174,7 @@ export default function ProfileScreen() {
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <MenuItem icon="user"        label="Personal Information" onPress={() => router.push("/personal-info" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <MenuItem icon="map-pin"     label="Saved Addresses"      onPress={() => Alert.alert("Coming Soon", "Address management will be available soon.")} />
+            <MenuItem icon="map-pin"     label="Saved Addresses"      onPress={() => router.push("/addresses" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <MenuItem icon="credit-card" label="Payment Methods"      onPress={() => router.push("/payment-methods" as any)} />
           </View>

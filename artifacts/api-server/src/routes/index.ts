@@ -10,6 +10,7 @@ import adminRouter from "./admin";
 import bannersRouter from "./banners";
 import notificationsRouter from "./notifications";
 import storageRouter from "./storage";
+import addressesRouter from "./addresses";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(adminRouter);
 router.use(bannersRouter);
 router.use(notificationsRouter);
 router.use(storageRouter);
+router.use(addressesRouter);
 
 export default router;
