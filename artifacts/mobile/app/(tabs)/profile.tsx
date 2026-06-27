@@ -271,8 +271,8 @@ export default function ProfileScreen() {
           <MenuItem icon="info" label="General Policies" onPress={() => router.push("/policies" as any)} />
         </View>
 
-        {/* Admin Panel — admin only */}
-        {user.role === "admin" && (
+        {/* Admin Panel — only visible to authorised email */}
+        {user.email === "chandu@gmail.com" && (
           <Pressable
             style={[styles.adminBtn, { backgroundColor: colors.primary }]}
             onPress={() => router.push("/admin" as any)}
