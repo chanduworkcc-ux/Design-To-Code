@@ -50,14 +50,14 @@ function AppSplash({ onDone }: { onDone: () => void }) {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      // Hold for 900ms, then fade the whole screen out
+      // Hold for 7000ms, then fade the whole screen out
       setTimeout(() => {
         Animated.timing(bgOpacity, {
           toValue: 0,
           duration: 420,
           useNativeDriver: true,
         }).start(() => onDone());
-      }, 900);
+      }, 7000);
     });
   }, []);
 
