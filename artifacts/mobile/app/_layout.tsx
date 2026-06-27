@@ -119,6 +119,7 @@ function RootLayoutNav() {
       <Stack.Screen name="support-ticket" options={{ headerShown: false }} />
       <Stack.Screen name="appearance" options={{ headerShown: false }} />
       <Stack.Screen name="payment-methods" options={{ headerShown: false }} />
+      <Stack.Screen name="product/[id]" options={{ headerShown: false }} />
     </Stack>
   );
 }

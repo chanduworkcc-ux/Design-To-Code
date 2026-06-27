@@ -1,5 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { useRouter } from "expo-router";
 import React from "react";
 import {
   Image,
@@ -20,6 +21,7 @@ interface ProductCardProps {
 
 export function ProductCard({ product, style }: ProductCardProps) {
   const colors = useColors();
+  const router = useRouter();
   const { addToCart, isInCart, addToWishlist, removeFromWishlist, isInWishlist } = useApp();
   const inWishlist = isInWishlist(product.id);
   const inCart = isInCart(product.id);
@@ -48,7 +50,10 @@ export function ProductCard({ product, style }: ProductCardProps) {
     : null;
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }, style]}>
+    <Pressable
+      style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }, style]}
+      onPress={() => router.push(`/product/${product.id}` as any)}
+    >
       <View style={[styles.imageContainer, { backgroundColor: colors.secondary }]}>
         {imageSource ? (
           <Image source={imageSource} style={styles.image} resizeMode="cover" />
@@ -128,7 +133,7 @@ export function ProductCard({ product, style }: ProductCardProps) {
           </Pressable>
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
