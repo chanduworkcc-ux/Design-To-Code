@@ -5,6 +5,7 @@ export const referralsTable = pgTable("referrals", {
   referrerId: text("referrer_id").notNull(),
   refereeId: text("referee_id").notNull().unique(),
   coinsAwarded: integer("coins_awarded").notNull(),
+  rewardedAt: timestamp("rewarded_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

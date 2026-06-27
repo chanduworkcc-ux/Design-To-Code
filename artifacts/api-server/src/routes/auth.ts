@@ -90,23 +90,16 @@ router.post("/auth/register", async (req, res) => {
     const referralEnabled = await getConfig("referral_enabled");
     const referralCoins = parseInt(await getConfig("referral_coins")) || 100;
     if (referralEnabled === "true") {
+      // Record the referral but do NOT award coins yet.
+      // Coins are credited to the referrer only after the referee's
+      // first order is marked as "delivered" (see orders route).
       await db.insert(referralsTable).values({
         id: uuidv4(),
         referrerId: referredById,
         refereeId: userId,
         coinsAwarded: referralCoins,
+        rewardedAt: null,
       }).onConflictDoNothing();
-
-      const [referrer] = await db.select().from(usersTable).where(eq(usersTable.id, referredById));
-      await db.update(usersTable).set({ walletBalance: (referrer.walletBalance || 0) + referralCoins }).where(eq(usersTable.id, referredById));
-      await db.insert(walletTransactionsTable).values({
-        id: uuidv4(),
-        userId: referredById,
-        type: "credit",
-        coins: referralCoins,
-        description: `Referral reward — new user ${name} joined`,
-        referenceId: userId,
-      });
     }
   }
 

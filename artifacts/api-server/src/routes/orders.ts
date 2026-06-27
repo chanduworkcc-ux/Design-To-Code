@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { ordersTable, productsTable, usersTable, couponsTable } from "@workspace/db/schema";
-import { eq, desc, sql } from "drizzle-orm";
+import { ordersTable, productsTable, usersTable, couponsTable, referralsTable, walletTransactionsTable } from "@workspace/db/schema";
+import { eq, desc, sql, isNull } from "drizzle-orm";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../middleware/auth";
 import { getConfig } from "../lib/config";
 import { z } from "zod";
@@ -218,6 +218,45 @@ router.put("/admin/orders/:id/status", authMiddleware, adminMiddleware, async (r
     .set(updateData)
     .where(eq(ordersTable.id, req.params.id))
     .returning();
+
+  // ── Referral reward: fire when an order is delivered ─────────────────────
+  // If the customer who just received delivery was referred by someone,
+  // and their referral hasn't been rewarded yet, credit the referrer now.
+  if (status === "delivered") {
+    const [pendingReferral] = await db
+      .select()
+      .from(referralsTable)
+      .where(eq(referralsTable.refereeId, order.userId))
+      .limit(1);
+
+    if (pendingReferral && !pendingReferral.rewardedAt) {
+      const coins = pendingReferral.coinsAwarded;
+      const referrerId = pendingReferral.referrerId;
+
+      // Credit coins to the referrer's wallet
+      const [referrer] = await db.select().from(usersTable).where(eq(usersTable.id, referrerId));
+      if (referrer) {
+        await db.update(usersTable)
+          .set({ walletBalance: (referrer.walletBalance || 0) + coins })
+          .where(eq(usersTable.id, referrerId));
+
+        await db.insert(walletTransactionsTable).values({
+          id: uuidv4(),
+          userId: referrerId,
+          type: "credit",
+          coins,
+          description: `Referral reward — your referral's order #${order.id.slice(0, 8).toUpperCase()} was delivered`,
+          referenceId: order.id,
+        });
+
+        // Mark referral as rewarded so it's never double-credited
+        await db.update(referralsTable)
+          .set({ rewardedAt: new Date() })
+          .where(eq(referralsTable.id, pendingReferral.id));
+      }
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   // Return the notification template so the client can display the in-app alert
   const notification = NOTIFICATION_TEMPLATES[status] ?? null;
