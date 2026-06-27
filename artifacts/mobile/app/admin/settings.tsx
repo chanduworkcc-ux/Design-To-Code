@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Animated,
   Platform,
   Pressable,
   ScrollView,
@@ -118,8 +117,12 @@ export default function SettingsScreen() {
         for (const item of (d.config as ConfigItem[])) { map[item.key] = item.value; }
         setConfig(map);
         setEdited(map);
+      } else {
+        Alert.alert("Error", "Failed to load settings. Please try again.");
       }
-    } catch {}
+    } catch (e) {
+      Alert.alert("Connection Error", "Could not reach the server. Check your connection and try again.");
+    }
     setLoading(false);
   }
 
@@ -171,8 +174,13 @@ export default function SettingsScreen() {
         setEdited(map);
         setShowBanner(false);
         Alert.alert("Saved", "Settings updated successfully.");
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        Alert.alert("Save Failed", errData?.error ?? "Could not save settings. Please try again.");
       }
-    } catch {}
+    } catch (e) {
+      Alert.alert("Connection Error", "Could not reach the server. Check your connection and try again.");
+    }
     setSaving(false);
   }
 
