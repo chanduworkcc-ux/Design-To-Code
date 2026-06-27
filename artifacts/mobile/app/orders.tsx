@@ -13,6 +13,14 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated2, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+  Easing,
+} from "react-native-reanimated";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 
@@ -56,6 +64,62 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 }
 
+function AnimatedTrackerDot({ color, icon, isActive, done }: { color: string; icon: string; isActive: boolean; done: boolean }) {
+  const scale = useSharedValue(1);
+  const ringScale = useSharedValue(0.5);
+  const ringOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    if (isActive) {
+      scale.value = withRepeat(
+        withSequence(
+          withTiming(1.2, { duration: 700, easing: Easing.inOut(Easing.sin) }),
+          withTiming(1.0, { duration: 700, easing: Easing.inOut(Easing.sin) }),
+        ), -1, false
+      );
+      ringScale.value = withRepeat(
+        withTiming(2, { duration: 1400, easing: Easing.out(Easing.quad) }),
+        -1, false
+      );
+      ringOpacity.value = withRepeat(
+        withSequence(
+          withTiming(0.5, { duration: 200 }),
+          withTiming(0, { duration: 1200, easing: Easing.out(Easing.quad) }),
+        ), -1, false
+      );
+    }
+  }, [isActive]);
+
+  const dotStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }, { perspective: 300 }, { rotateX: isActive ? `${scale.value * 5}deg` : "0deg" }],
+  }));
+
+  const ringStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: ringScale.value }],
+    opacity: ringOpacity.value,
+  }));
+
+  const bg = done ? color : "#E5E7EB";
+  return (
+    <View style={{ width: 28, height: 28, alignItems: "center", justifyContent: "center" }}>
+      {isActive && (
+        <Animated2.View style={[
+          StyleSheet.absoluteFillObject,
+          { borderRadius: 14, borderWidth: 2, borderColor: color },
+          ringStyle,
+        ]} />
+      )}
+      <Animated2.View style={[
+        styles.trackerDot,
+        { backgroundColor: bg, borderColor: bg },
+        dotStyle,
+      ]}>
+        {done && <Feather name={icon as any} size={10} color="#fff" />}
+      </Animated2.View>
+    </View>
+  );
+}
+
 function StatusTracker({ status }: { status: string }) {
   const colors = useColors();
   if (status === "cancelled") {
@@ -72,12 +136,11 @@ function StatusTracker({ status }: { status: string }) {
       {STATUS_STEPS.map((step, i) => {
         const cfg = STATUS_CONFIG[step];
         const done = i <= currentIdx;
+        const isActive = i === currentIdx;
         return (
           <React.Fragment key={step}>
             <View style={styles.trackerStep}>
-              <View style={[styles.trackerDot, { backgroundColor: done ? cfg.color : "#E5E7EB", borderColor: done ? cfg.color : "#E5E7EB" }]}>
-                {done && <Feather name={cfg.icon as any} size={10} color="#fff" />}
-              </View>
+              <AnimatedTrackerDot color={cfg.color} icon={cfg.icon} isActive={isActive} done={done} />
               <Text style={[styles.trackerLabel, { color: done ? cfg.color : "#9CA3AF" }]}>{cfg.label}</Text>
             </View>
             {i < STATUS_STEPS.length - 1 && (
@@ -317,7 +380,7 @@ export default function OrdersScreen() {
               )}
             </View>
           ) : (
-            filtered.map((order) => {
+            filtered.map((order, orderIdx) => {
               const cfg = STATUS_CONFIG[order.status] ?? STATUS_CONFIG.pending;
               const isExpanded = expandedId === order.id;
               const isChanged = changedIds.has(order.id);

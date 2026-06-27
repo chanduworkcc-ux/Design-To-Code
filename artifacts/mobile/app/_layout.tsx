@@ -23,12 +23,13 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AppProvider } from "@/context/AppContext";
 import { AuthProvider } from "@/context/AuthContext";
+import MaintenanceScreen from "./maintenance";
 
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
-
 const { width } = Dimensions.get("window");
+const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
 function AppSplash({ onDone }: { onDone: () => void }) {
   const bgOpacity = useRef(new Animated.Value(1)).current;
@@ -36,51 +37,24 @@ function AppSplash({ onDone }: { onDone: () => void }) {
   const logoOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Fade-in + scale-up logo
     Animated.parallel([
-      Animated.timing(logoOpacity, {
-        toValue: 1,
-        duration: 480,
-        useNativeDriver: true,
-      }),
-      Animated.spring(logoScale, {
-        toValue: 1,
-        friction: 6,
-        tension: 80,
-        useNativeDriver: true,
-      }),
+      Animated.timing(logoOpacity, { toValue: 1, duration: 480, useNativeDriver: true }),
+      Animated.spring(logoScale, { toValue: 1, friction: 6, tension: 80, useNativeDriver: true }),
     ]).start(() => {
-      // Hold for 7000ms, then fade the whole screen out
       setTimeout(() => {
-        Animated.timing(bgOpacity, {
-          toValue: 0,
-          duration: 420,
-          useNativeDriver: true,
-        }).start(() => onDone());
+        Animated.timing(bgOpacity, { toValue: 0, duration: 420, useNativeDriver: true })
+          .start(() => onDone());
       }, 7000);
     });
   }, []);
 
   return (
     <Animated.View style={[styles.splashRoot, { opacity: bgOpacity }]}>
-      <Animated.View
-        style={[
-          styles.splashLogoWrap,
-          { opacity: logoOpacity, transform: [{ scale: logoScale }] },
-        ]}
-      >
-        <Image
-          source={require("@/assets/logo.png")}
-          style={styles.splashLogo}
-          resizeMode="contain"
-        />
+      <Animated.View style={[styles.splashLogoWrap, { opacity: logoOpacity, transform: [{ scale: logoScale }] }]}>
+        <Image source={require("@/assets/logo.png")} style={styles.splashLogo} resizeMode="contain" />
       </Animated.View>
-
-      {/* Bottom pulse dots */}
       <View style={styles.dotsRow}>
-        {[0, 1, 2].map((i) => (
-          <PulseDot key={i} delay={i * 180} />
-        ))}
+        {[0, 1, 2].map((i) => <PulseDot key={i} delay={i * 180} />)}
       </View>
     </Animated.View>
   );
@@ -88,7 +62,6 @@ function AppSplash({ onDone }: { onDone: () => void }) {
 
 function PulseDot({ delay }: { delay: number }) {
   const opacity = useRef(new Animated.Value(0.3)).current;
-
   useEffect(() => {
     const anim = Animated.loop(
       Animated.sequence([
@@ -100,7 +73,6 @@ function PulseDot({ delay }: { delay: number }) {
     anim.start();
     return () => anim.stop();
   }, []);
-
   return <Animated.View style={[styles.dot, { opacity }]} />;
 }
 
@@ -112,6 +84,7 @@ function RootLayoutNav() {
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="orders" options={{ headerShown: false }} />
       <Stack.Screen name="checkout" options={{ headerShown: false }} />
+      <Stack.Screen name="maintenance" options={{ headerShown: false }} />
       <Stack.Screen name="policies" options={{ headerShown: false }} />
       <Stack.Screen name="referrals" options={{ headerShown: false }} />
       <Stack.Screen name="personal-info" options={{ headerShown: false }} />
@@ -126,20 +99,48 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
+    Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold,
   });
   const [showSplash, setShowSplash] = useState(true);
+  const [maintenance, setMaintenance] = useState<{ active: boolean; message?: string }>({ active: false });
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
-    }
+    if (fontsLoaded || fontError) SplashScreen.hideAsync();
+  }, [fontsLoaded, fontError]);
+
+  // Check maintenance mode after fonts load
+  useEffect(() => {
+    if (!fontsLoaded && !fontError) return;
+    fetch(`${BASE_URL}/config/public`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.maintenance_mode === "true") {
+          setMaintenance({ active: true, message: d.maintenance_message });
+        }
+      })
+      .catch(() => {});
   }, [fontsLoaded, fontError]);
 
   if (!fontsLoaded && !fontError) return null;
+
+  // Full-screen maintenance overlay (sits above everything)
+  if (maintenance.active) {
+    return (
+      <SafeAreaProvider>
+        <MaintenanceScreen
+          message={maintenance.message}
+          onRetry={() => {
+            fetch(`${BASE_URL}/config/public`)
+              .then((r) => r.json())
+              .then((d) => {
+                if (d?.maintenance_mode !== "true") setMaintenance({ active: false });
+              })
+              .catch(() => {});
+          }}
+        />
+      </SafeAreaProvider>
+    );
+  }
 
   return (
     <SafeAreaProvider>
@@ -150,9 +151,7 @@ export default function RootLayout() {
               <GestureHandlerRootView style={{ flex: 1 }}>
                 <KeyboardProvider>
                   <RootLayoutNav />
-                  {showSplash && (
-                    <AppSplash onDone={() => setShowSplash(false)} />
-                  )}
+                  {showSplash && <AppSplash onDone={() => setShowSplash(false)} />}
                 </KeyboardProvider>
               </GestureHandlerRootView>
             </AppProvider>
@@ -171,23 +170,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     zIndex: 9999,
   },
-  splashLogoWrap: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  splashLogo: {
-    width: width * 0.62,
-    height: width * 0.62 * 0.56,
-  },
-  dotsRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 48,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#2563EB",
-  },
+  splashLogoWrap: { alignItems: "center", justifyContent: "center" },
+  splashLogo: { width: width * 0.62, height: width * 0.62 * 0.56 },
+  dotsRow: { flexDirection: "row", gap: 8, marginTop: 48 },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#2563EB" },
 });

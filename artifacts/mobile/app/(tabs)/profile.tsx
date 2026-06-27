@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { GlowPulse, ShimmerWallet, FloatIn } from "@/components/ThreeD";
 
 interface MenuItemProps {
   icon: string;
@@ -54,9 +55,7 @@ export default function ProfileScreen() {
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.replace("/(auth)/login");
-    }
+    if (!loading && !user) router.replace("/(auth)/login");
   }, [user, loading]);
 
   if (loading || !user) {
@@ -70,21 +69,10 @@ export default function ProfileScreen() {
   const avatarLetter = user.name.charAt(0).toUpperCase();
 
   async function handleSignOut() {
-    if (Platform.OS === "web") {
-      await logout();
-      router.replace("/(auth)/login");
-      return;
-    }
+    if (Platform.OS === "web") { await logout(); router.replace("/(auth)/login"); return; }
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
       { text: "Cancel", style: "cancel" },
-      {
-        text: "Sign Out",
-        style: "destructive",
-        onPress: async () => {
-          await logout();
-          router.replace("/(auth)/login");
-        },
-      },
+      { text: "Sign Out", style: "destructive", onPress: async () => { await logout(); router.replace("/(auth)/login"); } },
     ]);
   }
 
@@ -105,184 +93,142 @@ export default function ProfileScreen() {
       >
         <Text style={[styles.title, { color: colors.text }]}>Profile</Text>
 
-        {/* User Card */}
-        <View style={[styles.userCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-            <Text style={styles.avatarText}>{avatarLetter}</Text>
+        {/* User Card — avatar has 3D glow pulse ring */}
+        <FloatIn delay={0} distance={24}>
+          <View style={[styles.userCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <GlowPulse color={colors.primary} size={54}>
+              <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+                <Text style={styles.avatarText}>{avatarLetter}</Text>
+              </View>
+            </GlowPulse>
+            <View style={styles.userInfo}>
+              <Text style={[styles.userName, { color: colors.text }]}>{user.name}</Text>
+              <Text style={[styles.userEmail, { color: colors.mutedForeground }]} numberOfLines={1}>{user.email}</Text>
+              {user.referralCode && (
+                <Text style={[styles.referralCode, { color: colors.primary }]}>Code: {user.referralCode}</Text>
+              )}
+            </View>
+            <Pressable
+              style={[styles.editBtn, { borderColor: colors.border }]}
+              onPress={() => router.push("/personal-info" as any)}
+            >
+              <Feather name="edit-2" size={16} color={colors.mutedForeground} />
+            </Pressable>
           </View>
-          <View style={styles.userInfo}>
-            <Text style={[styles.userName, { color: colors.text }]}>{user.name}</Text>
-            <Text style={[styles.userEmail, { color: colors.mutedForeground }]} numberOfLines={1}>{user.email}</Text>
-            {user.referralCode && (
-              <Text style={[styles.referralCode, { color: colors.primary }]}>Code: {user.referralCode}</Text>
-            )}
-          </View>
-          <Pressable
-            style={[styles.editBtn, { borderColor: colors.border }]}
-            onPress={() => router.push("/personal-info" as any)}
-          >
-            <Feather name="edit-2" size={16} color={colors.mutedForeground} />
-          </Pressable>
-        </View>
+        </FloatIn>
 
         {/* Stats */}
-        <View style={[styles.statsRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Pressable style={styles.statItem} onPress={() => router.push("/orders" as any)}>
-            <Text style={[styles.statNum, { color: colors.text }]}>View</Text>
-            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Orders</Text>
-          </Pressable>
-          <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statNum, { color: colors.text }]}>{wishlist.length}</Text>
-            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Wishlist</Text>
+        <FloatIn delay={80} distance={24}>
+          <View style={[styles.statsRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Pressable style={styles.statItem} onPress={() => router.push("/orders" as any)}>
+              <Text style={[styles.statNum, { color: colors.text }]}>View</Text>
+              <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Orders</Text>
+            </Pressable>
+            <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+            <View style={styles.statItem}>
+              <Text style={[styles.statNum, { color: colors.text }]}>{wishlist.length}</Text>
+              <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Wishlist</Text>
+            </View>
+            <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+            <View style={styles.statItem}>
+              <Text style={[styles.statNum, { color: colors.text }]}>{cartCount}</Text>
+              <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Cart</Text>
+            </View>
           </View>
-          <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statNum, { color: colors.text }]}>{cartCount}</Text>
-            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Cart</Text>
-          </View>
-        </View>
+        </FloatIn>
 
-        {/* Wallet */}
+        {/* Wallet — 3D shimmer tilt card */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>WALLET</Text>
-        <View style={[styles.walletCard, { backgroundColor: colors.primary }]}>
-          <View>
-            <Text style={styles.walletLabel}>Coin Balance</Text>
-            <Text style={styles.walletBalance}>{user.walletBalance} coins</Text>
-            <Text style={styles.walletInr}>≈ ₹{(user.walletBalance / 100).toFixed(2)} INR</Text>
-          </View>
-          <View style={[styles.walletBadge, { backgroundColor: "rgba(255,255,255,0.2)" }]}>
-            <Feather name="award" size={24} color="#fff" />
-          </View>
-        </View>
+        <FloatIn delay={160} distance={24}>
+          <ShimmerWallet style={[styles.walletCard, { backgroundColor: colors.primary }]}>
+            <View>
+              <Text style={styles.walletLabel}>Coin Balance</Text>
+              <Text style={styles.walletBalance}>{user.walletBalance} coins</Text>
+              <Text style={styles.walletInr}>≈ ₹{(user.walletBalance / 100).toFixed(2)} INR</Text>
+            </View>
+            <View style={[styles.walletBadge, { backgroundColor: "rgba(255,255,255,0.2)" }]}>
+              <Feather name="award" size={24} color="#fff" />
+            </View>
+          </ShimmerWallet>
+        </FloatIn>
 
         {/* Account */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>ACCOUNT</Text>
-        <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <MenuItem
-            icon="user"
-            label="Personal Information"
-            onPress={() => router.push("/personal-info" as any)}
-          />
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <MenuItem
-            icon="map-pin"
-            label="Saved Addresses"
-            onPress={() => Alert.alert("Coming Soon", "Address management will be available soon.")}
-          />
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <MenuItem
-            icon="credit-card"
-            label="Payment Methods"
-            onPress={() => router.push("/payment-methods" as any)}
-          />
-        </View>
+        <FloatIn delay={240} distance={20}>
+          <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <MenuItem icon="user"        label="Personal Information" onPress={() => router.push("/personal-info" as any)} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <MenuItem icon="map-pin"     label="Saved Addresses"      onPress={() => Alert.alert("Coming Soon", "Address management will be available soon.")} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <MenuItem icon="credit-card" label="Payment Methods"      onPress={() => router.push("/payment-methods" as any)} />
+          </View>
+        </FloatIn>
 
         {/* Orders */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>ORDERS</Text>
-        <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <MenuItem
-            icon="package"
-            label="Order History"
-            onPress={() => router.push("/orders" as any)}
-          />
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <MenuItem
-            icon="refresh-cw"
-            label="Returns & Refunds"
-            onPress={() => router.push("/orders" as any)}
-          />
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <MenuItem
-            icon="truck"
-            label="Track Orders"
-            onPress={() => router.push("/orders" as any)}
-          />
-        </View>
+        <FloatIn delay={300} distance={20}>
+          <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <MenuItem icon="package"    label="Order History"    onPress={() => router.push("/orders" as any)} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <MenuItem icon="refresh-cw" label="Returns & Refunds" onPress={() => router.push("/orders" as any)} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <MenuItem icon="truck"      label="Track Orders"     onPress={() => router.push("/orders" as any)} />
+          </View>
+        </FloatIn>
 
         {/* Referrals */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>REFERRALS</Text>
-        <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <MenuItem
-            icon="users"
-            label="My Referral Network"
-            onPress={() => router.push("/referrals" as any)}
-          />
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <MenuItem
-            icon="gift"
-            label="Invite & Earn"
-            onPress={handleInvite}
-          />
-        </View>
+        <FloatIn delay={360} distance={20}>
+          <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <MenuItem icon="users" label="My Referral Network" onPress={() => router.push("/referrals" as any)} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <MenuItem icon="gift"  label="Invite & Earn"       onPress={handleInvite} />
+          </View>
+        </FloatIn>
 
         {/* Preferences */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>PREFERENCES</Text>
-        <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <MenuItem
-            icon="bell"
-            label="Notifications"
-            onPress={() => router.push("/notifications-user" as any)}
-          />
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <MenuItem
-            icon="moon"
-            label="Appearance"
-            onPress={() => router.push("/appearance" as any)}
-          />
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <MenuItem
-            icon="globe"
-            label="Language & Region"
-            value="English (IN)"
-            onPress={() => Alert.alert("Coming Soon", "Language settings will be available soon.")}
-          />
-        </View>
+        <FloatIn delay={420} distance={20}>
+          <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <MenuItem icon="bell"  label="Notifications"    onPress={() => router.push("/notifications-user" as any)} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <MenuItem icon="moon"  label="Appearance"       onPress={() => router.push("/appearance" as any)} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <MenuItem icon="globe" label="Language & Region" value="English (IN)" onPress={() => Alert.alert("Coming Soon", "Language settings will be available soon.")} />
+          </View>
+        </FloatIn>
 
         {/* Support */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>SUPPORT</Text>
-        <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <MenuItem
-            icon="help-circle"
-            label="Help Center"
-            onPress={() => router.push("/support-ticket" as any)}
-          />
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <MenuItem
-            icon="message-circle"
-            label="Contact Us"
-            onPress={() => router.push("/support-ticket" as any)}
-          />
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <MenuItem
-            icon="star"
-            label="Rate the App"
-            onPress={() => Alert.alert("Thank You!", "You'll be redirected to the app store to leave a review.")}
-          />
-        </View>
+        <FloatIn delay={480} distance={20}>
+          <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <MenuItem icon="help-circle"    label="Help Center"  onPress={() => router.push("/support-ticket" as any)} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <MenuItem icon="message-circle" label="Contact Us"   onPress={() => router.push("/support-ticket" as any)} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <MenuItem icon="star"           label="Rate the App" onPress={() => Alert.alert("Thank You!", "You'll be redirected to the app store to leave a review.")} />
+          </View>
+        </FloatIn>
 
         {/* Legal */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>LEGAL</Text>
-        <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <MenuItem icon="file-text" label="Terms & Conditions" onPress={() => router.push("/policies" as any)} />
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <MenuItem icon="shield" label="Privacy Policy" onPress={() => router.push("/policies" as any)} />
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <MenuItem icon="info" label="General Policies" onPress={() => router.push("/policies" as any)} />
-        </View>
+        <FloatIn delay={540} distance={20}>
+          <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <MenuItem icon="file-text" label="Terms & Conditions" onPress={() => router.push("/policies" as any)} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <MenuItem icon="shield"    label="Privacy Policy"     onPress={() => router.push("/policies" as any)} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <MenuItem icon="info"      label="General Policies"   onPress={() => router.push("/policies" as any)} />
+          </View>
+        </FloatIn>
 
-        {/* Admin Panel — only visible to authorised email */}
         {user.email === "chandu@gmail.com" && (
-          <Pressable
-            style={[styles.adminBtn, { backgroundColor: colors.primary }]}
-            onPress={() => router.push("/admin" as any)}
-          >
+          <Pressable style={[styles.adminBtn, { backgroundColor: colors.primary }]} onPress={() => router.push("/admin" as any)}>
             <Feather name="shield" size={18} color="#fff" />
             <Text style={styles.adminBtnText}>Admin Panel</Text>
           </Pressable>
         )}
 
-        {/* Sign Out */}
         <Pressable
           style={[styles.signOutBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
           onPress={handleSignOut}
