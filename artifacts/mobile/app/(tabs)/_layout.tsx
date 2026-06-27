@@ -4,6 +4,7 @@ import { Tabs } from "expo-router";
 import React from "react";
 import { Platform, StyleSheet, View, useColorScheme } from "react-native";
 import { useApp } from "@/context/AppContext";
+import { useNotifications } from "@/context/NotificationContext";
 import { useColors } from "@/hooks/useColors";
 
 export default function TabLayout() {
@@ -13,6 +14,7 @@ export default function TabLayout() {
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
   const { cartCount, wishlistCount } = useApp();
+  const { unreadCount } = useNotifications();
 
   return (
     <Tabs
@@ -80,6 +82,7 @@ export default function TabLayout() {
         options={{
           title: "Profile",
           tabBarIcon: ({ color }) => <Feather name="user" size={22} color={color} />,
+          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
         }}
       />
     </Tabs>

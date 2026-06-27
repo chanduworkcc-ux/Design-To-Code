@@ -13,14 +13,16 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
+import { useNotifications } from "@/context/NotificationContext";
 import { useColors } from "@/hooks/useColors";
 
 interface Notification {
   id: string;
   title: string;
   body: string;
-  type?: string;
+  iconName?: string | null;
   sentAt: string;
+  targetType: string;
   targetUserId?: string | null;
 }
 
@@ -33,7 +35,15 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 }
 
-const TYPE_ICON: Record<string, string> = {
+const STATUS_ICON_MAP: Record<string, { icon: string; bg: string; fg: string; border: string; label: string }> = {
+  "check-circle": { icon: "check-circle", bg: "#ECFDF5", fg: "#10B981", border: "#6EE7B7", label: "Account Approved" },
+  "x-circle":     { icon: "x-circle",     bg: "#FEF2F2", fg: "#EF4444", border: "#FCA5A5", label: "Account Rejected" },
+  "alert-triangle": { icon: "alert-triangle", bg: "#FFFBEB", fg: "#F59E0B", border: "#FCD34D", label: "Account Suspended" },
+  "shield-off":   { icon: "shield-off",   bg: "#FEF2F2", fg: "#DC2626", border: "#FCA5A5", label: "Account Banned" },
+  "shield":       { icon: "shield",       bg: "#ECFDF5", fg: "#059669", border: "#6EE7B7", label: "Account Reinstated" },
+};
+
+const DEFAULT_ICON_MAP: Record<string, string> = {
   order: "package",
   wallet: "dollar-sign",
   promo: "tag",
@@ -44,7 +54,8 @@ export default function NotificationsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { apiRequest } = useAuth();
+  const { apiRequest, user } = useAuth();
+  const { markAllRead } = useNotifications();
   const topPadding = Platform.OS === "web" ? 0 : insets.top;
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -54,12 +65,18 @@ export default function NotificationsScreen() {
   const fetchNotifications = useCallback(async () => {
     try {
       const res = await apiRequest("/notifications");
-      if (res.ok) { const d = await res.json(); setNotifications(d.notifications ?? []); }
+      if (res.ok) {
+        const d = await res.json();
+        setNotifications(d.notifications ?? []);
+      }
     } catch {}
     setLoading(false);
   }, [apiRequest]);
 
-  useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
+  useEffect(() => {
+    fetchNotifications();
+    markAllRead();
+  }, [fetchNotifications, markAllRead]);
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -99,14 +116,42 @@ export default function NotificationsScreen() {
             </View>
           ) : (
             notifications.map((n) => {
-              const icon = TYPE_ICON[n.type ?? "system"] ?? "bell";
+              const isPersonal = n.targetType === "user" && n.targetUserId === user?.id;
+              const statusMeta = n.iconName ? STATUS_ICON_MAP[n.iconName] : null;
+              const isStatusCard = isPersonal && !!statusMeta;
+
+              const iconName = n.iconName && isPersonal
+                ? (STATUS_ICON_MAP[n.iconName]?.icon ?? DEFAULT_ICON_MAP["system"])
+                : DEFAULT_ICON_MAP["system"];
+
+              const iconBg = isStatusCard ? statusMeta!.bg : colors.accent;
+              const iconFg = isStatusCard ? statusMeta!.fg : colors.primary;
+              const borderColor = isStatusCard ? statusMeta!.border : colors.border;
+
               return (
-                <View key={n.id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                  <View style={[styles.iconWrap, { backgroundColor: colors.accent }]}>
-                    <Feather name={icon as any} size={18} color={colors.primary} />
+                <View
+                  key={n.id}
+                  style={[
+                    styles.card,
+                    {
+                      backgroundColor: isStatusCard ? statusMeta!.bg : colors.card,
+                      borderColor,
+                      borderLeftWidth: isStatusCard ? 4 : 1,
+                    },
+                  ]}
+                >
+                  <View style={[styles.iconWrap, { backgroundColor: iconBg }]}>
+                    <Feather name={iconName as any} size={18} color={iconFg} />
                   </View>
                   <View style={{ flex: 1, gap: 4 }}>
-                    <Text style={[styles.notifTitle, { color: colors.text }]}>{n.title}</Text>
+                    <View style={styles.titleRow}>
+                      <Text style={[styles.notifTitle, { color: isStatusCard ? iconFg : colors.text, flex: 1 }]}>{n.title}</Text>
+                      {isStatusCard && (
+                        <View style={[styles.forYouBadge, { backgroundColor: iconFg }]}>
+                          <Text style={styles.forYouText}>For You</Text>
+                        </View>
+                      )}
+                    </View>
                     <Text style={[styles.notifBody, { color: colors.mutedForeground }]}>{n.body}</Text>
                     <Text style={[styles.notifTime, { color: colors.mutedForeground }]}>{timeAgo(n.sentAt)}</Text>
                   </View>
@@ -131,7 +176,10 @@ const styles = StyleSheet.create({
   content: { padding: 16, gap: 10 },
   card: { flexDirection: "row", gap: 12, padding: 14, borderRadius: 14, borderWidth: 1, alignItems: "flex-start" },
   iconWrap: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   notifTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
   notifBody: { fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 18 },
   notifTime: { fontSize: 11, fontFamily: "Inter_400Regular" },
+  forYouBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 20, flexShrink: 0 },
+  forYouText: { fontSize: 10, fontFamily: "Inter_700Bold", color: "#fff" },
 });
