@@ -53,16 +53,17 @@ function parseShipping(raw?: string): ShippingInfo | null {
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; label: string; icon: string }> = {
   pending:   { color: "#F59E0B", bg: "#FFFBEB", label: "Order Created",   icon: "clock" },
-  confirmed: { color: "#3B82F6", bg: "#EFF6FF", label: "Order Accepted",  icon: "check-circle" },
-  shipped:   { color: "#8B5CF6", bg: "#F5F3FF", label: "Order Shipped",   icon: "truck" },
-  delivered: { color: "#10B981", bg: "#ECFDF5", label: "Order Delivered", icon: "package" },
+  confirmed: { color: "#3B82F6", bg: "#EFF6FF", label: "Confirmed",       icon: "check-circle" },
+  packed:    { color: "#F97316", bg: "#FFF7ED", label: "Packed",          icon: "box" },
+  shipped:   { color: "#8B5CF6", bg: "#F5F3FF", label: "Shipped",        icon: "truck" },
+  delivered: { color: "#10B981", bg: "#ECFDF5", label: "Delivered",      icon: "package" },
   cancelled: { color: "#EF4444", bg: "#FEF2F2", label: "Cancelled",       icon: "x-circle" },
 };
 
-const STATUS_ORDER = ["pending", "confirmed", "shipped", "delivered", "cancelled"];
+const STATUS_ORDER = ["pending", "confirmed", "packed", "shipped", "delivered", "cancelled"];
 
 function getNextStatus(current: string): string | null {
-  const pipeline = ["pending", "confirmed", "shipped", "delivered"];
+  const pipeline = ["pending", "confirmed", "packed", "shipped", "delivered"];
   const idx = pipeline.indexOf(current);
   if (idx === -1 || idx === pipeline.length - 1) return null;
   return pipeline[idx + 1];
@@ -188,6 +189,10 @@ export default function OrdersScreen() {
         {["all", ...STATUS_ORDER].map((s) => {
           const cfg = s === "all" ? null : STATUS_CONFIG[s];
           const n = s === "all" ? orders.length : (counts[s] ?? 0);
+          const shortLabel: Record<string, string> = {
+            pending: "Created", confirmed: "Confirmed", packed: "Packed",
+            shipped: "Shipped", delivered: "Delivered", cancelled: "Cancelled",
+          };
           return (
             <Pressable
               key={s}
@@ -195,7 +200,7 @@ export default function OrdersScreen() {
               onPress={() => setFilter(s)}
             >
               <Text style={[styles.filterTabText, filter === s && { color: "#fff" }]}>
-                {s === "all" ? `All (${n})` : `${cfg?.label} (${n})`}
+                {s === "all" ? `All (${n})` : `${shortLabel[s] ?? cfg?.label} (${n})`}
               </Text>
             </Pressable>
           );

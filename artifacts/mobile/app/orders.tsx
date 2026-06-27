@@ -47,13 +47,14 @@ interface Order {
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: string; label: string }> = {
   pending:   { color: "#F59E0B", bg: "#FFFBEB", icon: "clock",        label: "Order Created" },
-  confirmed: { color: "#3B82F6", bg: "#EFF6FF", icon: "check",        label: "Order Accepted" },
-  shipped:   { color: "#8B5CF6", bg: "#F5F3FF", icon: "truck",        label: "Order Shipped" },
-  delivered: { color: "#10B981", bg: "#ECFDF5", icon: "check-circle", label: "Order Delivered" },
+  confirmed: { color: "#3B82F6", bg: "#EFF6FF", icon: "check",        label: "Confirmed" },
+  packed:    { color: "#F97316", bg: "#FFF7ED", icon: "box",          label: "Packed" },
+  shipped:   { color: "#8B5CF6", bg: "#F5F3FF", icon: "truck",        label: "Shipped" },
+  delivered: { color: "#10B981", bg: "#ECFDF5", icon: "check-circle", label: "Delivered" },
   cancelled: { color: "#EF4444", bg: "#FEF2F2", icon: "x-circle",     label: "Cancelled" },
 };
 
-const STATUS_STEPS = ["pending", "confirmed", "shipped", "delivered"];
+const STATUS_STEPS = ["pending", "confirmed", "packed", "shipped", "delivered"];
 
 const POLL_INTERVAL_MS = 10_000;
 
@@ -65,64 +66,43 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 }
 
-function AnimatedTrackerDot({ color, icon, isActive, done }: { color: string; icon: string; isActive: boolean; done: boolean }) {
+function AnimatedDot({ color, isActive }: { color: string; isActive: boolean }) {
   const scale = useSharedValue(1);
-  const ringScale = useSharedValue(0.5);
   const ringOpacity = useSharedValue(0);
+  const ringScale = useSharedValue(0.5);
 
   useEffect(() => {
     if (isActive) {
       scale.value = withRepeat(
         withSequence(
-          withTiming(1.2, { duration: 700, easing: Easing.inOut(Easing.sin) }),
+          withTiming(1.15, { duration: 700, easing: Easing.inOut(Easing.sin) }),
           withTiming(1.0, { duration: 700, easing: Easing.inOut(Easing.sin) }),
         ), -1, false
       );
-      ringScale.value = withRepeat(
-        withTiming(2, { duration: 1400, easing: Easing.out(Easing.quad) }),
-        -1, false
-      );
+      ringScale.value = withRepeat(withTiming(2.2, { duration: 1400, easing: Easing.out(Easing.quad) }), -1, false);
       ringOpacity.value = withRepeat(
-        withSequence(
-          withTiming(0.5, { duration: 200 }),
-          withTiming(0, { duration: 1200, easing: Easing.out(Easing.quad) }),
-        ), -1, false
+        withSequence(withTiming(0.5, { duration: 200 }), withTiming(0, { duration: 1200, easing: Easing.out(Easing.quad) })),
+        -1, false
       );
     }
   }, [isActive]);
 
-  const dotStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }, { perspective: 300 }, { rotateX: isActive ? `${scale.value * 5}deg` : "0deg" }],
-  }));
+  const dotStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const ringStyle = useAnimatedStyle(() => ({ transform: [{ scale: ringScale.value }], opacity: ringOpacity.value }));
 
-  const ringStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: ringScale.value }],
-    opacity: ringOpacity.value,
-  }));
-
-  const bg = done ? color : "#E5E7EB";
   return (
-    <View style={{ width: 28, height: 28, alignItems: "center", justifyContent: "center" }}>
+    <View style={{ width: 32, height: 32, alignItems: "center", justifyContent: "center" }}>
       {isActive && (
-        <Animated2.View style={[
-          StyleSheet.absoluteFillObject,
-          { borderRadius: 14, borderWidth: 2, borderColor: color },
-          ringStyle,
-        ]} />
+        <Animated2.View style={[StyleSheet.absoluteFillObject, { borderRadius: 16, borderWidth: 2, borderColor: color }, ringStyle]} />
       )}
-      <Animated2.View style={[
-        styles.trackerDot,
-        { backgroundColor: bg, borderColor: bg },
-        dotStyle,
-      ]}>
-        {done && <Feather name={icon as any} size={10} color="#fff" />}
-      </Animated2.View>
+      <Animated2.View style={[{ width: 32, height: 32, borderRadius: 16, backgroundColor: color, alignItems: "center", justifyContent: "center" }, dotStyle]} />
     </View>
   );
 }
 
 function StatusTracker({ status }: { status: string }) {
   const colors = useColors();
+
   if (status === "cancelled") {
     return (
       <View style={[styles.cancelBanner, { backgroundColor: "#FEF2F2" }]}>
@@ -131,23 +111,55 @@ function StatusTracker({ status }: { status: string }) {
       </View>
     );
   }
+
   const currentIdx = STATUS_STEPS.indexOf(status);
+
   return (
-    <View style={styles.trackerRow}>
+    <View style={styles.verticalTracker}>
       {STATUS_STEPS.map((step, i) => {
         const cfg = STATUS_CONFIG[step];
         const done = i <= currentIdx;
         const isActive = i === currentIdx;
+        const isLast = i === STATUS_STEPS.length - 1;
+
         return (
-          <React.Fragment key={step}>
-            <View style={styles.trackerStep}>
-              <AnimatedTrackerDot color={cfg.color} icon={cfg.icon} isActive={isActive} done={done} />
-              <Text style={[styles.trackerLabel, { color: done ? cfg.color : "#9CA3AF" }]}>{cfg.label}</Text>
+          <View key={step} style={styles.vtStep}>
+            {/* Left: icon + connector line */}
+            <View style={styles.vtLeft}>
+              {done ? (
+                isActive ? (
+                  <AnimatedDot color={cfg.color} isActive />
+                ) : (
+                  <View style={[styles.vtDot, { backgroundColor: cfg.color }]}>
+                    <Feather name={cfg.icon as any} size={13} color="#fff" />
+                  </View>
+                )
+              ) : (
+                <View style={[styles.vtDot, styles.vtDotEmpty]}>
+                  <Feather name={cfg.icon as any} size={13} color="#D1D5DB" />
+                </View>
+              )}
+              {!isLast && (
+                <View style={[styles.vtLine, { backgroundColor: i < currentIdx ? cfg.color : "#E5E7EB" }]} />
+              )}
             </View>
-            {i < STATUS_STEPS.length - 1 && (
-              <View style={[styles.trackerLine, { backgroundColor: i < currentIdx ? STATUS_CONFIG[STATUS_STEPS[i]].color : "#E5E7EB" }]} />
-            )}
-          </React.Fragment>
+
+            {/* Right: label + timestamp */}
+            <View style={styles.vtContent}>
+              <Text style={[styles.vtLabel, { color: done ? cfg.color : "#9CA3AF", fontFamily: isActive ? "Inter_700Bold" : done ? "Inter_600SemiBold" : "Inter_400Regular" }]}>
+                {cfg.label}
+              </Text>
+              {isActive && (
+                <View style={[styles.vtActiveBadge, { backgroundColor: cfg.bg }]}>
+                  <View style={[styles.vtActiveDot, { backgroundColor: cfg.color }]} />
+                  <Text style={[styles.vtActiveText, { color: cfg.color }]}>Current Status</Text>
+                </View>
+              )}
+              {done && !isActive && (
+                <Text style={styles.vtDoneText}>Completed</Text>
+              )}
+            </View>
+          </View>
         );
       })}
     </View>
@@ -328,8 +340,9 @@ export default function OrdersScreen() {
       >
         {[
           { key: "all", label: `All (${orders.length})` },
-          { key: "pending",   label: "Pending" },
+          { key: "pending",   label: "Created" },
           { key: "confirmed", label: "Confirmed" },
+          { key: "packed",    label: "Packed" },
           { key: "shipped",   label: "Shipped" },
           { key: "delivered", label: "Delivered" },
           { key: "cancelled", label: "Cancelled" },
@@ -574,13 +587,20 @@ const styles = StyleSheet.create({
   orderTotal: { fontSize: 16, fontFamily: "Inter_700Bold" },
   paymentTag: { fontSize: 10, fontFamily: "Inter_600SemiBold" },
   expandedSection: { borderTopWidth: 1, padding: 14, gap: 12 },
-  trackerRow: { flexDirection: "row", alignItems: "center" },
-  trackerStep: { alignItems: "center", gap: 4 },
-  trackerDot: { width: 24, height: 24, borderRadius: 12, alignItems: "center", justifyContent: "center", borderWidth: 2 },
-  trackerLabel: { fontSize: 9, fontFamily: "Inter_600SemiBold", textAlign: "center" },
-  trackerLine: { flex: 1, height: 2, marginBottom: 14 },
   cancelBanner: { flexDirection: "row", alignItems: "center", gap: 8, padding: 10, borderRadius: 10 },
   cancelText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  verticalTracker: { paddingVertical: 8, paddingHorizontal: 4, gap: 0 },
+  vtStep: { flexDirection: "row", gap: 14, alignItems: "flex-start", minHeight: 52 },
+  vtLeft: { alignItems: "center", width: 32 },
+  vtDot: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  vtDotEmpty: { backgroundColor: "#F3F4F6", borderWidth: 1.5, borderColor: "#E5E7EB" },
+  vtLine: { width: 2, flex: 1, marginTop: 4, marginBottom: 0, minHeight: 20 },
+  vtContent: { flex: 1, paddingTop: 5, paddingBottom: 8, gap: 4 },
+  vtLabel: { fontSize: 14 },
+  vtActiveBadge: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, alignSelf: "flex-start" },
+  vtActiveDot: { width: 6, height: 6, borderRadius: 3 },
+  vtActiveText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
+  vtDoneText: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#9CA3AF" },
   priceBreakdown: { borderRadius: 12, borderWidth: 1, padding: 12, gap: 7 },
   breakdownTitle: { fontSize: 10, fontFamily: "Inter_600SemiBold", letterSpacing: 0.8, marginBottom: 2 },
   priceRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },

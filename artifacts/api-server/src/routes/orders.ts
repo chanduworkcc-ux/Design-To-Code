@@ -204,7 +204,7 @@ router.get("/admin/audit-logs", authMiddleware, adminMiddleware, async (_req, re
 // Forward pipeline: pending → confirmed → shipped → delivered
 // Admin can cancel any active order.
 // Once an order reaches "delivered" or "cancelled", isLocked = true — no further updates.
-const STATUS_PIPELINE = ["pending", "confirmed", "shipped", "delivered", "cancelled"];
+const STATUS_PIPELINE = ["pending", "confirmed", "packed", "shipped", "delivered", "cancelled"];
 
 function getStatusIcon(status: string): string {
   const icons: Record<string, string> = {
@@ -220,6 +220,10 @@ const NOTIFICATION_TEMPLATES: Record<string, { title: string; body: string }> = 
   confirmed: {
     title: "🎉 Order Confirmed!",
     body: "Great news, {Customer_Name}! Your order #{Order_ID} has been approved and accepted by our team. We're now preparing your package for dispatch. Track real-time updates inside the app!",
+  },
+  packed: {
+    title: "📦 Order Packed!",
+    body: "Hey {Customer_Name}! Your order #{Order_ID} has been packed and is ready for dispatch. It will be handed over to our courier partner shortly. Stay tuned!",
   },
   shipped: {
     title: "📦 Your Order Is On Its Way!",
@@ -266,7 +270,7 @@ router.put("/admin/orders/:id/status", authMiddleware, adminMiddleware, async (r
   if (status !== "cancelled" && newIdx !== currentIdx + 1) {
     res.status(400).json({
       error: "INVALID_TRANSITION",
-      message: `Cannot move order from '${order.status}' to '${status}'. Follow the pipeline: pending → confirmed → shipped → delivered.`,
+      message: `Cannot move order from '${order.status}' to '${status}'. Follow the pipeline: pending → confirmed → packed → shipped → delivered.`,
     });
     return;
   }

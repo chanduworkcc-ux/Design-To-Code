@@ -19,14 +19,15 @@ import { FloatingOrb, PulsingRing } from "@/components/ThreeD";
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: string; label: string }> = {
-  pending:   { color: "#F59E0B", bg: "#FFFBEB", icon: "clock",        label: "Order Created"   },
-  confirmed: { color: "#3B82F6", bg: "#EFF6FF", icon: "check",        label: "Order Accepted"  },
-  shipped:   { color: "#8B5CF6", bg: "#F5F3FF", icon: "truck",        label: "Order Shipped"   },
-  delivered: { color: "#10B981", bg: "#ECFDF5", icon: "check-circle", label: "Order Delivered" },
-  cancelled: { color: "#EF4444", bg: "#FEF2F2", icon: "x-circle",     label: "Cancelled"       },
+  pending:   { color: "#F59E0B", bg: "#FFFBEB", icon: "clock",        label: "Order Created" },
+  confirmed: { color: "#3B82F6", bg: "#EFF6FF", icon: "check",        label: "Confirmed"     },
+  packed:    { color: "#F97316", bg: "#FFF7ED", icon: "box",          label: "Packed"        },
+  shipped:   { color: "#8B5CF6", bg: "#F5F3FF", icon: "truck",        label: "Shipped"       },
+  delivered: { color: "#10B981", bg: "#ECFDF5", icon: "check-circle", label: "Delivered"     },
+  cancelled: { color: "#EF4444", bg: "#FEF2F2", icon: "x-circle",     label: "Cancelled"     },
 };
 
-const STATUS_STEPS = ["pending", "confirmed", "shipped", "delivered"];
+const STATUS_STEPS = ["pending", "confirmed", "packed", "shipped", "delivered"];
 
 interface TrackResult {
   id: string;
@@ -40,7 +41,6 @@ interface TrackResult {
 }
 
 function StatusTracker({ status }: { status: string }) {
-  const colors = useColors();
   if (status === "cancelled") {
     return (
       <View style={[styles.cancelBanner, { backgroundColor: "#FEF2F2" }]}>
@@ -53,27 +53,43 @@ function StatusTracker({ status }: { status: string }) {
   }
   const currentIdx = STATUS_STEPS.indexOf(status);
   return (
-    <View style={styles.trackerRow}>
+    <View style={styles.verticalTracker}>
       {STATUS_STEPS.map((step, i) => {
         const cfg = STATUS_CONFIG[step];
         const done = i <= currentIdx;
         const isActive = i === currentIdx;
+        const isLast = i === STATUS_STEPS.length - 1;
         return (
-          <React.Fragment key={step}>
-            <View style={styles.trackerStep}>
+          <View key={step} style={styles.vtStep}>
+            <View style={styles.vtLeft}>
               <View style={[
-                styles.trackerDot,
-                { backgroundColor: done ? cfg.color : "#E5E7EB", borderColor: done ? cfg.color : "#E5E7EB" },
-                isActive && styles.trackerDotActive,
+                styles.vtDot,
+                done ? { backgroundColor: cfg.color } : styles.vtDotEmpty,
               ]}>
-                {done && <Feather name={cfg.icon as any} size={10} color="#fff" />}
+                <Feather name={cfg.icon as any} size={13} color={done ? "#fff" : "#D1D5DB"} />
               </View>
-              <Text style={[styles.trackerLabel, { color: done ? cfg.color : "#9CA3AF" }]}>{cfg.label}</Text>
+              {!isLast && (
+                <View style={[styles.vtLine, { backgroundColor: i < currentIdx ? cfg.color : "#E5E7EB" }]} />
+              )}
             </View>
-            {i < STATUS_STEPS.length - 1 && (
-              <View style={[styles.trackerLine, { backgroundColor: i < currentIdx ? STATUS_CONFIG[STATUS_STEPS[i]].color : "#E5E7EB" }]} />
-            )}
-          </React.Fragment>
+            <View style={styles.vtContent}>
+              <Text style={[
+                styles.vtLabel,
+                { color: done ? cfg.color : "#9CA3AF", fontFamily: isActive ? "Inter_700Bold" : done ? "Inter_600SemiBold" : "Inter_400Regular" },
+              ]}>
+                {cfg.label}
+              </Text>
+              {isActive && (
+                <View style={[styles.vtActiveBadge, { backgroundColor: cfg.bg }]}>
+                  <View style={[styles.vtActiveDot, { backgroundColor: cfg.color }]} />
+                  <Text style={[styles.vtActiveText, { color: cfg.color }]}>Current Status</Text>
+                </View>
+              )}
+              {done && !isActive && (
+                <Text style={styles.vtDoneText}>Completed</Text>
+              )}
+            </View>
+          </View>
         );
       })}
     </View>
@@ -304,13 +320,19 @@ const styles = StyleSheet.create({
   statusText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
 
   trackerSection: { padding: 16 },
-  trackerRow: { flexDirection: "row", alignItems: "flex-start" },
-  trackerStep: { alignItems: "center", flex: 1, gap: 6 },
-  trackerDot: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center", borderWidth: 2 },
-  trackerDotActive: { shadowColor: "#000", shadowOpacity: 0.15, shadowRadius: 6, elevation: 3 },
-  trackerLabel: { fontSize: 9, fontFamily: "Inter_600SemiBold", textAlign: "center", letterSpacing: 0.3 },
-  trackerLine: { height: 2, flex: 0.4, marginTop: 13 },
   cancelBanner: { flexDirection: "row", alignItems: "center", padding: 12, borderRadius: 10, margin: 4 },
+  verticalTracker: { paddingVertical: 4, paddingHorizontal: 2, gap: 0 },
+  vtStep: { flexDirection: "row", gap: 14, alignItems: "flex-start", minHeight: 52 },
+  vtLeft: { alignItems: "center", width: 32 },
+  vtDot: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  vtDotEmpty: { backgroundColor: "#F3F4F6", borderWidth: 1.5, borderColor: "#E5E7EB" },
+  vtLine: { width: 2, flex: 1, marginTop: 4, minHeight: 20 },
+  vtContent: { flex: 1, paddingTop: 5, paddingBottom: 8, gap: 4 },
+  vtLabel: { fontSize: 14 },
+  vtActiveBadge: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, alignSelf: "flex-start" },
+  vtActiveDot: { width: 6, height: 6, borderRadius: 3 },
+  vtActiveText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
+  vtDoneText: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#9CA3AF" },
 
   metaGrid: { flexDirection: "row", borderTopWidth: 1, padding: 14 },
   metaItem: { flex: 1, alignItems: "center", gap: 4 },

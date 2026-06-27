@@ -2,7 +2,7 @@ import { pgTable, text, integer, real, boolean, timestamp, pgEnum } from "drizzl
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
-export const orderStatusEnum = pgEnum("order_status", ["pending", "confirmed", "shipped", "delivered", "cancelled"]);
+export const orderStatusEnum = pgEnum("order_status", ["pending", "confirmed", "packed", "shipped", "delivered", "cancelled"]);
 export const paymentStatusEnum = pgEnum("payment_status", ["pending", "paid", "failed", "refunded"]);
 export const paymentMethodEnum = pgEnum("payment_method", ["cod", "razorpay", "phonepe"]);
 
