@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -102,6 +102,9 @@ export default function SettingsScreen() {
   const [edited, setEdited] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const savingRef = useRef(false);
   const [gatewayErrors, setGatewayErrors] = useState<Record<string, string>>({});
   const [secureFields, setSecureFields] = useState<Record<string, boolean>>({});
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -205,6 +208,12 @@ export default function SettingsScreen() {
   }
 
   async function handleSave() {
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
+    setSaveSuccess(false);
+    setSaveError(null);
+
     const errors = validatePaymentGateways();
     setGatewayErrors(errors);
 
@@ -212,28 +221,37 @@ export default function SettingsScreen() {
     for (const [k, v] of Object.entries(edited)) {
       if (v !== config[k]) changes[k] = v;
     }
+
     if (Object.keys(changes).length === 0) {
-      Alert.alert("No Changes", "Nothing to save.");
+      savingRef.current = false;
+      setSaving(false);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2500);
       return;
     }
-    setSaving(true);
+
     try {
       const res = await apiRequest("/admin/config", { method: "PUT", body: JSON.stringify(changes) });
       if (res.ok) {
         const d = await res.json();
-        const map: Record<string, string> = {};
-        for (const item of (d.config as ConfigItem[])) { map[item.key] = item.value; }
-        setConfig(map);
-        setEdited(map);
-        Alert.alert("Saved", "Settings updated successfully.");
+        const returnedMap: Record<string, string> = {};
+        for (const item of (d.config as ConfigItem[])) { returnedMap[item.key] = item.value; }
+        setConfig(returnedMap);
+        setEdited((prev) => ({ ...prev, ...returnedMap }));
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 2500);
       } else {
         const errData = await res.json().catch(() => ({}));
-        Alert.alert("Save Failed", errData?.error ?? "Could not save settings. Please try again.");
+        setSaveError(errData?.error ?? "Could not save. Please try again.");
+        setTimeout(() => setSaveError(null), 4000);
       }
-    } catch (e) {
-      Alert.alert("Connection Error", "Could not reach the server. Check your connection and try again.");
+    } catch {
+      setSaveError("No connection. Please check your network.");
+      setTimeout(() => setSaveError(null), 4000);
     }
+
     setSaving(false);
+    savingRef.current = false;
   }
 
   const hasChanges = Object.keys(edited).some((k) => edited[k] !== config[k]);
@@ -249,13 +267,27 @@ export default function SettingsScreen() {
           <Feather name="arrow-left" size={20} color="#0F1740" />
         </Pressable>
         <Text style={styles.headerTitle}>Settings</Text>
-        {hasChanges && (
+        {saveSuccess && (
+          <View style={styles.savedBadge}>
+            <Feather name="check" size={13} color="#fff" />
+            <Text style={styles.savedBadgeText}>Saved</Text>
+          </View>
+        )}
+        {saveError && (
+          <View style={styles.errorBadge}>
+            <Feather name="alert-circle" size={13} color="#fff" />
+            <Text style={styles.errorBadgeText}>Error</Text>
+          </View>
+        )}
+        {(hasChanges || saving) && !saveSuccess && (
           <Pressable
             style={[styles.saveBtn, { opacity: saving ? 0.6 : 1 }]}
             onPress={handleSave}
             disabled={saving}
           >
-            {saving ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.saveBtnText}>Save</Text>}
+            {saving
+              ? <ActivityIndicator size="small" color="#fff" />
+              : <Text style={styles.saveBtnText}>Save</Text>}
           </Pressable>
         )}
       </View>
@@ -612,9 +644,23 @@ export default function SettingsScreen() {
             </View>
           </View>
 
-          {hasChanges && (
-            <Pressable style={[styles.saveBtnLarge, { opacity: saving ? 0.6 : 1 }]} onPress={handleSave} disabled={saving}>
-              {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnLargeText}>Save All Changes</Text>}
+          {saveSuccess && (
+            <View style={[styles.saveBtnLarge, { backgroundColor: "#16A34A" }]}>
+              <Feather name="check-circle" size={18} color="#fff" />
+              <Text style={styles.saveBtnLargeText}>  Settings Saved!</Text>
+            </View>
+          )}
+          {saveError && (
+            <View style={[styles.saveBtnLarge, { backgroundColor: "#DC2626", flexDirection: "row", gap: 8 }]}>
+              <Feather name="alert-circle" size={16} color="#fff" />
+              <Text style={[styles.saveBtnLargeText, { fontSize: 13 }]}>{saveError}</Text>
+            </View>
+          )}
+          {(hasChanges || saving) && !saveSuccess && !saveError && (
+            <Pressable style={[styles.saveBtnLarge, { opacity: saving ? 0.7 : 1, flexDirection: "row", gap: 8 }]} onPress={handleSave} disabled={saving}>
+              {saving
+                ? <><ActivityIndicator color="#fff" /><Text style={styles.saveBtnLargeText}>  Saving...</Text></>
+                : <Text style={styles.saveBtnLargeText}>Save All Changes</Text>}
             </Pressable>
           )}
         </ScrollView>
@@ -630,6 +676,10 @@ const styles = StyleSheet.create({
   headerTitle: { flex: 1, fontSize: 18, fontFamily: "Inter_700Bold", color: "#0F1740" },
   saveBtn: { backgroundColor: "#2563EB", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10 },
   saveBtnText: { color: "#fff", fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  savedBadge: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#16A34A", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 },
+  savedBadgeText: { color: "#fff", fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  errorBadge: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#DC2626", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 },
+  errorBadgeText: { color: "#fff", fontSize: 13, fontFamily: "Inter_600SemiBold" },
   logoPreview: {
     width: 72, height: 48, borderRadius: 10, backgroundColor: "#F3F4F6",
     alignItems: "center", justifyContent: "center", overflow: "hidden",
