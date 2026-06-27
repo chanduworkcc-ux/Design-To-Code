@@ -22,8 +22,15 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AppProvider } from "@/context/AppContext";
-import { AuthProvider } from "@/context/AuthContext";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import MaintenanceScreen from "./maintenance";
+
+function PushNotificationInit() {
+  const { token } = useAuth();
+  usePushNotifications(token);
+  return null;
+}
 
 SplashScreen.preventAutoHideAsync();
 
@@ -147,6 +154,7 @@ export default function RootLayout() {
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
+            <PushNotificationInit />
             <AppProvider>
               <GestureHandlerRootView style={{ flex: 1 }}>
                 <KeyboardProvider>
