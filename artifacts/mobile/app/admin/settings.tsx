@@ -264,6 +264,64 @@ export default function SettingsScreen() {
             </View>
           </View>
 
+          {/* Authentication Portal Override */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>AUTHENTICATION PORTAL OVERRIDE</Text>
+            <View style={styles.card}>
+              <View style={styles.toggleRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.configLabel}>Login Portal Open</Text>
+                  <Text style={styles.configDesc}>When OFF, all login attempts are blocked and users see a custom message</Text>
+                </View>
+                <Switch
+                  value={(edited["login_enabled"] ?? "true") === "true"}
+                  onValueChange={(v) => setEdited((prev) => ({ ...prev, login_enabled: v ? "true" : "false" }))}
+                  trackColor={{ true: "#10B981", false: "#EF4444" }}
+                  thumbColor="#fff"
+                />
+              </View>
+              <View style={styles.divider} />
+              <View style={styles.textInputRow}>
+                <Text style={styles.configLabel}>Login Closed Message</Text>
+                <Text style={styles.configDesc}>Message shown when login portal is disabled</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={edited["login_closed_message"] ?? ""}
+                  onChangeText={(v) => setEdited((prev) => ({ ...prev, login_closed_message: v }))}
+                  placeholder="Logins are temporarily paused. Please try again later."
+                  placeholderTextColor="#9CA3AF"
+                  multiline
+                />
+              </View>
+              <View style={styles.divider} />
+              <View style={styles.toggleRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.configLabel}>Registration Portal Open</Text>
+                  <Text style={styles.configDesc}>When OFF, new signups are blocked with a custom message</Text>
+                </View>
+                <Switch
+                  value={(edited["registration_enabled"] ?? "true") === "true"}
+                  onValueChange={(v) => setEdited((prev) => ({ ...prev, registration_enabled: v ? "true" : "false" }))}
+                  trackColor={{ true: "#10B981", false: "#EF4444" }}
+                  thumbColor="#fff"
+                />
+              </View>
+              <View style={styles.divider} />
+              <View style={styles.textInputRow}>
+                <Text style={styles.configLabel}>Registration Closed Message</Text>
+                <Text style={styles.configDesc}>Message shown when registration portal is disabled</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={edited["registration_closed_message"] ?? ""}
+                  onChangeText={(v) => setEdited((prev) => ({ ...prev, registration_closed_message: v }))}
+                  placeholder="New registrations are currently closed. Please check back soon."
+                  placeholderTextColor="#9CA3AF"
+                  multiline
+                />
+              </View>
+            </View>
+          </View>
+
           {/* Text / Behaviour */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>BEHAVIOUR & CONTENT</Text>

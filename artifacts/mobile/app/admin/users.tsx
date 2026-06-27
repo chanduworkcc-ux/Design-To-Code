@@ -54,6 +54,7 @@ function UserCard({
   onApprove,
   onReject,
   onWalletAdjust,
+  onSuspend,
 }: {
   user: AdminUser;
   onBan: (u: AdminUser) => void;
@@ -62,6 +63,7 @@ function UserCard({
   onApprove: (u: AdminUser) => void;
   onReject: (u: AdminUser) => void;
   onWalletAdjust: (u: AdminUser) => void;
+  onSuspend: (u: AdminUser) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const cfg = STATUS_CONFIG[user.status] ?? STATUS_CONFIG.active;
@@ -165,13 +167,22 @@ function UserCard({
                     <Text style={[styles.actionText, { color: "#10B981" }]}>Unban</Text>
                   </Pressable>
                 ) : (
-                  <Pressable
-                    style={[styles.actionBtn, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}
-                    onPress={() => onBan(user)}
-                  >
-                    <Feather name="user-x" size={14} color="#EF4444" />
-                    <Text style={[styles.actionText, { color: "#EF4444" }]}>Ban User</Text>
-                  </Pressable>
+                  <>
+                    <Pressable
+                      style={[styles.actionBtn, { backgroundColor: "#FFFBEB", borderColor: "#FDE68A" }]}
+                      onPress={() => onSuspend(user)}
+                    >
+                      <Feather name="slash" size={14} color="#F59E0B" />
+                      <Text style={[styles.actionText, { color: "#F59E0B" }]}>Suspend</Text>
+                    </Pressable>
+                    <Pressable
+                      style={[styles.actionBtn, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}
+                      onPress={() => onBan(user)}
+                    >
+                      <Feather name="user-x" size={14} color="#EF4444" />
+                      <Text style={[styles.actionText, { color: "#EF4444" }]}>Ban</Text>
+                    </Pressable>
+                  </>
                 )}
               </View>
             </View>
@@ -227,6 +238,127 @@ function LogsModal({
             ))}
           </ScrollView>
         )}
+      </View>
+    </View>
+  );
+}
+
+function SuspendModal({
+  user,
+  onClose,
+  onDone,
+  apiRequest,
+}: {
+  user: AdminUser;
+  onClose: () => void;
+  onDone: (userId: string) => void;
+  apiRequest: (path: string, options?: RequestInit) => Promise<Response>;
+}) {
+  const [duration, setDuration] = useState("1");
+  const [unit, setUnit] = useState<"hours" | "days" | "weeks">("days");
+  const [reason, setReason] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSubmit() {
+    const d = parseInt(duration);
+    if (!d || d <= 0) { setError("Enter a valid duration"); return; }
+    if (!reason.trim()) { setError("Suspension reason is required"); return; }
+    setLoading(true);
+    setError("");
+    try {
+      const res = await apiRequest(`/admin/users/${user.id}/suspend`, {
+        method: "POST",
+        body: JSON.stringify({ duration: d, unit, reason: reason.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error ?? "Failed"); setLoading(false); return; }
+      onDone(user.id);
+      Alert.alert("Suspended", `${user.name} has been suspended for ${d} ${unit}.`);
+      onClose();
+    } catch { setError("Network error"); }
+    setLoading(false);
+  }
+
+  const UNIT_LABELS: { key: "hours" | "days" | "weeks"; label: string }[] = [
+    { key: "hours", label: "Hours" },
+    { key: "days", label: "Days" },
+    { key: "weeks", label: "Weeks" },
+  ];
+
+  return (
+    <View style={styles.modalOverlay}>
+      <View style={[styles.modal, { height: "auto", maxHeight: "72%" }]}>
+        <View style={styles.modalHeader}>
+          <View>
+            <Text style={styles.modalTitle}>Suspend User</Text>
+            <Text style={styles.modalSub}>{user.name} · {user.email}</Text>
+          </View>
+          <Pressable onPress={onClose} style={styles.modalClose}>
+            <Feather name="x" size={20} color="#6B7280" />
+          </Pressable>
+        </View>
+
+        <View style={{ padding: 20, gap: 14 }}>
+          <View style={styles.walletField}>
+            <Text style={styles.walletLabel}>Duration</Text>
+            <TextInput
+              style={styles.walletInput}
+              placeholder="e.g. 2"
+              placeholderTextColor="#9CA3AF"
+              value={duration}
+              onChangeText={(t) => { setDuration(t.replace(/\D/g, "")); setError(""); }}
+              keyboardType="number-pad"
+            />
+          </View>
+
+          <View style={styles.walletField}>
+            <Text style={styles.walletLabel}>Unit</Text>
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              {UNIT_LABELS.map(({ key, label }) => (
+                <Pressable
+                  key={key}
+                  style={[styles.modeBtn, { flex: 1 }, unit === key && { backgroundColor: "#FEF3C7", borderColor: "#F59E0B" }]}
+                  onPress={() => setUnit(key)}
+                >
+                  <Text style={[styles.modeBtnText, { color: unit === key ? "#B45309" : "#9CA3AF" }]}>{label}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.walletField}>
+            <Text style={styles.walletLabel}>Reason *</Text>
+            <TextInput
+              style={[styles.walletInput, { height: 70, textAlignVertical: "top" }]}
+              placeholder="e.g. Abusive behavior in reviews"
+              placeholderTextColor="#9CA3AF"
+              value={reason}
+              onChangeText={(t) => { setReason(t); setError(""); }}
+              multiline
+            />
+          </View>
+
+          {!!error && (
+            <View style={[styles.walletError, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}>
+              <Feather name="alert-circle" size={13} color="#EF4444" />
+              <Text style={{ color: "#EF4444", fontSize: 13, fontFamily: "Inter_400Regular", flex: 1 }}>{error}</Text>
+            </View>
+          )}
+
+          <Pressable
+            style={[styles.walletSubmitBtn, { backgroundColor: "#F59E0B", opacity: loading ? 0.7 : 1 }]}
+            onPress={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? <ActivityIndicator color="#fff" /> : (
+              <>
+                <Feather name="slash" size={16} color="#fff" />
+                <Text style={styles.walletSubmitText}>Suspend for {duration || "?"} {unit}</Text>
+              </>
+            )}
+          </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -364,6 +496,7 @@ export default function UsersScreen() {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
   const [walletUser, setWalletUser] = useState<AdminUser | null>(null);
+  const [suspendUser, setSuspendUser] = useState<AdminUser | null>(null);
   const topPadding = Platform.OS === "web" ? 0 : insets.top;
 
   async function handleApprove(user: AdminUser) {
@@ -448,6 +581,10 @@ export default function UsersScreen() {
 
   function handleWalletDone(userId: string, newBalance: number) {
     setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, walletBalance: newBalance } : u)));
+  }
+
+  function handleSuspendDone(userId: string) {
+    setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, status: "suspended" as const } : u)));
   }
 
   const filtered = users.filter((u) => {
@@ -538,6 +675,7 @@ export default function UsersScreen() {
               onApprove={handleApprove}
               onReject={handleReject}
               onWalletAdjust={setWalletUser}
+              onSuspend={setSuspendUser}
             />
           ))}
         </ScrollView>
@@ -557,6 +695,15 @@ export default function UsersScreen() {
           user={walletUser}
           onClose={() => setWalletUser(null)}
           onDone={handleWalletDone}
+          apiRequest={apiRequest}
+        />
+      )}
+
+      {suspendUser && (
+        <SuspendModal
+          user={suspendUser}
+          onClose={() => setSuspendUser(null)}
+          onDone={handleSuspendDone}
           apiRequest={apiRequest}
         />
       )}

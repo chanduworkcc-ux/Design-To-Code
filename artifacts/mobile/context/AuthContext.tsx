@@ -12,6 +12,9 @@ export interface AuthUser {
   role: "user" | "admin";
   walletBalance: number;
   referralCode: string;
+  status?: string;
+  suspendedUntil?: string | null;
+  banReason?: string | null;
 }
 
 interface AuthContextType {
@@ -84,7 +87,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify({ email, password }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error ?? "Login failed");
+    if (!res.ok) {
+      if (data.error === "suspended") {
+        throw new Error(`suspended:${data.suspendedUntil ?? ""}:${data.banReason ?? ""}`);
+      }
+      throw new Error(data.error ?? "Login failed");
+    }
     await AsyncStorage.setItem("auth_token", data.token);
     setToken(data.token);
     setUser(data.user);

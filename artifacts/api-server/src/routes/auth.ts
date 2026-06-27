@@ -152,15 +152,46 @@ router.post("/auth/login", async (req, res) => {
     return;
   }
 
+  if (user.status === "suspended") {
+    if (user.suspendedUntil && user.suspendedUntil <= new Date()) {
+      await db.update(usersTable).set({ status: "active", suspendedUntil: null, banReason: null }).where(eq(usersTable.id, user.id));
+    } else {
+      res.status(403).json({
+        error: "suspended",
+        suspendedUntil: user.suspendedUntil?.toISOString() ?? null,
+        banReason: user.banReason ?? "Suspended by administrator",
+      });
+      return;
+    }
+  }
+
   const token = signToken(user.id);
-  res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role, walletBalance: user.walletBalance, referralCode: user.referralCode } });
+  res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role, walletBalance: user.walletBalance, referralCode: user.referralCode, status: user.status } });
 });
 
 router.get("/auth/me", authMiddleware, async (req: AuthRequest, res) => {
-  const users = await db.select({ id: usersTable.id, email: usersTable.email, name: usersTable.name, role: usersTable.role, walletBalance: usersTable.walletBalance, referralCode: usersTable.referralCode, status: usersTable.status, createdAt: usersTable.createdAt })
-    .from(usersTable).where(eq(usersTable.id, req.userId!));
+  const users = await db.select({
+    id: usersTable.id,
+    email: usersTable.email,
+    name: usersTable.name,
+    role: usersTable.role,
+    walletBalance: usersTable.walletBalance,
+    referralCode: usersTable.referralCode,
+    status: usersTable.status,
+    suspendedUntil: usersTable.suspendedUntil,
+    banReason: usersTable.banReason,
+    mobileNumber: usersTable.mobileNumber,
+    createdAt: usersTable.createdAt,
+  }).from(usersTable).where(eq(usersTable.id, req.userId!));
   if (!users.length) { res.status(404).json({ error: "User not found" }); return; }
-  res.json({ user: users[0] });
+  const u = users[0];
+  if (u.status === "suspended" && u.suspendedUntil && u.suspendedUntil <= new Date()) {
+    await db.update(usersTable).set({ status: "active", suspendedUntil: null, banReason: null }).where(eq(usersTable.id, u.id));
+    u.status = "active";
+    u.suspendedUntil = null;
+    u.banReason = null;
+  }
+  res.json({ user: u });
 });
 
 const patchMeSchema = z.object({

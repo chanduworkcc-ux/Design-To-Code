@@ -1,7 +1,8 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Dimensions,
   Image,
   KeyboardAvoidingView,
@@ -24,6 +25,8 @@ import Animated, {
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { FloatingOrb, FloatIn, TiltCard3D } from "@/components/ThreeD";
+
+const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
 const { width: W, height: H } = Dimensions.get("window");
 
@@ -63,6 +66,21 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [pendingApproval, setPendingApproval] = useState(false);
+  const [suspended, setSuspended] = useState<{ until: string | null; reason: string } | null>(null);
+  const [portalClosed, setPortalClosed] = useState<{ active: boolean; message: string }>({ active: false, message: "" });
+  const [portalLoading, setPortalLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`${BASE_URL}/config/public`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.login_enabled === "false") {
+          setPortalClosed({ active: true, message: d.login_closed_message || "Logins are temporarily paused. Please try again later." });
+        }
+      })
+      .catch(() => {})
+      .finally(() => setPortalLoading(false));
+  }, []);
 
   async function handleLogin() {
     if (!email.trim() || !password.trim()) { setError("Please fill in all fields"); return; }
@@ -73,8 +91,78 @@ export default function LoginScreen() {
       router.replace("/(tabs)");
     } catch (e: any) {
       if (e.message === "pending_approval") { setPendingApproval(true); }
-      else { setError(e.message ?? "Login failed"); }
+      else if (e.message?.startsWith("suspended:")) {
+        const [, until, ...rest] = e.message.split(":");
+        setSuspended({ until: until || null, reason: rest.join(":").trim() || "Suspended by administrator" });
+      } else { setError(e.message ?? "Login failed"); }
     } finally { setLoading(false); }
+  }
+
+  if (portalLoading) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background }}>
+        <ActivityIndicator color="#2563EB" />
+      </View>
+    );
+  }
+
+  if (portalClosed.active) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 32, backgroundColor: colors.background }}>
+        <FloatingOrb color="#EF4444" size={220} style={{ top: -60, right: -60 }} delay={0} />
+        <FloatingOrb color="#F97316" size={160} style={{ bottom: 20, left: -50 }} delay={600} />
+        <FloatIn delay={200}>
+          <View style={{ alignItems: "center", gap: 20 }}>
+            <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "#FEE2E2", alignItems: "center", justifyContent: "center" }}>
+              <Feather name="lock" size={36} color="#EF4444" />
+            </View>
+            <Text style={{ fontSize: 22, fontFamily: "Inter_700Bold", color: colors.text, textAlign: "center" }}>
+              Login Unavailable
+            </Text>
+            <View style={{ backgroundColor: "#FEF2F2", borderRadius: 14, padding: 18, borderWidth: 1, borderColor: "#FECACA" }}>
+              <Text style={{ fontSize: 14, fontFamily: "Inter_400Regular", color: "#7F1D1D", textAlign: "center", lineHeight: 22 }}>
+                {portalClosed.message}
+              </Text>
+            </View>
+            <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: colors.mutedForeground, textAlign: "center" }}>
+              Contact support if you need immediate assistance.
+            </Text>
+          </View>
+        </FloatIn>
+      </View>
+    );
+  }
+
+  if (suspended) {
+    const until = suspended.until ? new Date(suspended.until) : null;
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 32, backgroundColor: colors.background }}>
+        <FloatingOrb color="#F59E0B" size={200} style={{ top: -40, right: -60 }} delay={0} />
+        <FloatIn delay={200}>
+          <View style={{ alignItems: "center", gap: 20 }}>
+            <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "#FFFBEB", alignItems: "center", justifyContent: "center" }}>
+              <Feather name="slash" size={36} color="#F59E0B" />
+            </View>
+            <Text style={{ fontSize: 22, fontFamily: "Inter_700Bold", color: colors.text, textAlign: "center" }}>Account Suspended</Text>
+            <View style={{ backgroundColor: "#FFFBEB", borderRadius: 14, padding: 16, borderWidth: 1, borderColor: "#FDE68A", width: "100%" }}>
+              <Text style={{ fontSize: 13, fontFamily: "Inter_700Bold", color: "#B45309", marginBottom: 6 }}>Reason</Text>
+              <Text style={{ fontSize: 14, fontFamily: "Inter_400Regular", color: "#78350F", lineHeight: 20 }}>{suspended.reason}</Text>
+              {until && (
+                <Text style={{ fontSize: 12, fontFamily: "Inter_500Medium", color: "#92400E", marginTop: 8 }}>
+                  Until: {until.toLocaleString("en-IN", { dateStyle: "long", timeStyle: "short" })}
+                </Text>
+              )}
+            </View>
+            <Pressable
+              style={{ borderRadius: 14, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 24, paddingVertical: 12 }}
+              onPress={() => setSuspended(null)}
+            >
+              <Text style={{ fontSize: 14, fontFamily: "Inter_600SemiBold", color: colors.text }}>Go Back</Text>
+            </Pressable>
+          </View>
+        </FloatIn>
+      </View>
+    );
   }
 
   if (pendingApproval) {

@@ -23,6 +23,8 @@ const DEFAULTS: Record<string, string> = {
   registration_enabled: "true",
   maintenance_mode: "false",
   maintenance_message: "We are performing scheduled maintenance. Please check back soon.",
+  login_closed_message: "Logins are temporarily paused. Please try again later or contact support.",
+  registration_closed_message: "New registrations are currently closed. Please check back soon.",
   min_app_version: "1.0.0",
 };
 

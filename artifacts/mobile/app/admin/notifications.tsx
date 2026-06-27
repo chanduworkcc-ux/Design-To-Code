@@ -29,7 +29,7 @@ interface Notification {
 
 const ICONS = ["bell", "star", "tag", "gift", "zap", "alert-circle", "check-circle", "info"];
 
-const emptyForm = { title: "", body: "", targetType: "all" as "all" | "user", targetUserId: "", iconName: "bell" };
+const emptyForm = { title: "", body: "", targetType: "all" as "all" | "user" | "new_users" | "old_users", targetUserId: "", iconName: "bell" };
 
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
@@ -134,13 +134,31 @@ export default function NotificationsScreen() {
               </View>
               <View style={styles.fieldGroup}>
                 <Text style={styles.fieldLabel}>Target Audience</Text>
-                <View style={styles.segmented}>
-                  {(["all", "user"] as const).map((t) => (
-                    <Pressable key={t} style={[styles.segBtn, form.targetType === t && styles.segBtnActive]} onPress={() => setForm({ ...form, targetType: t })}>
-                      <Text style={[styles.segText, form.targetType === t && styles.segTextActive]}>{t === "all" ? "All Users" : "Specific User"}</Text>
+                <View style={[styles.segmented, { flexWrap: "wrap" }]}>
+                  {([
+                    { key: "all", label: "All Users" },
+                    { key: "new_users", label: "New Users" },
+                    { key: "old_users", label: "Old Users" },
+                    { key: "user", label: "Specific User" },
+                  ] as const).map(({ key, label }) => (
+                    <Pressable
+                      key={key}
+                      style={[styles.segBtn, { minWidth: "45%", marginBottom: 4 }, form.targetType === key && styles.segBtnActive]}
+                      onPress={() => setForm({ ...form, targetType: key })}
+                    >
+                      <Text style={[styles.segText, form.targetType === key && styles.segTextActive]}>{label}</Text>
                     </Pressable>
                   ))}
                 </View>
+                {(form.targetType === "new_users" || form.targetType === "old_users") && (
+                  <View style={{ backgroundColor: "#FFFBEB", borderRadius: 8, padding: 10, marginTop: 4, borderWidth: 1, borderColor: "#FDE68A" }}>
+                    <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: "#92400E" }}>
+                      {form.targetType === "new_users"
+                        ? "Sends to users registered within the last 30 days."
+                        : "Sends to users registered more than 30 days ago."}
+                    </Text>
+                  </View>
+                )}
               </View>
               {form.targetType === "user" && (
                 <View style={styles.fieldGroup}>
@@ -181,7 +199,12 @@ export default function NotificationsScreen() {
                 {sending ? <ActivityIndicator color="#fff" /> : (
                   <>
                     <Feather name="send" size={18} color="#fff" />
-                    <Text style={styles.sendBtnText}>Send Notification{form.targetType === "all" ? " to All Users" : ""}</Text>
+                    <Text style={styles.sendBtnText}>
+                      {form.targetType === "all" ? "Send to All Users"
+                        : form.targetType === "new_users" ? "Send to New Users"
+                        : form.targetType === "old_users" ? "Send to Old Users"
+                        : "Send to User"}
+                    </Text>
                   </>
                 )}
               </Pressable>
@@ -214,9 +237,22 @@ export default function NotificationsScreen() {
                 <View style={{ flex: 1 }}>
                   <View style={styles.notifTopRow}>
                     <Text style={styles.notifTitle} numberOfLines={1}>{n.title}</Text>
-                    <View style={[styles.targetBadge, { backgroundColor: n.targetType === "all" ? "#EFF6FF" : "#F5F3FF" }]}>
-                      <Text style={[styles.targetText, { color: n.targetType === "all" ? "#2563EB" : "#8B5CF6" }]}>
-                        {n.targetType === "all" ? "All" : "User"}
+                    <View style={[styles.targetBadge, {
+                      backgroundColor: n.targetType === "all" ? "#EFF6FF"
+                        : n.targetType === "new_users" ? "#ECFDF5"
+                        : n.targetType === "old_users" ? "#F5F3FF"
+                        : "#FEF2F2"
+                    }]}>
+                      <Text style={[styles.targetText, {
+                        color: n.targetType === "all" ? "#2563EB"
+                          : n.targetType === "new_users" ? "#10B981"
+                          : n.targetType === "old_users" ? "#8B5CF6"
+                          : "#EF4444"
+                      }]}>
+                        {n.targetType === "all" ? "All"
+                          : n.targetType === "new_users" ? "New Users"
+                          : n.targetType === "old_users" ? "Old Users"
+                          : "User"}
                       </Text>
                     </View>
                   </View>

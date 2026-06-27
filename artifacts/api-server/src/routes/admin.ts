@@ -13,7 +13,8 @@ import {
 } from "@workspace/db/schema";
 import { eq, desc, count, sql, and, gte, lte, inArray } from "drizzle-orm";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../middleware/auth";
-import { getAllConfig, setConfig } from "../lib/config";
+import { getAllConfig, setConfig, getConfig } from "../lib/config";
+import { insertAutoNotification } from "./notifications";
 import { z } from "zod";
 import { v4 as uuidv4 } from "uuid";
 
@@ -162,20 +163,23 @@ router.get("/admin/users/:id/logs", authMiddleware, adminMiddleware, async (req,
 
 router.post("/admin/users/:id/ban", authMiddleware, adminMiddleware, async (req, res) => {
   const { reason } = req.body;
+  const banReason = reason || "Policy violation";
   const [updated] = await db
     .update(usersTable)
-    .set({ status: "banned", banReason: reason || "Policy violation" })
+    .set({ status: "banned", banReason })
     .where(eq(usersTable.id, req.params.id))
     .returning({ id: usersTable.id, status: usersTable.status });
+  try { await insertAutoNotification(req.params.id, "Account Banned", `Your account has been permanently banned. Reason: ${banReason}`, "alert-circle"); } catch {}
   res.json({ user: updated });
 });
 
 router.post("/admin/users/:id/unban", authMiddleware, adminMiddleware, async (req, res) => {
   const [updated] = await db
     .update(usersTable)
-    .set({ status: "active", banReason: null })
+    .set({ status: "active", banReason: null, suspendedUntil: null })
     .where(eq(usersTable.id, req.params.id))
     .returning({ id: usersTable.id, status: usersTable.status });
+  try { await insertAutoNotification(req.params.id, "Account Reinstated", "Your account has been reinstated. You can now log in and use XyloCart normally.", "check-circle"); } catch {}
   res.json({ user: updated });
 });
 
@@ -185,27 +189,47 @@ router.post("/admin/users/:id/approve", authMiddleware, adminMiddleware, async (
     .set({ status: "active", banReason: null })
     .where(eq(usersTable.id, req.params.id))
     .returning({ id: usersTable.id, status: usersTable.status });
+  try { await insertAutoNotification(req.params.id, "Account Approved! 🎉", "Welcome to XyloCart! Your registration has been approved. You can now log in and start shopping.", "check-circle"); } catch {}
   res.json({ user: updated });
 });
 
 router.post("/admin/users/:id/reject", authMiddleware, adminMiddleware, async (req, res) => {
   const { reason } = req.body;
+  const banReason = reason || "Registration rejected by admin";
   const [updated] = await db
     .update(usersTable)
-    .set({ status: "banned", banReason: reason || "Registration rejected by admin" })
+    .set({ status: "banned", banReason })
     .where(eq(usersTable.id, req.params.id))
     .returning({ id: usersTable.id, status: usersTable.status });
+  try { await insertAutoNotification(req.params.id, "Registration Rejected", `Your registration has been reviewed and rejected. Reason: ${banReason}`, "alert-circle"); } catch {}
   res.json({ user: updated });
 });
 
+const suspendSchema = z.object({
+  duration: z.number().int().positive(),
+  unit: z.enum(["hours", "days", "weeks"]),
+  reason: z.string().min(1),
+});
+
 router.post("/admin/users/:id/suspend", authMiddleware, adminMiddleware, async (req, res) => {
-  const { until } = req.body;
-  if (!until) { res.status(400).json({ error: "Suspension expiry date required" }); return; }
+  const parsed = suspendSchema.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: "duration (number), unit (hours|days|weeks), and reason are required" }); return; }
+  const { duration, unit, reason } = parsed.data;
+
+  const unitMs = unit === "hours" ? 60 * 60 * 1000 : unit === "days" ? 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
+  const until = new Date(Date.now() + duration * unitMs);
+
   const [updated] = await db
     .update(usersTable)
-    .set({ status: "suspended", suspendedUntil: new Date(until) })
+    .set({ status: "suspended", suspendedUntil: until, banReason: reason })
     .where(eq(usersTable.id, req.params.id))
-    .returning({ id: usersTable.id, status: usersTable.status });
+    .returning({ id: usersTable.id, status: usersTable.status, suspendedUntil: usersTable.suspendedUntil });
+
+  try {
+    const label = `${duration} ${unit}`;
+    await insertAutoNotification(req.params.id, "Account Suspended", `Your account has been suspended for ${label}. Reason: ${reason}`, "alert-circle");
+  } catch {}
+
   res.json({ user: updated });
 });
 
@@ -381,11 +405,35 @@ router.put("/admin/config", authMiddleware, adminMiddleware, async (req, res) =>
 // ─── Announcements (public read) ──────────────────────────────────────────────
 
 router.get("/announcement", async (_req, res) => {
-  const { getConfig } = await import("../lib/config");
   const enabled = await getConfig("announcement_enabled");
   const text = await getConfig("announcement_text");
   const color = await getConfig("announcement_color");
   res.json({ enabled: enabled === "true", text: text || "", color: color || "#2563EB" });
+});
+
+// ─── Public config (safe keys only) ──────────────────────────────────────────
+
+router.get("/config/public", async (_req, res) => {
+  const [
+    maintenance_mode, maintenance_message,
+    login_enabled, registration_enabled,
+    login_closed_message, registration_closed_message,
+  ] = await Promise.all([
+    getConfig("maintenance_mode"),
+    getConfig("maintenance_message"),
+    getConfig("login_enabled"),
+    getConfig("registration_enabled"),
+    getConfig("login_closed_message"),
+    getConfig("registration_closed_message"),
+  ]);
+  res.json({
+    maintenance_mode,
+    maintenance_message,
+    login_enabled,
+    registration_enabled,
+    login_closed_message,
+    registration_closed_message,
+  });
 });
 
 export default router;
