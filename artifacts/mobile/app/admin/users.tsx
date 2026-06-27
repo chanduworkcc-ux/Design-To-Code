@@ -53,6 +53,7 @@ function UserCard({
   onViewLogs,
   onApprove,
   onReject,
+  onWalletAdjust,
 }: {
   user: AdminUser;
   onBan: (u: AdminUser) => void;
@@ -60,6 +61,7 @@ function UserCard({
   onViewLogs: (u: AdminUser) => void;
   onApprove: (u: AdminUser) => void;
   onReject: (u: AdminUser) => void;
+  onWalletAdjust: (u: AdminUser) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const cfg = STATUS_CONFIG[user.status] ?? STATUS_CONFIG.active;
@@ -117,49 +119,61 @@ function UserCard({
           </View>
 
           {user.role !== "admin" && (
-            <View style={styles.actionRow}>
-              <Pressable
-                style={[styles.actionBtn, { backgroundColor: "#EFF6FF", borderColor: "#BFDBFE" }]}
-                onPress={() => onViewLogs(user)}
-              >
-                <Feather name="activity" size={14} color="#2563EB" />
-                <Text style={[styles.actionText, { color: "#2563EB" }]}>View Logs</Text>
-              </Pressable>
+            <View style={styles.actionCol}>
+              <View style={styles.actionRow}>
+                <Pressable
+                  style={[styles.actionBtn, { backgroundColor: "#EFF6FF", borderColor: "#BFDBFE" }]}
+                  onPress={() => onViewLogs(user)}
+                >
+                  <Feather name="activity" size={14} color="#2563EB" />
+                  <Text style={[styles.actionText, { color: "#2563EB" }]}>View Logs</Text>
+                </Pressable>
 
-              {user.status === "pending" ? (
-                <>
+                <Pressable
+                  style={[styles.actionBtn, { backgroundColor: "#FFFBEB", borderColor: "#FDE68A" }]}
+                  onPress={() => onWalletAdjust(user)}
+                >
+                  <Feather name="dollar-sign" size={14} color="#F59E0B" />
+                  <Text style={[styles.actionText, { color: "#F59E0B" }]}>Wallet</Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.actionRow}>
+                {user.status === "pending" ? (
+                  <>
+                    <Pressable
+                      style={[styles.actionBtn, { backgroundColor: "#ECFDF5", borderColor: "#A7F3D0" }]}
+                      onPress={() => onApprove(user)}
+                    >
+                      <Feather name="check" size={14} color="#10B981" />
+                      <Text style={[styles.actionText, { color: "#10B981" }]}>Approve</Text>
+                    </Pressable>
+                    <Pressable
+                      style={[styles.actionBtn, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}
+                      onPress={() => onReject(user)}
+                    >
+                      <Feather name="x" size={14} color="#EF4444" />
+                      <Text style={[styles.actionText, { color: "#EF4444" }]}>Reject</Text>
+                    </Pressable>
+                  </>
+                ) : user.status === "banned" || user.status === "suspended" ? (
                   <Pressable
                     style={[styles.actionBtn, { backgroundColor: "#ECFDF5", borderColor: "#A7F3D0" }]}
-                    onPress={() => onApprove(user)}
+                    onPress={() => onUnban(user)}
                   >
-                    <Feather name="check" size={14} color="#10B981" />
-                    <Text style={[styles.actionText, { color: "#10B981" }]}>Approve</Text>
+                    <Feather name="user-check" size={14} color="#10B981" />
+                    <Text style={[styles.actionText, { color: "#10B981" }]}>Unban</Text>
                   </Pressable>
+                ) : (
                   <Pressable
                     style={[styles.actionBtn, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}
-                    onPress={() => onReject(user)}
+                    onPress={() => onBan(user)}
                   >
-                    <Feather name="x" size={14} color="#EF4444" />
-                    <Text style={[styles.actionText, { color: "#EF4444" }]}>Reject</Text>
+                    <Feather name="user-x" size={14} color="#EF4444" />
+                    <Text style={[styles.actionText, { color: "#EF4444" }]}>Ban User</Text>
                   </Pressable>
-                </>
-              ) : user.status === "banned" || user.status === "suspended" ? (
-                <Pressable
-                  style={[styles.actionBtn, { backgroundColor: "#ECFDF5", borderColor: "#A7F3D0" }]}
-                  onPress={() => onUnban(user)}
-                >
-                  <Feather name="user-check" size={14} color="#10B981" />
-                  <Text style={[styles.actionText, { color: "#10B981" }]}>Unban</Text>
-                </Pressable>
-              ) : (
-                <Pressable
-                  style={[styles.actionBtn, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}
-                  onPress={() => onBan(user)}
-                >
-                  <Feather name="user-x" size={14} color="#EF4444" />
-                  <Text style={[styles.actionText, { color: "#EF4444" }]}>Ban User</Text>
-                </Pressable>
-              )}
+                )}
+              </View>
             </View>
           )}
         </View>
@@ -218,6 +232,124 @@ function LogsModal({
   );
 }
 
+function WalletModal({
+  user,
+  onClose,
+  onDone,
+  apiRequest,
+}: {
+  user: AdminUser;
+  onClose: () => void;
+  onDone: (userId: string, newBalance: number) => void;
+  apiRequest: (path: string, options?: RequestInit) => Promise<Response>;
+}) {
+  const [amount, setAmount] = useState("");
+  const [reason, setReason] = useState("");
+  const [mode, setMode] = useState<"credit" | "debit">("credit");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSubmit() {
+    const coins = parseInt(amount);
+    if (!coins || coins <= 0) { setError("Enter a valid positive amount"); return; }
+    if (!reason.trim()) { setError("Reason is required"); return; }
+    setLoading(true);
+    setError("");
+    try {
+      const res = await apiRequest(`/admin/users/${user.id}/wallet-adjust`, {
+        method: "POST",
+        body: JSON.stringify({ coins: mode === "credit" ? coins : -coins, reason: reason.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error ?? "Failed"); setLoading(false); return; }
+      onDone(user.id, data.newBalance);
+      Alert.alert("Done", `${mode === "credit" ? "Added" : "Deducted"} ${coins} coins. New balance: ${data.newBalance} coins.`);
+      onClose();
+    } catch { setError("Network error"); }
+    setLoading(false);
+  }
+
+  return (
+    <View style={styles.modalOverlay}>
+      <View style={[styles.modal, { height: "auto", maxHeight: "70%" }]}>
+        <View style={styles.modalHeader}>
+          <View>
+            <Text style={styles.modalTitle}>Wallet Control</Text>
+            <Text style={styles.modalSub}>{user.name} · {user.walletBalance} coins</Text>
+          </View>
+          <Pressable onPress={onClose} style={styles.modalClose}>
+            <Feather name="x" size={20} color="#6B7280" />
+          </Pressable>
+        </View>
+
+        <View style={{ padding: 20, gap: 14 }}>
+          {/* Credit / Debit toggle */}
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            <Pressable
+              style={[styles.modeBtn, mode === "credit" && { backgroundColor: "#ECFDF5", borderColor: "#10B981" }]}
+              onPress={() => setMode("credit")}
+            >
+              <Feather name="plus-circle" size={16} color={mode === "credit" ? "#10B981" : "#9CA3AF"} />
+              <Text style={[styles.modeBtnText, { color: mode === "credit" ? "#10B981" : "#9CA3AF" }]}>Add Coins</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.modeBtn, mode === "debit" && { backgroundColor: "#FEF2F2", borderColor: "#EF4444" }]}
+              onPress={() => setMode("debit")}
+            >
+              <Feather name="minus-circle" size={16} color={mode === "debit" ? "#EF4444" : "#9CA3AF"} />
+              <Text style={[styles.modeBtnText, { color: mode === "debit" ? "#EF4444" : "#9CA3AF" }]}>Deduct Coins</Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.walletField}>
+            <Text style={styles.walletLabel}>Amount (coins)</Text>
+            <TextInput
+              style={styles.walletInput}
+              placeholder="e.g. 500"
+              placeholderTextColor="#9CA3AF"
+              value={amount}
+              onChangeText={(t) => { setAmount(t.replace(/\D/g, "")); setError(""); }}
+              keyboardType="number-pad"
+            />
+          </View>
+
+          <View style={styles.walletField}>
+            <Text style={styles.walletLabel}>Reason</Text>
+            <TextInput
+              style={[styles.walletInput, { height: 70, textAlignVertical: "top" }]}
+              placeholder="e.g. Bonus for first purchase"
+              placeholderTextColor="#9CA3AF"
+              value={reason}
+              onChangeText={(t) => { setReason(t); setError(""); }}
+              multiline
+            />
+          </View>
+
+          {!!error && (
+            <View style={[styles.walletError, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}>
+              <Feather name="alert-circle" size={13} color="#EF4444" />
+              <Text style={{ color: "#EF4444", fontSize: 13, fontFamily: "Inter_400Regular", flex: 1 }}>{error}</Text>
+            </View>
+          )}
+
+          <Pressable
+            style={[styles.walletSubmitBtn, { backgroundColor: mode === "credit" ? "#10B981" : "#EF4444", opacity: loading ? 0.7 : 1 }]}
+            onPress={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? <ActivityIndicator color="#fff" /> : (
+              <>
+                <Feather name={mode === "credit" ? "plus" : "minus"} size={16} color="#fff" />
+                <Text style={styles.walletSubmitText}>{mode === "credit" ? "Credit Coins" : "Deduct Coins"}</Text>
+              </>
+            )}
+          </Pressable>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 export default function UsersScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -231,6 +363,7 @@ export default function UsersScreen() {
   const [logsUser, setLogsUser] = useState<AdminUser | null>(null);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
+  const [walletUser, setWalletUser] = useState<AdminUser | null>(null);
   const topPadding = Platform.OS === "web" ? 0 : insets.top;
 
   async function handleApprove(user: AdminUser) {
@@ -313,6 +446,10 @@ export default function UsersScreen() {
     }
   }
 
+  function handleWalletDone(userId: string, newBalance: number) {
+    setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, walletBalance: newBalance } : u)));
+  }
+
   const filtered = users.filter((u) => {
     const matchSearch = !search || u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
     const matchFilter =
@@ -344,7 +481,6 @@ export default function UsersScreen() {
         </Pressable>
       </View>
 
-      {/* Search */}
       <View style={styles.searchRow}>
         <View style={styles.searchBox}>
           <Feather name="search" size={16} color="#9CA3AF" />
@@ -363,7 +499,6 @@ export default function UsersScreen() {
         </View>
       </View>
 
-      {/* Filter Tabs */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={styles.filterRow}>
         {filterTabs.map((tab) => (
           <Pressable
@@ -402,6 +537,7 @@ export default function UsersScreen() {
               onViewLogs={handleViewLogs}
               onApprove={handleApprove}
               onReject={handleReject}
+              onWalletAdjust={setWalletUser}
             />
           ))}
         </ScrollView>
@@ -413,6 +549,15 @@ export default function UsersScreen() {
           logs={logs}
           loading={logsLoading}
           onClose={() => setLogsUser(null)}
+        />
+      )}
+
+      {walletUser && (
+        <WalletModal
+          user={walletUser}
+          onClose={() => setWalletUser(null)}
+          onDone={handleWalletDone}
+          apiRequest={apiRequest}
         />
       )}
     </View>
@@ -452,6 +597,7 @@ const styles = StyleSheet.create({
   infoItem: { gap: 2 },
   infoLabel: { fontSize: 11, fontFamily: "Inter_500Medium", color: "#9CA3AF" },
   infoValue: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#0F1740" },
+  actionCol: { gap: 8 },
   actionRow: { flexDirection: "row", gap: 10 },
   actionBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 10, borderWidth: 1, paddingVertical: 10 },
   actionText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
@@ -466,4 +612,12 @@ const styles = StyleSheet.create({
   methodText: { fontSize: 11, fontFamily: "Inter_700Bold" },
   logPath: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#374151" },
   logTime: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#9CA3AF", marginTop: 2 },
+  modeBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 10, borderWidth: 1.5, borderColor: "#E5E7EB", paddingVertical: 12 },
+  modeBtnText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  walletField: { gap: 6 },
+  walletLabel: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#374151" },
+  walletInput: { borderRadius: 10, borderWidth: 1, borderColor: "#E5EAF8", backgroundColor: "#F9FAFB", paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, fontFamily: "Inter_400Regular", color: "#0F1740" },
+  walletError: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 10, borderWidth: 1, padding: 10 },
+  walletSubmitBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 12, paddingVertical: 14 },
+  walletSubmitText: { color: "#fff", fontSize: 15, fontFamily: "Inter_600SemiBold" },
 });

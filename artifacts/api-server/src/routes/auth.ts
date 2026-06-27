@@ -13,7 +13,8 @@ const router = Router();
 const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
-  name: z.string().min(1),
+  name: z.string().min(3),
+  mobileNumber: z.string().regex(/^\d{10}$/, "Must be a 10-digit mobile number"),
   deviceUuid: z.string().min(1),
   referralCode: z.string().optional(),
 });
@@ -40,7 +41,7 @@ router.post("/auth/register", async (req, res) => {
     res.status(400).json({ error: "Validation failed", details: parsed.error.issues });
     return;
   }
-  const { email, password, name, deviceUuid, referralCode } = parsed.data;
+  const { email, password, name, mobileNumber, deviceUuid, referralCode } = parsed.data;
 
   const existing = await db.select({ id: usersTable.id, deviceUuid: usersTable.deviceUuid })
     .from(usersTable)
@@ -78,6 +79,7 @@ router.post("/auth/register", async (req, res) => {
     email,
     passwordHash,
     name,
+    mobileNumber,
     deviceUuid,
     referralCode: userReferralCode,
     referredById,

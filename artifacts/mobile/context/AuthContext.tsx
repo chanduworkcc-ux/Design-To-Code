@@ -29,6 +29,7 @@ interface RegisterData {
   email: string;
   password: string;
   name: string;
+  mobileNumber: string;
   referralCode?: string;
 }
 

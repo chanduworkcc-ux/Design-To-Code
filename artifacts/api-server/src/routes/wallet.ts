@@ -74,4 +74,85 @@ router.post("/admin/withdrawals/:id/reject", authMiddleware, adminMiddleware, as
   res.json({ success: true, refundedCoins: wr.coins });
 });
 
+// ─── Admin: Manually adjust user wallet ──────────────────────────────────────
+
+const walletAdjustSchema = z.object({
+  coins: z.number().int().refine((n) => n !== 0, "Amount cannot be zero"),
+  reason: z.string().min(1),
+});
+
+router.post("/admin/users/:id/wallet-adjust", authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
+  const parsed = walletAdjustSchema.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: "Validation failed", details: parsed.error.issues }); return; }
+  const { coins, reason } = parsed.data;
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.params.id));
+  if (!user) { res.status(404).json({ error: "User not found" }); return; }
+
+  const newBalance = user.walletBalance + coins;
+  if (newBalance < 0) { res.status(400).json({ error: `Insufficient balance. User has ${user.walletBalance} coins.` }); return; }
+
+  await db.update(usersTable).set({ walletBalance: newBalance }).where(eq(usersTable.id, req.params.id));
+  await db.insert(walletTransactionsTable).values({
+    id: uuidv4(),
+    userId: req.params.id,
+    type: coins > 0 ? "credit" : "debit",
+    coins: Math.abs(coins),
+    description: `Admin adjustment: ${reason}`,
+    referenceId: req.userId,
+  });
+
+  res.json({ newBalance, coins, user: { id: user.id, name: user.name, email: user.email } });
+});
+
+// ─── Admin: Wallet financial summary ─────────────────────────────────────────
+
+router.get("/admin/wallet/summary", authMiddleware, adminMiddleware, async (_req, res) => {
+  const { sql, sum } = await import("drizzle-orm");
+
+  const [totalGiven] = await db
+    .select({ total: sql<number>`COALESCE(SUM(${walletTransactionsTable.coins}), 0)` })
+    .from(walletTransactionsTable)
+    .where(eq(walletTransactionsTable.type, "credit"));
+
+  const [totalDeducted] = await db
+    .select({ total: sql<number>`COALESCE(SUM(${walletTransactionsTable.coins}), 0)` })
+    .from(walletTransactionsTable)
+    .where(eq(walletTransactionsTable.type, "debit"));
+
+  const [adminAdjustments] = await db
+    .select({ total: sql<number>`COALESCE(SUM(${walletTransactionsTable.coins}), 0)` })
+    .from(walletTransactionsTable)
+    .where(sql`${walletTransactionsTable.type} = 'credit' AND ${walletTransactionsTable.description} LIKE 'Admin adjustment:%'`);
+
+  const [currentSunday] = [new Date()];
+  currentSunday.setHours(0, 0, 0, 0);
+  currentSunday.setDate(currentSunday.getDate() - currentSunday.getDay());
+
+  const [thisWeekGiven] = await db
+    .select({ total: sql<number>`COALESCE(SUM(${walletTransactionsTable.coins}), 0)` })
+    .from(walletTransactionsTable)
+    .where(sql`${walletTransactionsTable.type} = 'credit' AND ${walletTransactionsTable.createdAt} >= ${currentSunday}`);
+
+  const [userCount] = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(usersTable)
+    .where(eq(usersTable.role, "user"));
+
+  const [totalUserBalance] = await db
+    .select({ total: sql<number>`COALESCE(SUM(${usersTable.walletBalance}), 0)` })
+    .from(usersTable)
+    .where(eq(usersTable.role, "user"));
+
+  res.json({
+    lifetimeCoinsGiven: Number(totalGiven.total),
+    lifetimeCoinsDeducted: Number(totalDeducted.total),
+    adminAdjustmentsTotal: Number(adminAdjustments.total),
+    thisWeekCoinsGiven: Number(thisWeekGiven.total),
+    totalUsersWithWallet: Number(userCount.count),
+    totalCurrentBalance: Number(totalUserBalance.total),
+    generatedAt: new Date().toISOString(),
+  });
+});
+
 export default router;

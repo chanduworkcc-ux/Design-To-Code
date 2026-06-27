@@ -59,20 +59,46 @@ export default function RegisterScreen() {
   const { register } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
   const [referralCode, setReferralCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [pendingApproval, setPendingApproval] = useState(false);
 
   async function handleRegister() {
-    if (!name.trim() || !email.trim() || !password.trim()) { setError("Please fill in all required fields"); return; }
-    if (password.length < 6) { setError("Password must be at least 6 characters"); return; }
+    if (!name.trim() || !email.trim() || !mobile.trim() || !password.trim()) {
+      setError("Please fill in all required fields");
+      return;
+    }
+    if (name.trim().length < 3) {
+      setError("Name must be at least 3 characters");
+      return;
+    }
+    if (!/^\d{10}$/.test(mobile.trim())) {
+      setError("Mobile number must be exactly 10 digits");
+      return;
+    }
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
+    if (!agreedToTerms) {
+      setError("You must accept the Terms & Conditions to continue");
+      return;
+    }
     setLoading(true);
     setError("");
     try {
-      await register({ name: name.trim(), email: email.trim().toLowerCase(), password, referralCode: referralCode.trim() || undefined });
+      await register({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        password,
+        mobileNumber: mobile.trim(),
+        referralCode: referralCode.trim() || undefined,
+      });
       router.replace("/(tabs)");
     } catch (e: any) {
       if (e.message === "pending_approval") { setPendingApproval(true); }
@@ -109,7 +135,6 @@ export default function RegisterScreen() {
       style={[styles.root, { backgroundColor: colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      {/* 3D floating orbs */}
       <FloatingOrb color="#10B981" size={260} style={{ top: -70, right: -90 }} delay={0}    amplitude={20} duration={3800} />
       <FloatingOrb color="#2563EB" size={200} style={{ top: H * 0.4,  left: -80  }} delay={600}  amplitude={16} duration={3400} />
       <FloatingOrb color="#F472B6" size={160} style={{ bottom: 50, right: -40 }} delay={300}  amplitude={18} duration={3200} />
@@ -136,35 +161,86 @@ export default function RegisterScreen() {
             </View>
           )}
 
-          {[
-            { label: "Full Name",  icon: "user",   value: name,         setter: setName,         placeholder: "Enter your full name",      type: undefined,        secure: false },
-            { label: "Email",      icon: "mail",   value: email,        setter: setEmail,        placeholder: "Enter your email",           type: "email-address",  secure: false },
-            { label: "Password",   icon: "lock",   value: password,     setter: setPassword,     placeholder: "Create a password (6+ chars)", type: undefined,       secure: !showPassword },
-          ].map(({ label, icon, value, setter, placeholder, type, secure }) => (
-            <View key={label} style={styles.field}>
-              <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
-              <View style={[styles.inputRow, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-                <Feather name={icon as any} size={18} color={colors.mutedForeground} />
-                <TextInput
-                  style={[styles.input, { color: colors.text }]}
-                  placeholder={placeholder}
-                  placeholderTextColor={colors.mutedForeground}
-                  value={value}
-                  onChangeText={(t) => { setter(t); setError(""); }}
-                  keyboardType={type as any}
-                  autoCapitalize={label === "Full Name" ? "words" : "none"}
-                  secureTextEntry={secure}
-                  autoCorrect={false}
-                />
-                {label === "Password" && (
-                  <Pressable onPress={() => setShowPassword(v => !v)}>
-                    <Feather name={showPassword ? "eye-off" : "eye"} size={18} color={colors.mutedForeground} />
-                  </Pressable>
-                )}
-              </View>
+          {/* Full Name */}
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: colors.text }]}>Full Name</Text>
+            <View style={[styles.inputRow, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+              <Feather name="user" size={18} color={colors.mutedForeground} />
+              <TextInput
+                style={[styles.input, { color: colors.text }]}
+                placeholder="Enter your full name (3+ chars)"
+                placeholderTextColor={colors.mutedForeground}
+                value={name}
+                onChangeText={(t) => { setName(t); setError(""); }}
+                autoCapitalize="words"
+                autoCorrect={false}
+              />
             </View>
-          ))}
+          </View>
 
+          {/* Email */}
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: colors.text }]}>Email</Text>
+            <View style={[styles.inputRow, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+              <Feather name="mail" size={18} color={colors.mutedForeground} />
+              <TextInput
+                style={[styles.input, { color: colors.text }]}
+                placeholder="Enter your email"
+                placeholderTextColor={colors.mutedForeground}
+                value={email}
+                onChangeText={(t) => { setEmail(t); setError(""); }}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+          </View>
+
+          {/* Mobile Number */}
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: colors.text }]}>Mobile Number</Text>
+            <View style={[styles.inputRow, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+              <Feather name="phone" size={18} color={colors.mutedForeground} />
+              <TextInput
+                style={[styles.input, { color: colors.text }]}
+                placeholder="10-digit mobile number"
+                placeholderTextColor={colors.mutedForeground}
+                value={mobile}
+                onChangeText={(t) => { setMobile(t.replace(/\D/g, "").slice(0, 10)); setError(""); }}
+                keyboardType="number-pad"
+                maxLength={10}
+                autoCorrect={false}
+              />
+              {mobile.length > 0 && (
+                <Text style={{ fontSize: 11, fontFamily: "Inter_500Medium", color: mobile.length === 10 ? "#10B981" : colors.mutedForeground }}>
+                  {mobile.length}/10
+                </Text>
+              )}
+            </View>
+          </View>
+
+          {/* Password */}
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: colors.text }]}>Password</Text>
+            <View style={[styles.inputRow, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+              <Feather name="lock" size={18} color={colors.mutedForeground} />
+              <TextInput
+                style={[styles.input, { color: colors.text }]}
+                placeholder="Create a password (6+ chars)"
+                placeholderTextColor={colors.mutedForeground}
+                value={password}
+                onChangeText={(t) => { setPassword(t); setError(""); }}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <Pressable onPress={() => setShowPassword(v => !v)}>
+                <Feather name={showPassword ? "eye-off" : "eye"} size={18} color={colors.mutedForeground} />
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Referral Code */}
           <View style={styles.field}>
             <Text style={[styles.label, { color: colors.text }]}>Referral Code <Text style={[styles.optional, { color: colors.mutedForeground }]}>(Optional)</Text></Text>
             <View style={[styles.inputRow, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
@@ -180,6 +256,23 @@ export default function RegisterScreen() {
               />
             </View>
           </View>
+
+          {/* Terms & Conditions */}
+          <Pressable style={styles.termsRow} onPress={() => setAgreedToTerms(v => !v)}>
+            <View style={[styles.checkbox, { borderColor: agreedToTerms ? "#2563EB" : colors.border, backgroundColor: agreedToTerms ? "#2563EB" : "transparent" }]}>
+              {agreedToTerms && <Feather name="check" size={12} color="#fff" />}
+            </View>
+            <Text style={[styles.termsText, { color: colors.mutedForeground }]}>
+              I agree to the{" "}
+              <Text style={[styles.termsLink, { color: colors.primary }]} onPress={() => router.push("/policies")}>
+                Terms & Conditions
+              </Text>{" "}
+              and{" "}
+              <Text style={[styles.termsLink, { color: colors.primary }]} onPress={() => router.push("/policies")}>
+                Privacy Policy
+              </Text>
+            </Text>
+          </Pressable>
 
           <Btn3D onPress={handleRegister} loading={loading} label="Create Account" />
 
@@ -209,6 +302,10 @@ const styles = StyleSheet.create({
   optional: { fontSize: 12, fontFamily: "Inter_400Regular" },
   inputRow: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13 },
   input: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", padding: 0 },
+  termsRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginTop: -2 },
+  checkbox: { width: 20, height: 20, borderRadius: 6, borderWidth: 1.5, alignItems: "center", justifyContent: "center", marginTop: 1, flexShrink: 0 },
+  termsText: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 20 },
+  termsLink: { fontFamily: "Inter_600SemiBold" },
   btn: { borderRadius: 14, paddingVertical: 16, alignItems: "center", marginTop: 4 },
   btnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_600SemiBold" },
   switchRow: { flexDirection: "row", justifyContent: "center", marginTop: -2 },

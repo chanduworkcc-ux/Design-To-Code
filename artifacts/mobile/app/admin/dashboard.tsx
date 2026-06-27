@@ -38,6 +38,16 @@ interface Stats {
   bannedUsers: number;
 }
 
+interface WalletSummary {
+  lifetimeCoinsGiven: number;
+  lifetimeCoinsDeducted: number;
+  adminAdjustmentsTotal: number;
+  thisWeekCoinsGiven: number;
+  totalUsersWithWallet: number;
+  totalCurrentBalance: number;
+  generatedAt: string;
+}
+
 export default function AdminDashboardScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -48,6 +58,7 @@ export default function AdminDashboardScreen() {
   const overlayAnim = useRef(new Animated.Value(0)).current;
   const [stats, setStats] = useState<Stats | null>(null);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [walletSummary, setWalletSummary] = useState<WalletSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const topPadding = Platform.OS === "web" ? 0 : insets.top;
@@ -56,11 +67,18 @@ export default function AdminDashboardScreen() {
 
   async function fetchStats() {
     try {
-      const res = await apiRequest("/admin/stats");
-      if (res.ok) {
-        const data = await res.json();
+      const [statsRes, walletRes] = await Promise.all([
+        apiRequest("/admin/stats"),
+        apiRequest("/admin/wallet/summary"),
+      ]);
+      if (statsRes.ok) {
+        const data = await statsRes.json();
         setStats(data.stats);
         setRecentOrders(data.recentOrders ?? []);
+      }
+      if (walletRes.ok) {
+        const wData = await walletRes.json();
+        setWalletSummary(wData);
       }
     } catch {}
     setLoading(false);
@@ -281,6 +299,66 @@ export default function AdminDashboardScreen() {
             </View>
           </View>
 
+          {/* Financial Summary */}
+          <View style={[styles.section, { backgroundColor: "#fff", borderColor: "#E5EAF8" }]}>
+            <View style={styles.sectionHeaderRow}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <View style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: "#FFFBEB", alignItems: "center", justifyContent: "center" }}>
+                  <Feather name="dollar-sign" size={16} color="#F59E0B" />
+                </View>
+                <Text style={styles.sectionTitle}>Wallet Financial Summary</Text>
+              </View>
+              <Pressable onPress={() => router.push("/admin/users")}>
+                <Text style={styles.sectionLink}>Adjust →</Text>
+              </Pressable>
+            </View>
+            {walletSummary ? (
+              <View style={{ gap: 8 }}>
+                <View style={styles.finRow}>
+                  <View style={[styles.finIcon, { backgroundColor: "#ECFDF5" }]}>
+                    <Feather name="trending-up" size={14} color="#10B981" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.finLabel}>Lifetime Coins Given</Text>
+                    <Text style={styles.finValue}>{walletSummary.lifetimeCoinsGiven.toLocaleString()} coins</Text>
+                  </View>
+                </View>
+                <View style={styles.finRow}>
+                  <View style={[styles.finIcon, { backgroundColor: "#FEF2F2" }]}>
+                    <Feather name="trending-down" size={14} color="#EF4444" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.finLabel}>Lifetime Coins Deducted</Text>
+                    <Text style={styles.finValue}>{walletSummary.lifetimeCoinsDeducted.toLocaleString()} coins</Text>
+                  </View>
+                </View>
+                <View style={styles.finRow}>
+                  <View style={[styles.finIcon, { backgroundColor: "#EFF6FF" }]}>
+                    <Feather name="users" size={14} color="#2563EB" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.finLabel}>Total Live Wallet Balance</Text>
+                    <Text style={styles.finValue}>{walletSummary.totalCurrentBalance.toLocaleString()} coins across {walletSummary.totalUsersWithWallet} users</Text>
+                  </View>
+                </View>
+                <View style={[styles.finRow, { backgroundColor: "#FFFBEB", borderRadius: 10, paddingHorizontal: 10 }]}>
+                  <View style={[styles.finIcon, { backgroundColor: "#FDE68A" }]}>
+                    <Feather name="calendar" size={14} color="#F59E0B" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.finLabel}>This Week (since Sunday)</Text>
+                    <Text style={[styles.finValue, { color: "#B45309" }]}>{walletSummary.thisWeekCoinsGiven.toLocaleString()} coins given</Text>
+                  </View>
+                </View>
+                <Text style={[styles.noDataText, { textAlign: "right", paddingTop: 0 }]}>
+                  Updated {new Date(walletSummary.generatedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                </Text>
+              </View>
+            ) : (
+              <Text style={styles.noDataText}>Loading summary...</Text>
+            )}
+          </View>
+
           {/* Settings shortcut */}
           <Pressable
             style={[styles.section, { backgroundColor: "#fff", borderColor: "#E5EAF8", flexDirection: "row", alignItems: "center" }]}
@@ -424,4 +502,8 @@ const styles = StyleSheet.create({
   soonTag: { fontSize: 9, fontFamily: "Inter_700Bold", color: "#9CA3AF", backgroundColor: "#F3F4F6", paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4 },
   drawerSignOut: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 22, paddingVertical: 16, borderTopWidth: 1, borderTopColor: "#E5EAF8" },
   drawerSignOutText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#EF4444" },
+  finRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 4 },
+  finIcon: { width: 30, height: 30, borderRadius: 8, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  finLabel: { fontSize: 12, fontFamily: "Inter_500Medium", color: "#6B7280" },
+  finValue: { fontSize: 14, fontFamily: "Inter_700Bold", color: "#0F1740", marginTop: 1 },
 });

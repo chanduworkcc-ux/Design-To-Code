@@ -10,6 +10,7 @@ export const usersTable = pgTable("users", {
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   name: text("name").notNull(),
+  mobileNumber: text("mobile_number"),
   deviceUuid: text("device_uuid").unique(),
   referralCode: text("referral_code").notNull().unique(),
   referredById: text("referred_by_id"),
