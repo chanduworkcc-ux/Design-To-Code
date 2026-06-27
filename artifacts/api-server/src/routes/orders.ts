@@ -90,11 +90,9 @@ router.post("/orders", authMiddleware, async (req: AuthRequest, res) => {
     .from(ordersTable)
     .where(eq(ordersTable.userId, req.userId!));
 
-  const alreadyPurchased = existingOrders.some(
-    (o) => o.productId === productId && o.status !== "cancelled"
-  );
-  if (alreadyPurchased) {
-    res.status(400).json({ error: "You have already purchased this item. Each item can only be bought once." });
+  const hasActiveOrder = existingOrders.some((o) => o.status !== "cancelled");
+  if (hasActiveOrder) {
+    res.status(400).json({ error: "You already have an order. Only one order per account is allowed." });
     return;
   }
 

@@ -134,21 +134,46 @@ router.get("/admin/users", authMiddleware, adminMiddleware, async (req, res) => 
       status: usersTable.status,
       walletBalance: usersTable.walletBalance,
       referralCode: usersTable.referralCode,
+      deviceUuid: usersTable.deviceUuid,
       createdAt: usersTable.createdAt,
       banReason: usersTable.banReason,
       suspendedUntil: usersTable.suspendedUntil,
+      verifiedAt: usersTable.verifiedAt,
     })
     .from(usersTable)
     .orderBy(desc(usersTable.createdAt));
 
   const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000);
-  const onlineUsers = await db
-    .selectDistinct({ userId: activityLogsTable.userId })
-    .from(activityLogsTable)
-    .where(and(gte(activityLogsTable.timestamp, fifteenMinsAgo), sql`${activityLogsTable.userId} IS NOT NULL`));
+
+  const [onlineUsers, latestIps] = await Promise.all([
+    db.selectDistinct({ userId: activityLogsTable.userId })
+      .from(activityLogsTable)
+      .where(and(gte(activityLogsTable.timestamp, fifteenMinsAgo), sql`${activityLogsTable.userId} IS NOT NULL`)),
+    db.select({
+      userId: activityLogsTable.userId,
+      ip: activityLogsTable.ip,
+      timestamp: activityLogsTable.timestamp,
+    })
+      .from(activityLogsTable)
+      .where(sql`${activityLogsTable.userId} IS NOT NULL AND ${activityLogsTable.ip} IS NOT NULL`)
+      .orderBy(desc(activityLogsTable.timestamp))
+      .limit(500),
+  ]);
+
   const onlineSet = new Set(onlineUsers.map((u) => u.userId));
 
-  const usersWithStatus = users.map((u) => ({ ...u, online: onlineSet.has(u.id) }));
+  const ipMap: Record<string, { ip: string; seenAt: string }> = {};
+  for (const log of latestIps) {
+    if (log.userId && !ipMap[log.userId] && log.ip) {
+      ipMap[log.userId] = { ip: log.ip, seenAt: log.timestamp.toISOString() };
+    }
+  }
+
+  const usersWithStatus = users.map((u) => ({
+    ...u,
+    online: onlineSet.has(u.id),
+    liveIp: ipMap[u.id] ?? null,
+  }));
   res.json({ users: usersWithStatus });
 });
 

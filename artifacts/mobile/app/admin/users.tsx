@@ -22,13 +22,16 @@ interface AdminUser {
   email: string;
   name: string;
   role: string;
-  status: "active" | "banned" | "suspended" | "pending";
+  status: "active" | "banned" | "suspended" | "pending" | "unverified" | "rejected";
   walletBalance: number;
   referralCode: string;
+  deviceUuid: string | null;
   createdAt: string;
   banReason: string | null;
   suspendedUntil: string | null;
   online: boolean;
+  liveIp: { ip: string; seenAt: string } | null;
+  verifiedAt: string | null;
 }
 
 interface ActivityLog {
@@ -39,11 +42,13 @@ interface ActivityLog {
   timestamp: string;
 }
 
-const STATUS_CONFIG = {
-  active: { color: "#10B981", bg: "#ECFDF5", label: "Active" },
-  banned: { color: "#EF4444", bg: "#FEF2F2", label: "Banned" },
-  suspended: { color: "#F59E0B", bg: "#FFFBEB", label: "Suspended" },
-  pending: { color: "#8B5CF6", bg: "#F5F3FF", label: "Pending" },
+const STATUS_CONFIG: Record<string, { color: string; bg: string; label: string }> = {
+  active:     { color: "#10B981", bg: "#ECFDF5", label: "Active" },
+  banned:     { color: "#EF4444", bg: "#FEF2F2", label: "Banned" },
+  suspended:  { color: "#F59E0B", bg: "#FFFBEB", label: "Suspended" },
+  pending:    { color: "#8B5CF6", bg: "#F5F3FF", label: "Pending" },
+  unverified: { color: "#64748B", bg: "#F1F5F9", label: "Unverified" },
+  rejected:   { color: "#DC2626", bg: "#FEE2E2", label: "Rejected" },
 };
 
 function UserCard({
@@ -99,6 +104,16 @@ function UserCard({
 
       {expanded && (
         <View style={[styles.expandedSection, { borderTopColor: "#F3F4F6" }]}>
+          {user.liveIp && (
+            <View style={styles.ipBanner}>
+              <Feather name="wifi" size={13} color="#2563EB" />
+              <Text style={styles.ipAddress}>{user.liveIp.ip}</Text>
+              <Text style={styles.ipSeen}>
+                {" · "}last seen {new Date(user.liveIp.seenAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+              </Text>
+            </View>
+          )}
+
           <View style={styles.infoGrid}>
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Wallet</Text>
@@ -112,6 +127,12 @@ function UserCard({
               <Text style={styles.infoLabel}>Joined</Text>
               <Text style={styles.infoValue}>{new Date(user.createdAt).toLocaleDateString("en-IN")}</Text>
             </View>
+            {user.verifiedAt && (
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>Verified</Text>
+                <Text style={styles.infoValue}>{new Date(user.verifiedAt).toLocaleDateString("en-IN")}</Text>
+              </View>
+            )}
             {user.banReason && (
               <View style={styles.infoItem}>
                 <Text style={styles.infoLabel}>Ban Reason</Text>
@@ -740,6 +761,9 @@ const styles = StyleSheet.create({
   statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   statusText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
   expandedSection: { borderTopWidth: 1, padding: 14 },
+  ipBanner: { flexDirection: "row", alignItems: "center", backgroundColor: "#EFF6FF", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7, marginBottom: 12, gap: 6 },
+  ipAddress: { fontSize: 13, fontFamily: "Inter_700Bold", color: "#1D4ED8", letterSpacing: 0.3 },
+  ipSeen: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#6B7280" },
   infoGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 14 },
   infoItem: { gap: 2 },
   infoLabel: { fontSize: 11, fontFamily: "Inter_500Medium", color: "#9CA3AF" },

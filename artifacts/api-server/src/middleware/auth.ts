@@ -62,12 +62,17 @@ export function adminMiddleware(req: AuthRequest, res: Response, next: NextFunct
   next();
 }
 
-export function activityLogger(req: AuthRequest, _res: Response, next: NextFunction) {
-  const userId = req.userId ?? null;
-  const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0] ?? req.socket.remoteAddress ?? null;
+export function activityLogger(req: AuthRequest, res: Response, next: NextFunction) {
+  const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ?? req.socket.remoteAddress ?? null;
   const userAgent = req.headers["user-agent"] ?? null;
-  db.insert(activityLogsTable)
-    .values({ id: uuidv4(), userId: userId ?? undefined, path: req.path, method: req.method, ip: ip ?? undefined, userAgent: userAgent ?? undefined })
-    .catch(() => {});
+  const path = req.path;
+  const method = req.method;
+
+  res.on("finish", () => {
+    const userId = req.userId ?? null;
+    db.insert(activityLogsTable)
+      .values({ id: uuidv4(), userId: userId ?? undefined, path, method, ip: ip ?? undefined, userAgent: userAgent ?? undefined })
+      .catch(() => {});
+  });
   next();
 }
