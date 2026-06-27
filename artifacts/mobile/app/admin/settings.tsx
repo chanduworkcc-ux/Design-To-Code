@@ -102,7 +102,6 @@ export default function SettingsScreen() {
   const [edited, setEdited] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [showBanner, setShowBanner] = useState(true);
   const [gatewayErrors, setGatewayErrors] = useState<Record<string, string>>({});
   const [secureFields, setSecureFields] = useState<Record<string, boolean>>({});
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -226,7 +225,6 @@ export default function SettingsScreen() {
         for (const item of (d.config as ConfigItem[])) { map[item.key] = item.value; }
         setConfig(map);
         setEdited(map);
-        setShowBanner(false);
         Alert.alert("Saved", "Settings updated successfully.");
       } else {
         const errData = await res.json().catch(() => ({}));
@@ -261,22 +259,6 @@ export default function SettingsScreen() {
           </Pressable>
         )}
       </View>
-
-      {/* Option 3: Warning Banner */}
-      {showBanner && (
-        <View style={styles.warningBanner}>
-          <View style={styles.warningIconWrap}>
-            <Feather name="alert-triangle" size={16} color="#92400E" />
-          </View>
-          <Text style={styles.warningText}>
-            <Text style={styles.warningBold}>Action Required:</Text>
-            {" "}Your payment gateways are currently inactive. Fill out the mandatory credentials below and click "Save" to go live.
-          </Text>
-          <Pressable onPress={() => setShowBanner(false)} style={styles.warningClose} hitSlop={8}>
-            <Feather name="x" size={14} color="#92400E" />
-          </Pressable>
-        </View>
-      )}
 
       {loading ? (
         <View style={styles.center}>
@@ -659,13 +641,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#2563EB", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10,
   },
   uploadBtnText: { color: "#fff", fontSize: 13, fontFamily: "Inter_600SemiBold" },
-
-  // Option 3: Warning Banner
-  warningBanner: { flexDirection: "row", alignItems: "flex-start", gap: 10, backgroundColor: "#FFFBEB", borderBottomWidth: 1, borderBottomColor: "#FCD34D", paddingHorizontal: 16, paddingVertical: 12 },
-  warningIconWrap: { marginTop: 1 },
-  warningText: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: "#78350F", lineHeight: 18 },
-  warningBold: { fontFamily: "Inter_700Bold" },
-  warningClose: { padding: 2 },
 
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
   loadingText: { color: "#6B7280", fontFamily: "Inter_500Medium", fontSize: 14 },
