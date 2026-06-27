@@ -30,9 +30,6 @@ const BOOLEAN_CONFIGS: Record<string, { label: string; description: string }> = 
   registration_open: { label: "Registration Open", description: "Allow new user sign-ups" },
   maintenance_mode: { label: "Maintenance Mode", description: "Take the app offline for maintenance" },
   cod_enabled: { label: "Cash on Delivery", description: "Allow COD payment method" },
-  stripe_enabled: { label: "Stripe Enabled", description: "Allow Stripe card payment method" },
-  paypal_enabled: { label: "PayPal Enabled", description: "Allow PayPal express checkout" },
-  razorpay_enabled: { label: "Razorpay Enabled", description: "Allow Razorpay payment method" },
   announcement_enabled: { label: "Announcement Bar", description: "Show announcement banner on home screen" },
 };
 
@@ -209,19 +206,8 @@ export default function SettingsScreen() {
   }
 
   async function handleSave() {
-    // Option 2: compute inline errors
     const errors = validatePaymentGateways();
     setGatewayErrors(errors);
-
-    // Option 1: show pop-up if any gateway has errors
-    if (Object.keys(errors).length > 0) {
-      Alert.alert(
-        "Missing Payment Configuration!",
-        "You cannot save your settings yet. Please fill in all required payment gateway details (marked with an asterisk *) to activate payments.",
-        [{ text: "Acknowledge", style: "default" }]
-      );
-      return;
-    }
 
     const changes: Record<string, string> = {};
     for (const [k, v] of Object.entries(edited)) {

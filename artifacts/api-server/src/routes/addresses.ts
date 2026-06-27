@@ -3,18 +3,18 @@ import { eq, and } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { db } from "@workspace/db";
 import { addressesTable } from "@workspace/db/schema";
-import { authMiddleware } from "../middleware/auth";
+import { authMiddleware, type AuthRequest } from "../middleware/auth";
 
 const router: IRouter = Router();
 
 router.get("/addresses", authMiddleware, async (req: Request, res: Response) => {
-  const userId = (req as any).user.id;
+  const userId = (req as AuthRequest).userId!;
   const rows = await db.select().from(addressesTable).where(eq(addressesTable.userId, userId));
   res.json({ addresses: rows });
 });
 
 router.post("/addresses", authMiddleware, async (req: Request, res: Response) => {
-  const userId = (req as any).user.id;
+  const userId = (req as AuthRequest).userId!;
   const { label, fullName, phone, line1, line2, city, state, pincode, isDefault } = req.body;
   if (!fullName || !phone || !line1 || !city || !state || !pincode) {
     res.status(400).json({ error: "fullName, phone, line1, city, state, and pincode are required." });
@@ -40,7 +40,7 @@ router.post("/addresses", authMiddleware, async (req: Request, res: Response) =>
 });
 
 router.put("/addresses/:id", authMiddleware, async (req: Request, res: Response) => {
-  const userId = (req as any).user.id;
+  const userId = (req as AuthRequest).userId!;
   const { id } = req.params;
   const { label, fullName, phone, line1, line2, city, state, pincode, isDefault } = req.body;
   const existing = await db.select().from(addressesTable).where(and(eq(addressesTable.id, id), eq(addressesTable.userId, userId)));
@@ -64,7 +64,7 @@ router.put("/addresses/:id", authMiddleware, async (req: Request, res: Response)
 });
 
 router.delete("/addresses/:id", authMiddleware, async (req: Request, res: Response) => {
-  const userId = (req as any).user.id;
+  const userId = (req as AuthRequest).userId!;
   const { id } = req.params;
   const existing = await db.select().from(addressesTable).where(and(eq(addressesTable.id, id), eq(addressesTable.userId, userId)));
   if (!existing.length) { res.status(404).json({ error: "Address not found." }); return; }
