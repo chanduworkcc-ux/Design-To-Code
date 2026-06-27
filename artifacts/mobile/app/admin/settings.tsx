@@ -180,8 +180,7 @@ export default function SettingsScreen() {
       const res = await apiRequest("/admin/config");
       if (res.ok) {
         const d = await res.json();
-        const map: Record<string, string> = {};
-        for (const item of (d.config as ConfigItem[])) { map[item.key] = item.value; }
+        const map: Record<string, string> = d.config as Record<string, string>;
         setConfig(map);
         setEdited(map);
       } else {
@@ -234,8 +233,7 @@ export default function SettingsScreen() {
       const res = await apiRequest("/admin/config", { method: "PUT", body: JSON.stringify(changes) });
       if (res.ok) {
         const d = await res.json();
-        const returnedMap: Record<string, string> = {};
-        for (const item of (d.config as ConfigItem[])) { returnedMap[item.key] = item.value; }
+        const returnedMap: Record<string, string> = d.config as Record<string, string>;
         setConfig(returnedMap);
         setEdited((prev) => ({ ...prev, ...returnedMap }));
         setSaveSuccess(true);
