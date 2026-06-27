@@ -83,7 +83,7 @@ export default function WishlistScreen() {
               </Text>
               <View style={styles.priceRow}>
                 <Text style={[styles.price, { color: colors.text }]}>
-                  ${item.price.toFixed(2)}
+                  ₹{Number(item.price).toLocaleString("en-IN")}
                 </Text>
                 {item.discount && (
                   <View style={[styles.discountBadge, { backgroundColor: colors.orange }]}>
