@@ -270,6 +270,10 @@ export default function LoginScreen() {
 
           <Btn3D onPress={handleLogin} loading={loading} label="Sign In" />
 
+          <Pressable onPress={() => router.push("/(auth)/forgot-password")} style={styles.switchRow}>
+            <Text style={[styles.switchLink, { color: colors.primary }]}>Forgot password?</Text>
+          </Pressable>
+
           <Pressable onPress={() => router.push("/(auth)/register")} style={styles.switchRow}>
             <Text style={[styles.switchText, { color: colors.mutedForeground }]}>Don't have an account? </Text>
             <Text style={[styles.switchLink, { color: colors.primary }]}>Create one</Text>

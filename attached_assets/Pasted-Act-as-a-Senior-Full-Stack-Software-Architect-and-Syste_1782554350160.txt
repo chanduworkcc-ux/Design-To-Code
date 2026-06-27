@@ -1,0 +1,31 @@
+Act as a Senior Full-Stack Software Architect and Systems Designer. Provide a detailed, production-ready technical specification for a User Registration, Email Verification, and Admin Approval Workflow. 
+
+The system must support two operational modes controllable via a global admin setting: "Manual Approval" and "Automatic Approval". The core user statuses are: Unverified, Pending Approval, Approved, and Rejected.
+
+Please deliver a comprehensive architectural blueprint covering the following five sections:
+
+1. DATABASE SCHEMA & CONFIGURATION STORAGE
+- Design a relational schema for the `users` table including registration fields, status enums, verification tokens, and timestamps.
+- Design a global `system_settings` schema (or key-value structure) to manage the `user_approval_mode` configuration switch.
+
+2. CONDITIONAL STATE MACHINE LOGIC
+- Map out the conditional state machine transitions based on the system mode:
+  - If mode is 'auto': Registration -> Unverified -> (Email Verified) -> Approved (Skips Pending).
+  - If mode is 'manual': Registration -> Unverified -> (Email Verified) -> Pending Approval -> Admin Action (Approved or Rejected).
+- Define edge-case handlers (e.g., what happens to existing 'Pending' users if an admin switches the mode from manual to auto).
+
+3. REST API ENDPOINTS & ACCESS CONTROL
+- List all required endpoints (POST /register, GET /verify-email, POST /login, PUT /admin/settings, POST /admin/approve-reject).
+- Specify HTTP methods, request payloads, response bodies, and explicit status code behaviors.
+- Define strict authentication/authorization rules (e.g., blocking 'Pending' or 'Rejected' users from logging in, ensuring only Super Admins can toggle the approval mode).
+
+4. UX/UI & FRONTEND INTERFACES
+- Wireframe/describe the frontend user screens: Registration Form, Email Verification landing page, and the "Account Pending Review" block dashboard.
+- Outline the Admin Dashboard interface, highlighting the toggle control for Auto/Manual mode and the review queue management interface (filter, approve, reject with reason).
+
+5. NOTIFICATIONS, AUDIT LOGGING & SECURITY
+- Detail the transactional email triggers and timing for each state pathway.
+- Specify requirements for audit logging (tracking who changed the approval mode, and which admin approved/rejected specific users).
+- Detail critical security measures including token expiration, rate limiting, and protection against registration spam.
+
+Ensure the final document is structured, highly technical, and immediately actionable for a software development team.

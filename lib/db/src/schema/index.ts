@@ -10,3 +10,4 @@ export * from "./banners";
 export * from "./notifications";
 export * from "./audit";
 export * from "./push-tokens";
+export * from "./password-reset";

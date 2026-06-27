@@ -2,11 +2,12 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
 import { db } from "@workspace/db";
-import { usersTable, walletTransactionsTable, referralsTable } from "@workspace/db/schema";
-import { eq, or } from "drizzle-orm";
+import { usersTable, walletTransactionsTable, referralsTable, passwordResetTokensTable } from "@workspace/db/schema";
+import { eq, or, and, gt } from "drizzle-orm";
 import { z } from "zod";
 import { signToken, authMiddleware, type AuthRequest } from "../middleware/auth";
 import { getConfig } from "../lib/config";
+import { sendPasswordResetEmail } from "../lib/mailer";
 
 const router = Router();
 
@@ -209,6 +210,77 @@ router.patch("/auth/me", authMiddleware, async (req: AuthRequest, res) => {
     .returning({ id: usersTable.id, email: usersTable.email, name: usersTable.name, role: usersTable.role, walletBalance: usersTable.walletBalance, referralCode: usersTable.referralCode });
   if (!updated) { res.status(404).json({ error: "User not found" }); return; }
   res.json({ user: updated });
+});
+
+function generateResetToken(): string {
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email(),
+});
+
+router.post("/auth/forgot-password", async (req, res) => {
+  const parsed = forgotPasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Please provide a valid email address." });
+    return;
+  }
+  const { email } = parsed.data;
+
+  const users = await db.select({ id: usersTable.id, name: usersTable.name, email: usersTable.email })
+    .from(usersTable).where(eq(usersTable.email, email));
+
+  if (users.length > 0) {
+    const user = users[0];
+    await db.delete(passwordResetTokensTable).where(eq(passwordResetTokensTable.userId, user.id));
+
+    const token = generateResetToken();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+    await db.insert(passwordResetTokensTable).values({
+      id: uuidv4(),
+      userId: user.id,
+      token,
+      expiresAt,
+    });
+
+    await sendPasswordResetEmail(user.email, user.name, token).catch(() => {});
+  }
+
+  res.json({ message: "If an account exists for that email, a reset code has been sent." });
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1),
+  password: z.string().min(6),
+});
+
+router.post("/auth/reset-password", async (req, res) => {
+  const parsed = resetPasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request. Please check your code and password." });
+    return;
+  }
+  const { token, password } = parsed.data;
+
+  const rows = await db.select().from(passwordResetTokensTable)
+    .where(and(
+      eq(passwordResetTokensTable.token, token.toUpperCase()),
+      eq(passwordResetTokensTable.used, false),
+      gt(passwordResetTokensTable.expiresAt, new Date()),
+    ));
+
+  if (!rows.length) {
+    res.status(400).json({ error: "Invalid or expired reset code. Please request a new one." });
+    return;
+  }
+
+  const record = rows[0];
+  const passwordHash = await bcrypt.hash(password, 12);
+  await db.update(usersTable).set({ passwordHash }).where(eq(usersTable.id, record.userId));
+  await db.update(passwordResetTokensTable).set({ used: true }).where(eq(passwordResetTokensTable.id, record.id));
+
+  res.json({ message: "Password reset successfully." });
 });
 
 export default router;
