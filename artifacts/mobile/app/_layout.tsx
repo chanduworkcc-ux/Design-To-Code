@@ -14,6 +14,7 @@ import {
   Dimensions,
   Image,
   StyleSheet,
+  Text,
   View,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -55,18 +56,38 @@ const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
 const MAX_SPLASH_MS = 15000;
 
+function PulseDot({ delay }: { delay: number }) {
+  const opacity = useRef(new Animated.Value(0.3)).current;
+  const scale = useRef(new Animated.Value(0.8)).current;
+
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.parallel([
+          Animated.timing(opacity, { toValue: 1, duration: 380, useNativeDriver: true }),
+          Animated.timing(scale, { toValue: 1.25, duration: 380, useNativeDriver: true }),
+        ]),
+        Animated.parallel([
+          Animated.timing(opacity, { toValue: 0.3, duration: 380, useNativeDriver: true }),
+          Animated.timing(scale, { toValue: 0.8, duration: 380, useNativeDriver: true }),
+        ]),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, []);
+
+  return <Animated.View style={[styles.dot, { opacity, transform: [{ scale }] }]} />;
+}
+
 function AppSplash({ onDone, logoUrl }: { onDone: () => void; logoUrl: string | null }) {
   const screenOpacity = useRef(new Animated.Value(1)).current;
-  const logoOpacity = useRef(new Animated.Value(0)).current;
-  const logoTranslate = useRef(new Animated.Value(20)).current;
+  const contentOpacity = useRef(new Animated.Value(0)).current;
   const doneRef = useRef(false);
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(logoOpacity, { toValue: 1, duration: 500, useNativeDriver: true }),
-      Animated.timing(logoTranslate, { toValue: 0, duration: 500, useNativeDriver: true }),
-    ]).start();
-
+    Animated.timing(contentOpacity, { toValue: 1, duration: 500, useNativeDriver: true }).start();
     const maxTimer = setTimeout(dismiss, MAX_SPLASH_MS);
     return () => clearTimeout(maxTimer);
   }, []);
@@ -74,29 +95,23 @@ function AppSplash({ onDone, logoUrl }: { onDone: () => void; logoUrl: string | 
   function dismiss() {
     if (doneRef.current) return;
     doneRef.current = true;
-    Animated.timing(screenOpacity, { toValue: 0, duration: 400, useNativeDriver: true }).start(() => onDone());
+    Animated.timing(screenOpacity, { toValue: 0, duration: 350, useNativeDriver: true }).start(() => onDone());
   }
 
   const logoSource = logoUrl ? { uri: logoUrl } : LOCAL_LOGO;
 
   return (
     <Animated.View style={[styles.splashRoot, { opacity: screenOpacity }]}>
-      {/* White base */}
-      <View style={StyleSheet.absoluteFill} pointerEvents="none">
-        <View style={{ flex: 1, backgroundColor: "#fff" }} />
-      </View>
-
-      {/* Slanted blue top panel */}
-      <View style={styles.slantTop} pointerEvents="none" />
-
-      {/* Logo centred over the slant line */}
-      <Animated.View
-        style={[
-          styles.logoWrap,
-          { opacity: logoOpacity, transform: [{ translateY: logoTranslate }] },
-        ]}
-      >
+      <Animated.View style={[styles.centerContent, { opacity: contentOpacity }]}>
         <Image source={logoSource} style={styles.logoImg} resizeMode="contain" />
+        <View style={styles.dotsRow}>
+          {[0, 1, 2].map((i) => <PulseDot key={i} delay={i * 180} />)}
+        </View>
+      </Animated.View>
+
+      <Animated.View style={[styles.brandWrap, { opacity: contentOpacity }]}>
+        <Text style={styles.brandBy}>by</Text>
+        <Text style={styles.brandName}>FX PRIME 26</Text>
       </Animated.View>
     </Animated.View>
   );
@@ -207,32 +222,43 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     zIndex: 9999,
-    backgroundColor: "#fff",
+    backgroundColor: "#EEF2FF",
   },
-  slantTop: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: height * 0.58,
-    backgroundColor: "#2563EB",
-    transform: [{ skewY: "-12deg" }, { translateY: -(height * 0.08) }],
-  },
-  logoWrap: {
+  centerContent: {
     alignItems: "center",
-    justifyContent: "center",
-    zIndex: 10,
-    backgroundColor: "#fff",
-    borderRadius: 24,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 8,
+    gap: 28,
   },
   logoImg: {
-    width: width * 0.58,
-    height: width * 0.58 * 0.42,
+    width: width * 0.42,
+    height: width * 0.42 * 0.72,
+  },
+  dotsRow: {
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "center",
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#2563EB",
+  },
+  brandWrap: {
+    position: "absolute",
+    bottom: height * 0.08,
+    alignItems: "center",
+    gap: 4,
+  },
+  brandBy: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: "#94A3B8",
+    letterSpacing: 1,
+  },
+  brandName: {
+    fontSize: 15,
+    fontFamily: "Inter_700Bold",
+    color: "#1E3A8A",
+    letterSpacing: 6,
   },
 });
