@@ -23,6 +23,7 @@ import Animated2, {
 } from "react-native-reanimated";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import LoadingScreen from "@/components/LoadingScreen";
 
 interface Order {
   id: string;
@@ -355,12 +356,7 @@ export default function OrdersScreen() {
             <Text style={styles.actionBtnText}>Sign In</Text>
           </Pressable>
         </View>
-      ) : loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.emptyTitle, { color: colors.mutedForeground }]}>Loading orders...</Text>
-        </View>
-      ) : (
+      ) : loading ? null : (
         <ScrollView
           contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 40 }]}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}

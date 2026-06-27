@@ -22,6 +22,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useNotifications } from "@/context/NotificationContext";
 import { Product } from "@/data/products";
 import { FloatingOrb, FloatIn, PulsingRing } from "@/components/ThreeD";
+import LoadingScreen from "@/components/LoadingScreen";
 import Animated2, {
   useSharedValue,
   useAnimatedStyle,
@@ -205,6 +206,9 @@ export default function ShopScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
+      {/* 3D loading overlay — covers screen while products are fetching */}
+      <LoadingScreen visible={loadingProducts} message="Loading products" />
+
       {/* Subtle 3D background orbs — only in top area so they don't cover products */}
       <FloatingOrb color={colors.primary} size={160} style={{ top: -40, right: -50 }} delay={0}   amplitude={14} duration={4000} />
       <FloatingOrb color="#7C3AED"        size={120} style={{ top: 60,  left: -40  }} delay={800} amplitude={10} duration={3600} />
