@@ -70,6 +70,14 @@ function proxyRequest(req, res) {
     targetPath = "/";
   }
 
+  // Health-check endpoint: respond immediately so Replit marks the service
+  // as reachable even before Metro has fully warmed up.
+  if (targetPath === "/status") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ status: "ok" }));
+    return;
+  }
+
   // SPA fallback: paths without a file extension are app routes, not static
   // assets. Forward them all to "/" so Metro always returns index.html and
   // lets the client-side Expo Router do the matching — this prevents the
@@ -82,7 +90,6 @@ function proxyRequest(req, res) {
     targetPath.startsWith("/node_modules") ||
     targetPath.startsWith("/index.bundle") ||
     targetPath.startsWith("/debugger") ||
-    targetPath.startsWith("/status") ||
     targetPath.startsWith("/logs") ||
     targetPath.startsWith("/reload") ||
     targetPath.startsWith("/symbolicate") ||
