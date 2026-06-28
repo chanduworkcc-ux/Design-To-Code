@@ -86,6 +86,9 @@ function RootLayoutNav() {
       <Stack.Screen name="product/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="suspended" options={{ headerShown: false }} />
       <Stack.Screen name="track-order" options={{ headerShown: false }} />
+      <Stack.Screen name="change-password" options={{ headerShown: false }} />
+      <Stack.Screen name="login-devices" options={{ headerShown: false }} />
+      <Stack.Screen name="account-security" options={{ headerShown: false }} />
     </Stack>
   );
 }

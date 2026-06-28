@@ -272,11 +272,11 @@ export default function ProfileScreen() {
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>SECURITY</Text>
         <View>
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <MenuItem icon="lock"        label="Change Password"      onPress={() => router.push("/personal-info" as any)} />
+            <MenuItem icon="lock"        label="Change Password"      onPress={() => router.push("/change-password" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <MenuItem icon="smartphone"  label="Login Devices"         onPress={() => Alert.alert("Devices", "Device management coming soon.")} />
+            <MenuItem icon="smartphone"  label="Login Devices"         onPress={() => router.push("/login-devices" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <MenuItem icon="shield"      label="Account Security"      onPress={() => Alert.alert("Security", "Two-step verification coming soon.")} />
+            <MenuItem icon="shield"      label="Account Security"      onPress={() => router.push("/account-security" as any)} />
           </View>
         </View>
 
@@ -286,7 +286,7 @@ export default function ProfileScreen() {
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <MenuItem icon="download-cloud" label="Check for Updates"  onPress={handleCheckUpdates} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <MenuItem icon="info"           label="App Version"        value={`v${appVersion}`} />
+            <MenuItem icon="info"           label="App Version"        value={`v${appVersion}`} onPress={() => Alert.alert("App Version", `XyloCart v${appVersion}\n\nBuilt with React Native & Expo.\n© 2025 XyloCart. All rights reserved.`)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <MenuItem icon="share-2"        label="Share App"          onPress={handleInvite} />
           </View>

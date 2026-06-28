@@ -286,4 +286,34 @@ router.post("/auth/forgot-password", async (_req, res) => {
   res.json({ contactAdmin: true, adminEmail: "admin@integratedgmail.com" });
 });
 
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(6),
+});
+
+router.post("/auth/change-password", authMiddleware, async (req: AuthRequest, res) => {
+  const parsed = changePasswordSchema.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: "New password must be at least 6 characters." }); return; }
+  const { currentPassword, newPassword } = parsed.data;
+  const [user] = await db.select({ id: usersTable.id, passwordHash: usersTable.passwordHash })
+    .from(usersTable).where(eq(usersTable.id, req.userId!));
+  if (!user) { res.status(404).json({ error: "User not found." }); return; }
+  const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!valid) { res.status(401).json({ error: "Current password is incorrect." }); return; }
+  const newHash = await bcrypt.hash(newPassword, 12);
+  await db.update(usersTable).set({ passwordHash: newHash }).where(eq(usersTable.id, req.userId!));
+  res.json({ success: true });
+});
+
+router.get("/auth/me/security", authMiddleware, async (req: AuthRequest, res) => {
+  const [user] = await db.select({
+    createdAt: usersTable.createdAt,
+    registrationIp: usersTable.registrationIp,
+    lastLoginIp: usersTable.lastLoginIp,
+    deviceUuid: usersTable.deviceUuid,
+  }).from(usersTable).where(eq(usersTable.id, req.userId!));
+  if (!user) { res.status(404).json({ error: "User not found." }); return; }
+  res.json({ security: user });
+});
+
 export default router;
