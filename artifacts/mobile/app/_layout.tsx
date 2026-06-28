@@ -6,8 +6,9 @@ import {
   useFonts,
 } from "@expo-google-fonts/dm-sans";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useEffect, useState } from "react";
 import {
   Platform,
@@ -49,9 +50,26 @@ SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
+function LandingInitializer() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading) return;
+    AsyncStorage.getItem("has_seen_landing").then((seen) => {
+      if (!seen && !user) {
+        router.replace("/landing" as any);
+      }
+    });
+  }, [loading, user]);
+
+  return null;
+}
+
 function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerBackTitle: "Back" }}>
+      <Stack.Screen name="landing" options={{ headerShown: false, animation: "fade" }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="admin" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
@@ -136,6 +154,7 @@ export default function RootLayout() {
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
+            <LandingInitializer />
             <PushNotificationInit />
             <AppProvider>
               <SocketInit>
