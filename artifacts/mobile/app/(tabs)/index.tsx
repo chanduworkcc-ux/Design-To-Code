@@ -23,6 +23,7 @@ import { useNotifications } from "@/context/NotificationContext";
 import { Product } from "@/data/products";
 import { FloatingOrb, FloatIn, PulsingRing } from "@/components/ThreeD";
 import LoadingScreen from "@/components/LoadingScreen";
+import { GlobalFooter } from "@/components/GlobalFooter";
 import Animated2, {
   useSharedValue,
   useAnimatedStyle,
@@ -152,6 +153,7 @@ export default function ShopScreen() {
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [bannerIdx, setBannerIdx] = useState(0);
+  const [sortBy, setSortBy] = useState<string>("default");
   const bannerScrollRef = useRef<ScrollView>(null);
   const bannerTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const marqueeAnim = useRef(new Animated.Value(SCREEN_WIDTH)).current;
@@ -203,6 +205,25 @@ export default function ShopScreen() {
   }, [banners.length]);
 
   const featured = products.filter((p) => (p as any).featured ?? false).slice(0, 6);
+
+  const SORT_OPTIONS = [
+    { key: "default",    label: "Default"     },
+    { key: "price_asc",  label: "Price ↑"     },
+    { key: "price_desc", label: "Price ↓"     },
+    { key: "name_asc",   label: "A → Z"       },
+    { key: "name_desc",  label: "Z → A"       },
+    { key: "pro",        label: "⚡ Pro Only"  },
+  ];
+
+  const sortedProducts = (() => {
+    let list = [...products];
+    if (sortBy === "pro") list = list.filter((p) => (p as any).featured);
+    if (sortBy === "price_asc")  list.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
+    if (sortBy === "price_desc") list.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
+    if (sortBy === "name_asc")   list.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
+    if (sortBy === "name_desc")  list.sort((a, b) => (b.name ?? "").localeCompare(a.name ?? ""));
+    return list;
+  })();
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -260,6 +281,24 @@ export default function ShopScreen() {
             <Feather name="search" size={18} color={colors.mutedForeground} />
             <Text style={[styles.searchPlaceholder, { color: colors.mutedForeground }]}>Search products...</Text>
           </Pressable>
+        </FloatIn>
+
+        {/* Filter Bar */}
+        <FloatIn delay={120} distance={12}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow} style={{ marginBottom: 16 }}>
+            {SORT_OPTIONS.map((opt) => {
+              const active = sortBy === opt.key;
+              return (
+                <Pressable
+                  key={opt.key}
+                  style={[styles.filterChip, active && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                  onPress={() => setSortBy(opt.key)}
+                >
+                  <Text style={[styles.filterChipText, { color: active ? "#fff" : colors.mutedForeground }]}>{opt.label}</Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
         </FloatIn>
 
         {/* Banners */}
@@ -366,7 +405,7 @@ export default function ShopScreen() {
           )}
         </View>
 
-        {products.length === 0 ? (
+        {sortedProducts.length === 0 ? (
           <FloatIn delay={300} distance={20} style={{ alignItems: "center", paddingVertical: 40, gap: 0 }}>
             <View style={{ width: 120, height: 120, alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
               <PulsingRing color={colors.primary} size={110} duration={2200} />
@@ -375,18 +414,24 @@ export default function ShopScreen() {
                 <Feather name="package" size={38} color={colors.primary} />
               </Animated2.View>
             </View>
-            <Text style={[{ color: colors.text, fontFamily: "Inter_700Bold", fontSize: 18, marginBottom: 6 }]}>No products yet</Text>
-            <Text style={[{ color: colors.mutedForeground, fontFamily: "Inter_400Regular", fontSize: 13, textAlign: "center" }]}>Check back soon for new arrivals</Text>
+            <Text style={[{ color: colors.text, fontFamily: "Inter_700Bold", fontSize: 18, marginBottom: 6 }]}>
+              {sortBy === "pro" ? "No Pro products found" : "No products yet"}
+            </Text>
+            <Text style={[{ color: colors.mutedForeground, fontFamily: "Inter_400Regular", fontSize: 13, textAlign: "center" }]}>
+              {sortBy === "pro" ? "Pro-tier products will appear here" : "Check back soon for new arrivals"}
+            </Text>
           </FloatIn>
         ) : (
           <FloatIn delay={280} distance={20}>
             <View style={styles.grid}>
-              {products.map((product) => (
+              {sortedProducts.map((product) => (
                 <ProductCard key={product.id} product={product} style={{ width: "47%" }} />
               ))}
             </View>
           </FloatIn>
         )}
+
+        <GlobalFooter />
       </ScrollView>
     </View>
   );
@@ -438,4 +483,7 @@ const styles = StyleSheet.create({
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 12, justifyContent: "space-between" },
   floatingLabel: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
   floatingLabelText: { color: "#fff", fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 0.5 },
+  filterRow: { gap: 8, paddingRight: 4 },
+  filterChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1, borderColor: "#E5EAF8" },
+  filterChipText: { fontSize: 12, fontFamily: "Inter_500Medium" },
 });

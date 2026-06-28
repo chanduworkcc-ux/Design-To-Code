@@ -19,6 +19,7 @@ import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { GlowPulse, ShimmerWallet, FloatIn } from "@/components/ThreeD";
+import { GlobalFooter } from "@/components/GlobalFooter";
 
 interface MenuItemProps {
   icon: string;
@@ -88,10 +89,30 @@ export default function ProfileScreen() {
   async function handleInvite() {
     try {
       await Share.share({
-        message: `Join XyloCart with my referral code ${user.referralCode} and earn bonus coins on your first order! 🎁`,
-        title: "Invite to XyloCart",
+        message: `Join FX PRIME 26 with my referral code ${user.referralCode} and earn bonus coins on your first order! 🎁`,
+        title: "Invite to FX PRIME 26",
       });
     } catch {}
+  }
+
+  async function handleCheckUpdates() {
+    try {
+      const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
+      const res = await fetch(`${BASE_URL}/config/public`);
+      if (!res.ok) { Alert.alert("Error", "Could not reach the server. Please try again."); return; }
+      const d = await res.json();
+      if (d?.force_update === "true") {
+        Alert.alert(
+          "Update Required",
+          `A new version (${d.update_version ?? "latest"}) is available. Please update the app to continue.\n\n${d.update_notes ?? ""}`,
+          [{ text: "OK" }]
+        );
+      } else {
+        Alert.alert("You're up to date!", "FX PRIME 26 is running the latest version.", [{ text: "Great" }]);
+      }
+    } catch {
+      Alert.alert("Error", "Could not check for updates. Please check your connection.");
+    }
   }
 
   return (
@@ -214,6 +235,16 @@ export default function ProfileScreen() {
           </View>
         </FloatIn>
 
+        {/* App */}
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>APP</Text>
+        <FloatIn delay={460} distance={20}>
+          <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <MenuItem icon="download-cloud" label="Check for Updates" onPress={handleCheckUpdates} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <MenuItem icon="info" label="App Version" value={`v1.0.0`} />
+          </View>
+        </FloatIn>
+
         {/* Support */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>SUPPORT</Text>
         <FloatIn delay={480} distance={20}>
@@ -252,6 +283,8 @@ export default function ProfileScreen() {
           <Feather name="log-out" size={18} color={colors.destructive} />
           <Text style={[styles.signOutText, { color: colors.destructive }]}>Sign Out</Text>
         </Pressable>
+
+        <GlobalFooter />
       </ScrollView>
     </View>
   );

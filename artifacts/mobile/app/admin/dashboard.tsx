@@ -63,7 +63,15 @@ export default function AdminDashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [storeStatus, setStoreStatus] = useState<"on" | "off">("on");
   const [togglingStore, setTogglingStore] = useState(false);
+  const [lastRefreshAt, setLastRefreshAt] = useState<Date | null>(null);
+  const [currentRefreshAt, setCurrentRefreshAt] = useState<Date | null>(null);
   const topPadding = Platform.OS === "web" ? 0 : insets.top;
+
+  function toIST(date: Date): string {
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const ist = new Date(date.getTime() + istOffset - date.getTimezoneOffset() * 60 * 1000);
+    return ist.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true }) + " IST";
+  }
 
   useEffect(() => { fetchStats(); fetchStoreStatus(); }, []);
 
@@ -93,6 +101,8 @@ export default function AdminDashboardScreen() {
   }
 
   async function fetchStats() {
+    const now = new Date();
+    setCurrentRefreshAt(now);
     try {
       const [statsRes, walletRes] = await Promise.all([
         apiRequest("/admin/stats"),
@@ -108,6 +118,7 @@ export default function AdminDashboardScreen() {
         setWalletSummary(wData);
       }
     } catch {}
+    setLastRefreshAt(new Date());
     setLoading(false);
   }
 
@@ -177,14 +188,22 @@ export default function AdminDashboardScreen() {
         </Pressable>
         <View style={styles.headerTitle}>
           <View style={[styles.headerLogo, { backgroundColor: "#2563EB" }]}>
-            <Feather name="shopping-cart" size={14} color="#fff" />
+            <Feather name="zap" size={14} color="#fff" />
           </View>
           <View>
-            <Text style={styles.headerBrand}>XyloCart</Text>
+            <Text style={styles.headerBrand}>FX PRIME 26</Text>
             <Text style={styles.headerSub}>Admin Console</Text>
           </View>
         </View>
-        <Pressable onPress={handleRefresh} style={styles.refreshBtn}>
+        <View style={{ flex: 1, alignItems: "flex-end", marginRight: 8 }}>
+          {currentRefreshAt && (
+            <Text style={styles.tsText}>Now: {toIST(currentRefreshAt)}</Text>
+          )}
+          {lastRefreshAt && (
+            <Text style={styles.tsText}>Last: {toIST(lastRefreshAt)}</Text>
+          )}
+        </View>
+        <Pressable onPress={handleRefresh} style={styles.refreshBtn} disabled={refreshing}>
           <Feather name="refresh-cw" size={18} color="#2563EB" />
         </Pressable>
         <Pressable style={[styles.signOutBtn, { borderColor: "#E5EAF8" }]} onPress={() => router.replace("/(tabs)/profile")}>
@@ -500,6 +519,7 @@ const styles = StyleSheet.create({
   headerTitle: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10 },
   headerLogo: { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   headerBrand: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#0F1740" },
+  tsText: { fontSize: 9, fontFamily: "Inter_400Regular", color: "#6B7280", letterSpacing: 0.2 },
   headerSub: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#6B7280" },
   refreshBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
   signOutBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, alignItems: "center", justifyContent: "center" },

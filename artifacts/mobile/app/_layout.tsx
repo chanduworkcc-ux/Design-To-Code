@@ -22,6 +22,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { TransitionBanner } from "@/components/TransitionBanner";
 import { AppProvider } from "@/context/AppContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { NotificationProvider } from "@/context/NotificationContext";
@@ -146,6 +147,7 @@ export default function RootLayout() {
     Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold,
   });
   const [showSplash, setShowSplash] = useState(true);
+  const [showTransition, setShowTransition] = useState(false);
   const [maintenance, setMaintenance] = useState<{ active: boolean; message?: string }>({ active: false });
   const [forceUpdate, setForceUpdate] = useState<{ active: boolean; url: string; version: string; notes: string }>({ active: false, url: "", version: "", notes: "" });
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -220,9 +222,14 @@ export default function RootLayout() {
                     {showSplash && (
                       <AppSplash
                         logoUrl={logoUrl}
-                        onDone={() => setShowSplash(false)}
+                        onDone={() => { setShowSplash(false); setShowTransition(true); }}
                       />
                     )}
+                    <TransitionBanner
+                      visible={showTransition}
+                      logoUrl={logoUrl}
+                      onDone={() => setShowTransition(false)}
+                    />
                   </KeyboardProvider>
                 </GestureHandlerRootView>
               </SocketInit>
