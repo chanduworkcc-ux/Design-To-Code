@@ -1,26 +1,26 @@
-import { Link, Stack } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
-
+import { useRouter } from "expo-router";
+import React, { useEffect } from "react";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useColors } from "@/hooks/useColors";
 
 export default function NotFoundScreen() {
   const colors = useColors();
+  const router = useRouter();
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      router.replace("/(tabs)" as any);
+    }, 300);
+    return () => clearTimeout(t);
+  }, []);
 
   return (
-    <>
-      <Stack.Screen options={{ title: "Oops!" }} />
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <Text style={[styles.title, { color: colors.foreground }]}>
-          This screen doesn&apos;t exist.
-        </Text>
-
-        <Link href="/" style={styles.link}>
-          <Text style={[styles.linkText, { color: colors.primary }]}>
-            Go to home screen!
-          </Text>
-        </Link>
-      </View>
-    </>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ActivityIndicator size="large" color={colors.primary} />
+      <Text style={[styles.text, { color: colors.mutedForeground }]}>
+        Redirecting…
+      </Text>
+    </View>
   );
 }
 
@@ -29,17 +29,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    padding: 20,
+    gap: 16,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
-  },
-  linkText: {
+  text: {
     fontSize: 14,
+    fontFamily: "Inter_400Regular",
   },
 });

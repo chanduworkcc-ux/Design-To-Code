@@ -225,7 +225,7 @@ export default function AdminDashboardScreen() {
         {/* Quick Action Buttons */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickRow}>
           {[
-            { label: "Analytics", icon: "bar-chart-2", route: "/admin/analytics", color: "#2563EB", bg: "#EFF6FF" },
+            { label: "Analytics", icon: "bar-chart-2", route: "/admin/analytics", color: "#2563EB", bg: "#EFF6FF", showArrow: true },
             { label: "Users", icon: "users", route: "/admin/users", color: "#10B981", bg: "#ECFDF5" },
             { label: "Orders", icon: "shopping-bag", route: "/admin/orders", color: "#8B5CF6", bg: "#F5F3FF" },
             { label: "Products", icon: "package", route: "/admin/products", color: "#F97316", bg: "#FFF7ED" },
@@ -237,7 +237,14 @@ export default function AdminDashboardScreen() {
               style={[styles.quickBtn, { backgroundColor: q.bg, borderColor: q.color + "40" }]}
               onPress={() => router.push(q.route as any)}
             >
-              <Feather name={q.icon as any} size={20} color={q.color} />
+              <View style={{ alignItems: "center", justifyContent: "center" }}>
+                <Feather name={q.icon as any} size={20} color={q.color} />
+                {(q as any).showArrow && (
+                  <View style={styles.arrowBadge}>
+                    <Feather name="arrow-up" size={9} color="#fff" />
+                  </View>
+                )}
+              </View>
               <Text style={[styles.quickLabel, { color: q.color }]}>{q.label}</Text>
             </Pressable>
           ))}
@@ -251,15 +258,16 @@ export default function AdminDashboardScreen() {
         ) : (
           <View style={styles.statsGrid}>
             {STATS_CONFIG.map((s) => (
-              <View key={s.key} style={[styles.statCard, { backgroundColor: "#fff", borderColor: "#E5EAF8" }]}>
+              <View key={s.key} style={[styles.statCard, { backgroundColor: s.bg }]}>
                 <View style={styles.statTop}>
-                  <Text style={styles.statLabel}>{s.label}</Text>
-                  <View style={[styles.statIcon, { backgroundColor: s.bg }]}>
+                  <View style={[styles.statIcon, { backgroundColor: s.color + "22" }]}>
                     <Feather name={s.icon as any} size={16} color={s.color} />
                   </View>
+                  <Feather name="trending-up" size={13} color={s.color} style={{ opacity: 0.7 }} />
                 </View>
+                <Text style={[styles.statValue, { color: s.color }]}>{(stats as any)?.[s.key] ?? 0}</Text>
                 <View style={styles.statBottom}>
-                  <Text style={styles.statValue}>{(stats as any)?.[s.key] ?? 0}</Text>
+                  <Text style={[styles.statLabel, { color: s.color, opacity: 0.75 }]}>{s.label}</Text>
                   {(s as any).live && (
                     <View style={styles.liveRow}>
                       <View style={styles.liveDot} />
@@ -533,12 +541,13 @@ const styles = StyleSheet.create({
   loadingBox: { alignItems: "center", paddingVertical: 40, gap: 12 },
   loadingText: { color: "#6B7280", fontFamily: "Inter_500Medium", fontSize: 14 },
   statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-  statCard: { width: "47.5%", borderRadius: 14, borderWidth: 1, padding: 16, gap: 10 },
-  statTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-  statLabel: { fontSize: 12, fontFamily: "Inter_500Medium", color: "#374151", flex: 1, paddingRight: 8 },
+  statCard: { width: "47.5%", borderRadius: 16, padding: 16, gap: 8 },
+  statTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  statLabel: { fontSize: 12, fontFamily: "Inter_600SemiBold", flex: 1 },
   statIcon: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  statBottom: { flexDirection: "row", alignItems: "center", gap: 8 },
-  statValue: { fontSize: 28, fontFamily: "Inter_700Bold", color: "#0F1740" },
+  statBottom: { flexDirection: "row", alignItems: "center", gap: 6 },
+  statValue: { fontSize: 30, fontFamily: "Inter_700Bold" },
+  arrowBadge: { position: "absolute", bottom: -4, right: -4, width: 16, height: 16, borderRadius: 8, backgroundColor: "#2563EB", alignItems: "center", justifyContent: "center" },
   liveRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#10B981" },
   liveText: { fontSize: 12, fontFamily: "Inter_500Medium", color: "#10B981" },

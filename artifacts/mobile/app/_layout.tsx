@@ -168,7 +168,10 @@ export default function RootLayout() {
         if (d?.force_update === "true" && d?.update_url) {
           setForceUpdate({ active: true, url: d.update_url, version: d.update_version ?? "latest", notes: d.update_notes ?? "" });
         }
-        if (d?.logo_url) {
+        // Prefer transparent variant (no background) for display on coloured surfaces
+        if (d?.logo_url_without_bg) {
+          setLogoUrl(d.logo_url_without_bg);
+        } else if (d?.logo_url) {
           setLogoUrl(d.logo_url);
         }
       })
