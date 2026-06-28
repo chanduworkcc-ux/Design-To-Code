@@ -2,3 +2,7 @@
 - [Admin access pattern](admin-access.md) — admin login calls real /auth/login, checks role client-side; _layout.tsx guards routes; API uses authMiddleware+adminMiddleware
 - [Expo Router path literals](expo-router-paths.md) — use "/(tabs)" not "/(tabs)/" (trailing slash is a TypeScript error with expo-router typed routes)
 - [expo-application API names](expo-application-api.md) — use Application.applicationId only; getIosIdForVendorAsync/getAndroidId are async, avoid in sync context
+- [Purchase limit & fraud detection](purchase-fraud-pattern.md) — one-time purchase enforced server-side (409 + purchase_limit_exceeded); IP stored in registrationIp/lastLoginIp; fraud emits to admins socket room + insertAutoNotification for each admin
+- [Email utility pattern](email-utility.md) — sendEmail() in api-server/src/lib/email.ts; skips silently when email_enabled≠"true" or SMTP unconfigured; orderStatusEmailHtml() and fraudAlertEmailHtml() helpers in same file
+- [Checkout billing breakdown](checkout-billing.md) — config/public endpoint already returns delivery_charge/tax_percent/service_charge/maintenance_charge; checkout.tsx fetches these on mount and shows live breakdown before order; coupon verified via POST /coupons/validate before placement
+- [3D purchase success animation](purchase-success-animation.md) — PurchaseSuccessAnimation.tsx uses ThreeD.tsx exports (FloatingOrb/PulsingRing/SpinBox3D/FloatIn/FloatingParticle); auto-calls onComplete after 3600ms; onComplete navigates to /orders

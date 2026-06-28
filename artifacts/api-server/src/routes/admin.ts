@@ -16,6 +16,7 @@ import { eq, desc, count, sql, and, gte, lte, inArray } from "drizzle-orm";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../middleware/auth";
 import { getAllConfig, setConfig, getConfig } from "../lib/config";
 import { insertAutoNotification } from "./notifications";
+import { sendEmail, orderStatusEmailHtml } from "../lib/email";
 import { z } from "zod";
 import { v4 as uuidv4 } from "uuid";
 
@@ -277,71 +278,94 @@ router.get("/admin/orders", authMiddleware, adminMiddleware, async (req, res) =>
   res.json({ orders });
 });
 
-router.patch("/admin/orders/:id/status", authMiddleware, adminMiddleware, async (req, res) => {
-  const { status } = req.body;
+async function handleOrderStatusUpdate(orderId: string, newStatus: string, res: any) {
   const allowed = ["pending", "confirmed", "shipped", "delivered", "cancelled"];
-  if (!allowed.includes(status)) { res.status(400).json({ error: "Invalid status" }); return; }
+  if (!allowed.includes(newStatus)) { res.status(400).json({ error: "Invalid status" }); return; }
+
   const [updated] = await db
     .update(ordersTable)
-    .set({ status, updatedAt: new Date() })
-    .where(eq(ordersTable.id, req.params.id))
+    .set({ status: newStatus as any, updatedAt: new Date() })
+    .where(eq(ordersTable.id, orderId))
     .returning();
   if (!updated) { res.status(404).json({ error: "Order not found" }); return; }
 
-  if (status === "delivered") {
-    const [order] = await db.select().from(ordersTable).where(eq(ordersTable.id, req.params.id));
-    if (order) {
-      const [user] = await db.select().from(usersTable).where(eq(usersTable.id, updated.userId));
-      if (user) {
-        const DELIVERY_REWARD_COINS = 100;
-        await db.update(usersTable)
-          .set({ walletBalance: user.walletBalance + DELIVERY_REWARD_COINS })
-          .where(eq(usersTable.id, updated.userId));
-        await db.insert(walletTransactionsTable).values({
-          id: uuidv4(),
-          userId: updated.userId,
-          type: "credit",
-          coins: DELIVERY_REWARD_COINS,
-          description: `Delivery reward — Order #${updated.id.slice(0, 8).toUpperCase()} delivered`,
-          referenceId: updated.id,
-        });
-      }
-    }
+  const [user] = await db
+    .select({ id: usersTable.id, email: usersTable.email, name: usersTable.name, walletBalance: usersTable.walletBalance })
+    .from(usersTable)
+    .where(eq(usersTable.id, updated.userId));
+
+  const [product] = await db
+    .select({ name: productsTable.name })
+    .from(productsTable)
+    .where(eq(productsTable.id, updated.productId));
+
+  if (newStatus === "delivered" && user) {
+    const DELIVERY_REWARD_COINS = 100;
+    await db.update(usersTable)
+      .set({ walletBalance: user.walletBalance + DELIVERY_REWARD_COINS })
+      .where(eq(usersTable.id, updated.userId));
+    await db.insert(walletTransactionsTable).values({
+      id: uuidv4(),
+      userId: updated.userId,
+      type: "credit",
+      coins: DELIVERY_REWARD_COINS,
+      description: `Delivery reward — Order #${updated.id.slice(0, 8).toUpperCase()} delivered`,
+      referenceId: updated.id,
+    });
+  }
+
+  // In-app notification
+  const statusLabels: Record<string, string> = {
+    confirmed: "Order Confirmed ✅",
+    shipped:   "Order Shipped 🚚",
+    delivered: "Order Delivered 🎉",
+    cancelled: "Order Cancelled",
+  };
+  if (user && statusLabels[newStatus]) {
+    try {
+      await insertAutoNotification(
+        user.id,
+        statusLabels[newStatus],
+        `Your order ${updated.orderNumber ?? orderId.slice(0, 8).toUpperCase()} has been ${newStatus}.`,
+        newStatus === "cancelled" ? "alert-circle" : "package",
+      );
+    } catch {}
+  }
+
+  // Email notification
+  if (user) {
+    try {
+      const shippingInfo = (() => {
+        try { return updated.shippingAddress ? JSON.parse(updated.shippingAddress as string) : null; } catch { return null; }
+      })();
+      const emailHtml = orderStatusEmailHtml({
+        userName: user.name,
+        orderNumber: updated.orderNumber ?? orderId.slice(0, 8).toUpperCase(),
+        status: newStatus,
+        productName: product?.name ?? "Your product",
+        total: updated.total ?? 0,
+        trackingNumber: (updated as any).trackingNumber ?? null,
+        trackingLink: (updated as any).trackingLink ?? null,
+        courierPartner: (updated as any).courierPartner ?? null,
+        estimatedDelivery: (updated as any).estimatedDelivery ?? null,
+      });
+      await sendEmail({
+        to: user.email,
+        subject: `Order Update: ${statusLabels[newStatus] ?? newStatus} — ${updated.orderNumber ?? orderId.slice(0, 8).toUpperCase()}`,
+        html: emailHtml,
+      });
+    } catch {}
   }
 
   res.json({ order: updated });
+}
+
+router.patch("/admin/orders/:id/status", authMiddleware, adminMiddleware, async (req, res) => {
+  await handleOrderStatusUpdate(req.params.id, req.body.status, res);
 });
 
 router.put("/admin/orders/:id/status", authMiddleware, adminMiddleware, async (req, res) => {
-  const { status } = req.body;
-  const allowed = ["pending", "confirmed", "shipped", "delivered", "cancelled"];
-  if (!allowed.includes(status)) { res.status(400).json({ error: "Invalid status" }); return; }
-  const [updated] = await db
-    .update(ordersTable)
-    .set({ status, updatedAt: new Date() })
-    .where(eq(ordersTable.id, req.params.id))
-    .returning();
-  if (!updated) { res.status(404).json({ error: "Order not found" }); return; }
-
-  if (status === "delivered") {
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, updated.userId));
-    if (user) {
-      const DELIVERY_REWARD_COINS = 100;
-      await db.update(usersTable)
-        .set({ walletBalance: user.walletBalance + DELIVERY_REWARD_COINS })
-        .where(eq(usersTable.id, updated.userId));
-      await db.insert(walletTransactionsTable).values({
-        id: uuidv4(),
-        userId: updated.userId,
-        type: "credit",
-        coins: DELIVERY_REWARD_COINS,
-        description: `Delivery reward — Order #${updated.id.slice(0, 8).toUpperCase()} delivered`,
-        referenceId: updated.id,
-      });
-    }
-  }
-
-  res.json({ order: updated });
+  await handleOrderStatusUpdate(req.params.id, req.body.status, res);
 });
 
 // ─── Referral Network (User) ──────────────────────────────────────────────────

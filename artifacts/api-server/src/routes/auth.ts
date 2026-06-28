@@ -7,6 +7,15 @@ import { eq, or } from "drizzle-orm";
 import { z } from "zod";
 import { signToken, authMiddleware, type AuthRequest } from "../middleware/auth";
 import { getConfig } from "../lib/config";
+import { getIO } from "../lib/socket";
+import { insertAutoNotification } from "./notifications";
+import { sendEmail, fraudAlertEmailHtml } from "../lib/email";
+
+function getClientIp(req: any): string {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (forwarded) return (Array.isArray(forwarded) ? forwarded[0] : forwarded).split(",")[0].trim();
+  return req.socket?.remoteAddress ?? req.ip ?? "unknown";
+}
 
 const router = Router();
 
@@ -43,7 +52,9 @@ router.post("/auth/register", async (req, res) => {
   }
   const { email, password, name, mobileNumber, deviceUuid, referralCode } = parsed.data;
 
-  const existing = await db.select({ id: usersTable.id, deviceUuid: usersTable.deviceUuid })
+  const clientIp = getClientIp(req);
+
+  const existing = await db.select({ id: usersTable.id, deviceUuid: usersTable.deviceUuid, email: usersTable.email, registrationIp: usersTable.registrationIp })
     .from(usersTable)
     .where(or(eq(usersTable.email, email), eq(usersTable.deviceUuid, deviceUuid)));
 
@@ -56,6 +67,67 @@ router.post("/auth/register", async (req, res) => {
       res.status(400).json({ error: "Email already registered." });
       return;
     }
+  }
+
+  // ── IP-based fraud detection ──────────────────────────────────────────────
+  if (clientIp && clientIp !== "unknown") {
+    try {
+      const sameIpUsers = await db
+        .select({ id: usersTable.id, email: usersTable.email, name: usersTable.name })
+        .from(usersTable)
+        .where(eq(usersTable.registrationIp, clientIp));
+
+      if (sameIpUsers.length > 0) {
+        const existingUser = sameIpUsers[0];
+        const alertPayload = {
+          type: "fraud_alert",
+          message: `Multi-account detected: new registration from IP ${clientIp} already used by ${existingUser.email}`,
+          suspiciousEmail: email,
+          suspiciousName: name,
+          existingEmail: existingUser.email,
+          ip: clientIp,
+          deviceUuid,
+          timestamp: new Date().toISOString(),
+        };
+
+        // Emit real-time alert to all connected admins
+        try { getIO().to("admins").emit("fraud_alert", alertPayload); } catch {}
+
+        // Notify all admin users in-app
+        const admins = await db
+          .select({ id: usersTable.id, email: usersTable.email })
+          .from(usersTable)
+          .where(eq(usersTable.role, "admin"));
+
+        for (const admin of admins) {
+          try {
+            await insertAutoNotification(
+              admin.id,
+              "🚨 Fraud Alert: Multi-Account Registration",
+              `New account "${name}" (${email}) registered from IP ${clientIp} — same IP as existing account ${existingUser.email}.`,
+              "alert-triangle",
+            );
+          } catch {}
+
+          // Send email alert
+          try {
+            const adminEmail = await getConfig("smtp_from") || admin.email;
+            await sendEmail({
+              to: admin.email,
+              subject: "🚨 XyloCart Fraud Alert: Multi-Account Registration Detected",
+              html: fraudAlertEmailHtml({
+                suspiciousEmail: email,
+                suspiciousName: name,
+                matchType: "ip",
+                matchValue: clientIp,
+                existingEmail: existingUser.email,
+                registrationTime: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
+              }),
+            });
+          } catch {}
+        }
+      }
+    } catch {}
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
@@ -87,6 +159,8 @@ router.post("/auth/register", async (req, res) => {
     role: "user",
     status: status as any,
     verifiedAt: status === "active" ? new Date() : undefined,
+    registrationIp: clientIp,
+    lastLoginIp: clientIp,
   });
 
   if (status === "pending") {
@@ -114,6 +188,7 @@ router.post("/auth/login", async (req, res) => {
     return;
   }
   const { email, password } = parsed.data;
+  const loginIp = getClientIp(req);
 
   const users = await db.select().from(usersTable).where(eq(usersTable.email, email));
   if (!users.length) {
@@ -155,6 +230,11 @@ router.post("/auth/login", async (req, res) => {
       return;
     }
   }
+
+  // Update last login IP
+  try {
+    await db.update(usersTable).set({ lastLoginIp: loginIp }).where(eq(usersTable.id, user.id));
+  } catch {}
 
   const token = signToken(user.id);
   res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role, walletBalance: user.walletBalance, referralCode: user.referralCode, status: user.status } });

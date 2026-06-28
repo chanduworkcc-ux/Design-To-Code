@@ -2,7 +2,8 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { ordersTable, productsTable, usersTable, couponsTable, referralsTable, walletTransactionsTable, orderSequencesTable } from "@workspace/db/schema";
 import { adminAuditLogsTable } from "@workspace/db/schema";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, sql, and, not, inArray } from "drizzle-orm";
+import { sendEmail, orderStatusEmailHtml } from "../lib/email";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../middleware/auth";
 import { getConfig } from "../lib/config";
 import { getIO } from "../lib/socket";
@@ -143,6 +144,27 @@ router.post("/orders", authMiddleware, async (req: AuthRequest, res) => {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!));
   if (!user) { res.status(404).json({ error: "User not found" }); return; }
 
+  // ─── One-time purchase limit per user per product ─────────────────────────
+  const existingOrder = await db
+    .select({ id: ordersTable.id, status: ordersTable.status })
+    .from(ordersTable)
+    .where(
+      and(
+        eq(ordersTable.userId, req.userId!),
+        eq(ordersTable.productId, productId),
+        not(inArray(ordersTable.status, ["cancelled", "refunded"]))
+      )
+    )
+    .limit(1);
+
+  if (existingOrder.length > 0) {
+    res.status(409).json({
+      error: "purchase_limit_exceeded",
+      message: "You have already purchased this product. Each product can only be purchased once per account. This policy exists to ensure fair access for all customers.",
+    });
+    return;
+  }
+
   const deliveryChargeStr = await getConfig("delivery_charge");
   const taxPercentStr = await getConfig("tax_percent");
   const serviceChargeStr = await getConfig("service_charge");
@@ -229,6 +251,18 @@ router.post("/orders", authMiddleware, async (req: AuthRequest, res) => {
 
   try {
     getIO().to("admins").emit("new_order", { order, message: `New order ${orderNumber} — ₹${total.toFixed(0)}` });
+  } catch {}
+
+  // Send order confirmation email to user
+  try {
+    const emailHtml = orderStatusEmailHtml({
+      userName: user.name,
+      orderNumber,
+      status: "pending",
+      productName: product.name,
+      total,
+    });
+    await sendEmail({ to: user.email, subject: `Order Confirmed: ${orderNumber} — XyloCart`, html: emailHtml });
   } catch {}
 
   res.status(201).json({

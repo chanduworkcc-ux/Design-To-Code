@@ -22,6 +22,8 @@ export const usersTable = pgTable("users", {
   verificationToken: text("verification_token"),
   verificationExpiresAt: timestamp("verification_expires_at"),
   verifiedAt: timestamp("verified_at"),
+  registrationIp: text("registration_ip"),
+  lastLoginIp: text("last_login_ip"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
