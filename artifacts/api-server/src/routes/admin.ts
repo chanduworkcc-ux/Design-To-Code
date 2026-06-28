@@ -504,7 +504,7 @@ router.get("/config/public", async (_req, res) => {
     no_returns, no_refunds, no_exchanges,
     delivery_info, product_disclaimer,
     delivery_charge, tax_percent, service_charge, maintenance_charge,
-    store_status,
+    store_status, force_update, update_url, update_version, update_notes,
   ] = await Promise.all([
     getConfig("maintenance_mode"),
     getConfig("maintenance_message"),
@@ -527,6 +527,10 @@ router.get("/config/public", async (_req, res) => {
     getConfig("service_charge"),
     getConfig("maintenance_charge"),
     getConfig("store_status"),
+    getConfig("force_update"),
+    getConfig("update_url"),
+    getConfig("update_version"),
+    getConfig("update_notes"),
   ]);
   res.json({
     maintenance_mode,
@@ -550,7 +554,73 @@ router.get("/config/public", async (_req, res) => {
     service_charge,
     maintenance_charge,
     store_status: store_status || "on",
+    force_update: force_update || "false",
+    update_url: update_url || "",
+    update_version: update_version || "1.0.0",
+    update_notes: update_notes || "",
   });
+});
+
+// ─── Export Users (CSV) ───────────────────────────────────────────────────────
+
+router.get("/admin/export/users", authMiddleware, adminMiddleware, async (_req, res) => {
+  const users = await db
+    .select({
+      id: usersTable.id,
+      name: usersTable.name,
+      email: usersTable.email,
+      walletBalance: usersTable.walletBalance,
+      status: usersTable.status,
+      role: usersTable.role,
+      referralCode: usersTable.referralCode,
+      createdAt: usersTable.createdAt,
+    })
+    .from(usersTable)
+    .orderBy(desc(usersTable.createdAt));
+
+  const orders = await db
+    .select({
+      userId: ordersTable.userId,
+      id: ordersTable.id,
+      orderNumber: ordersTable.orderNumber,
+      total: ordersTable.total,
+      status: ordersTable.status,
+    })
+    .from(ordersTable)
+    .orderBy(desc(ordersTable.createdAt));
+
+  const ordersByUser: Record<string, typeof orders> = {};
+  for (const o of orders) {
+    if (!ordersByUser[o.userId]) ordersByUser[o.userId] = [];
+    ordersByUser[o.userId].push(o);
+  }
+
+  const rows: string[] = [
+    "Name,Email,Wallet Balance (coins),Status,Role,Referral Code,Joined,Total Orders,Order IDs"
+  ];
+
+  for (const u of users) {
+    const userOrders = ordersByUser[u.id] ?? [];
+    const orderIds = userOrders.map((o) => o.orderNumber ?? o.id.slice(0, 8).toUpperCase()).join("|");
+    const joinedDate = new Date(u.createdAt).toLocaleDateString("en-IN");
+    const row = [
+      `"${(u.name ?? "").replace(/"/g, '""')}"`,
+      `"${(u.email ?? "").replace(/"/g, '""')}"`,
+      u.walletBalance,
+      u.status,
+      u.role,
+      u.referralCode,
+      joinedDate,
+      userOrders.length,
+      `"${orderIds}"`,
+    ].join(",");
+    rows.push(row);
+  }
+
+  const csv = rows.join("\n");
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader("Content-Disposition", "attachment; filename=xyloscart-users.csv");
+  res.send(csv);
 });
 
 export default router;

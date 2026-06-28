@@ -1,5 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -16,6 +18,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+
+const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
 interface AdminUser {
   id: string;
@@ -225,38 +229,87 @@ function LogsModal({
   loading: boolean;
   onClose: () => void;
 }) {
+  const [logFilter, setLogFilter] = useState<"all" | "pageviews" | "api">("all");
+
+  const pageViews = logs.filter((l) => l.method === "PAGEVIEW");
+  const apiLogs = logs.filter((l) => l.method !== "PAGEVIEW");
+  const displayed = logFilter === "all" ? logs : logFilter === "pageviews" ? pageViews : apiLogs;
+
+  function formatLogPath(log: ActivityLog): string {
+    if (log.method === "PAGEVIEW") {
+      return log.path.replace("screen:", "");
+    }
+    return log.path;
+  }
+
+  function getMethodColor(method: string): { bg: string; color: string } {
+    if (method === "PAGEVIEW") return { bg: "#F5F3FF", color: "#7C3AED" };
+    if (method === "GET")  return { bg: "#EFF6FF", color: "#2563EB" };
+    if (method === "POST") return { bg: "#ECFDF5", color: "#10B981" };
+    if (method === "DELETE") return { bg: "#FEF2F2", color: "#EF4444" };
+    return { bg: "#F9FAFB", color: "#374151" };
+  }
+
   return (
     <View style={styles.modalOverlay}>
       <View style={styles.modal}>
         <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>Activity Logs</Text>
-          <Text style={styles.modalSub}>{user.name}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.modalTitle}>Activity Logs</Text>
+            <Text style={styles.modalSub}>{user.name} · {logs.length} entries</Text>
+          </View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <View style={[{ width: 7, height: 7, borderRadius: 4, backgroundColor: user.online ? "#10B981" : "#D1D5DB" }]} />
+            <Text style={{ fontSize: 12, fontFamily: "Inter_500Medium", color: user.online ? "#10B981" : "#9CA3AF" }}>
+              {user.online ? "Online now" : user.liveIp ? `Last seen ${new Date(user.liveIp.seenAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}` : "Offline"}
+            </Text>
+          </View>
           <Pressable onPress={onClose} style={styles.modalClose}>
             <Feather name="x" size={20} color="#6B7280" />
           </Pressable>
         </View>
+
+        {/* Log filter tabs */}
+        <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#F3F4F6" }}>
+          {([
+            { key: "all", label: `All (${logs.length})` },
+            { key: "pageviews", label: `Screens (${pageViews.length})`, color: "#7C3AED" },
+            { key: "api", label: `API (${apiLogs.length})`, color: "#2563EB" },
+          ] as const).map((tab) => (
+            <Pressable
+              key={tab.key}
+              style={[styles.filterTab, logFilter === tab.key && { backgroundColor: (tab as any).color ?? "#0F1740" }]}
+              onPress={() => setLogFilter(tab.key)}
+            >
+              <Text style={[styles.filterTabText, logFilter === tab.key && { color: "#fff" }]}>{tab.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+
         {loading ? (
           <View style={styles.center}>
             <ActivityIndicator color="#2563EB" />
           </View>
         ) : (
           <ScrollView style={{ flex: 1 }}>
-            {logs.length === 0 && (
-              <Text style={[styles.emptyText, { textAlign: "center", paddingVertical: 40 }]}>No activity logs found</Text>
+            {displayed.length === 0 && (
+              <Text style={[styles.emptyText, { textAlign: "center", paddingVertical: 40 }]}>No logs found</Text>
             )}
-            {logs.map((log) => (
+            {displayed.map((log) => {
+              const { bg, color } = getMethodColor(log.method);
+              return (
               <View key={log.id} style={styles.logRow}>
-                <View style={[styles.methodBadge, { backgroundColor: log.method === "GET" ? "#EFF6FF" : log.method === "POST" ? "#ECFDF5" : "#FEF2F2" }]}>
-                  <Text style={[styles.methodText, { color: log.method === "GET" ? "#2563EB" : log.method === "POST" ? "#10B981" : "#EF4444" }]}>
-                    {log.method}
+                <View style={[styles.methodBadge, { backgroundColor: bg }]}>
+                  <Text style={[styles.methodText, { color }]}>
+                    {log.method === "PAGEVIEW" ? "VIEW" : log.method}
                   </Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.logPath} numberOfLines={1}>{log.path}</Text>
+                  <Text style={styles.logPath} numberOfLines={1}>{formatLogPath(log)}</Text>
                   <Text style={styles.logTime}>{new Date(log.timestamp).toLocaleString("en-IN")}</Text>
                 </View>
               </View>
-            ))}
+            )})}
           </ScrollView>
         )}
       </View>
@@ -567,6 +620,36 @@ export default function UsersScreen() {
     setLogsLoading(false);
   }
 
+  async function handleExportCSV() {
+    try {
+      const res = await apiRequest("/admin/export/users");
+      if (!res.ok) { Alert.alert("Export Failed", "Could not export users."); return; }
+      const csv = await res.text();
+
+      if (Platform.OS === "web") {
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "xyloscart-users.csv";
+        a.click();
+        URL.revokeObjectURL(url);
+        return;
+      }
+
+      const fileUri = `${FileSystem.documentDirectory}xyloscart-users.csv`;
+      await FileSystem.writeAsStringAsync(fileUri, csv, { encoding: FileSystem.EncodingType.UTF8 });
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(fileUri, { mimeType: "text/csv", dialogTitle: "Export Users CSV", UTI: "public.comma-separated-values-text" });
+      } else {
+        Alert.alert("Exported", `Saved to: ${fileUri}`);
+      }
+    } catch (e: any) {
+      Alert.alert("Export Error", e.message ?? "Could not export.");
+    }
+  }
+
   async function handleBan(user: AdminUser) {
     if (Platform.OS === "web") {
       const reason = prompt(`Ban reason for ${user.name}:`);
@@ -655,6 +738,13 @@ export default function UsersScreen() {
             </Pressable>
           )}
         </View>
+        <Pressable
+          style={styles.exportBtn}
+          onPress={handleExportCSV}
+        >
+          <Feather name="download" size={14} color="#fff" />
+          <Text style={styles.exportBtnText}>CSV</Text>
+        </Pressable>
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={styles.filterRow}>
@@ -737,8 +827,10 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#E5EAF8", gap: 12 },
   backBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, borderColor: "#E5EAF8", alignItems: "center", justifyContent: "center" },
   headerTitle: { flex: 1, fontSize: 18, fontFamily: "Inter_700Bold", color: "#0F1740" },
-  searchRow: { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: "#fff" },
-  searchBox: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#F3F4F6", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
+  searchRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: "#fff" },
+  searchBox: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#F3F4F6", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
+  exportBtn: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#2563EB", paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12 },
+  exportBtnText: { color: "#fff", fontSize: 12, fontFamily: "Inter_600SemiBold" },
   searchInput: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", color: "#0F1740", padding: 0 },
   filterScroll: { maxHeight: 48, backgroundColor: "#fff" },
   filterRow: { paddingHorizontal: 16, paddingBottom: 10, gap: 8 },

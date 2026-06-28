@@ -583,6 +583,71 @@ export default function SettingsScreen() {
             </View>
           </View>
 
+          {/* Forced App Update */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>FORCED APP UPDATE</Text>
+            <Text style={[styles.configDesc, { marginBottom: 10, marginLeft: 4 }]}>
+              When enabled, all users will see a mandatory update screen instead of the app until they update.
+            </Text>
+            <View style={styles.card}>
+              <View style={styles.toggleRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.configLabel}>Force Update Active</Text>
+                  <Text style={styles.configDesc}>Show mandatory update screen to all users</Text>
+                </View>
+                <Switch
+                  value={(edited["force_update"] ?? "false") === "true"}
+                  onValueChange={(v) => setEdited((prev) => ({ ...prev, force_update: v ? "true" : "false" }))}
+                  trackColor={{ true: "#EF4444", false: "#D1D5DB" }}
+                  thumbColor="#fff"
+                />
+              </View>
+              <View style={styles.divider} />
+              <View style={styles.textInputRow}>
+                <Text style={styles.configLabel}>Required Version</Text>
+                <Text style={styles.configDesc}>Version number shown on the update screen</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={edited["update_version"] ?? ""}
+                  onChangeText={(v) => setEdited((prev) => ({ ...prev, update_version: v }))}
+                  placeholder="2.0.0"
+                  placeholderTextColor="#9CA3AF"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
+              <View style={styles.divider} />
+              <View style={styles.textInputRow}>
+                <Text style={styles.configLabel}>Download URL</Text>
+                <Text style={styles.configDesc}>Link to the new app version (App Store, Play Store, or APK)</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={edited["update_url"] ?? ""}
+                  onChangeText={(v) => setEdited((prev) => ({ ...prev, update_url: v }))}
+                  placeholder="https://play.google.com/store/apps/..."
+                  placeholderTextColor="#9CA3AF"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="url"
+                />
+              </View>
+              <View style={styles.divider} />
+              <View style={styles.textInputRow}>
+                <Text style={styles.configLabel}>Release Notes</Text>
+                <Text style={styles.configDesc}>What's new in this version (shown to users on the update screen)</Text>
+                <TextInput
+                  style={[styles.textInput, { minHeight: 80, textAlignVertical: "top" }]}
+                  value={edited["update_notes"] ?? ""}
+                  onChangeText={(v) => setEdited((prev) => ({ ...prev, update_notes: v }))}
+                  placeholder="Bug fixes and performance improvements&#10;New checkout flow&#10;Enhanced order tracking"
+                  placeholderTextColor="#9CA3AF"
+                  multiline
+                  numberOfLines={4}
+                />
+              </View>
+            </View>
+          </View>
+
           {/* SMS Notifications */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>SMS NOTIFICATIONS (TWILIO)</Text>

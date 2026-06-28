@@ -28,6 +28,7 @@ import { NotificationProvider } from "@/context/NotificationContext";
 import { SocketProvider } from "@/context/SocketContext";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import MaintenanceScreen from "./maintenance";
+import ForceUpdateScreen from "./force-update";
 
 const LOCAL_LOGO = require("@/assets/logo-transparent.png");
 
@@ -146,6 +147,7 @@ export default function RootLayout() {
   });
   const [showSplash, setShowSplash] = useState(true);
   const [maintenance, setMaintenance] = useState<{ active: boolean; message?: string }>({ active: false });
+  const [forceUpdate, setForceUpdate] = useState<{ active: boolean; url: string; version: string; notes: string }>({ active: false, url: "", version: "", notes: "" });
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -160,6 +162,9 @@ export default function RootLayout() {
         if (d?.maintenance_mode === "true") {
           setMaintenance({ active: true, message: d.maintenance_message });
         }
+        if (d?.force_update === "true" && d?.update_url) {
+          setForceUpdate({ active: true, url: d.update_url, version: d.update_version ?? "latest", notes: d.update_notes ?? "" });
+        }
         if (d?.logo_url) {
           setLogoUrl(d.logo_url);
         }
@@ -168,6 +173,18 @@ export default function RootLayout() {
   }, [fontsLoaded, fontError]);
 
   if (!fontsLoaded && !fontError) return null;
+
+  if (forceUpdate.active) {
+    return (
+      <SafeAreaProvider>
+        <ForceUpdateScreen
+          version={forceUpdate.version}
+          url={forceUpdate.url}
+          notes={forceUpdate.notes}
+        />
+      </SafeAreaProvider>
+    );
+  }
 
   if (maintenance.active) {
     return (
@@ -179,6 +196,7 @@ export default function RootLayout() {
               .then((r) => r.json())
               .then((d) => {
                 if (d?.maintenance_mode !== "true") setMaintenance({ active: false });
+                if (d?.force_update === "true" && d?.update_url) setForceUpdate({ active: true, url: d.update_url, version: d.update_version ?? "latest", notes: d.update_notes ?? "" });
                 if (d?.logo_url) setLogoUrl(d.logo_url);
               })
               .catch(() => {});
