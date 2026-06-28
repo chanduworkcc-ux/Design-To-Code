@@ -7,7 +7,7 @@ export function GlobalFooter() {
   return (
     <View style={[styles.footer, { borderTopColor: colors.border }]}>
       <Text style={[styles.text, { color: colors.mutedForeground }]}>
-        © 2026 FX PRIME 26. All rights reserved.
+        © 2026 XyloCart. All rights reserved.
       </Text>
     </View>
   );

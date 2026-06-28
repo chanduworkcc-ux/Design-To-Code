@@ -191,7 +191,7 @@ export default function AdminDashboardScreen() {
             <Feather name="zap" size={14} color="#fff" />
           </View>
           <View>
-            <Text style={styles.headerBrand}>FX PRIME 26</Text>
+            <Text style={styles.headerBrand}>XyloCart</Text>
             <Text style={styles.headerSub}>Admin Console</Text>
           </View>
         </View>

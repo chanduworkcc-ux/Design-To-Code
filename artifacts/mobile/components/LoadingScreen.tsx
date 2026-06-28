@@ -158,7 +158,7 @@ export default function LoadingScreen({ visible, message }: LoadingScreenProps) 
       {/* Bottom brand */}
       <View style={styles.brand}>
         <Text style={[styles.brandBy,    { color: colors.mutedForeground }]}>by</Text>
-        <Text style={[styles.brandName,  { color: colors.primary }]}>FX PRIME 26</Text>
+        <Text style={[styles.brandName,  { color: colors.primary }]}>XyloCart</Text>
       </View>
     </Animated.View>
   );

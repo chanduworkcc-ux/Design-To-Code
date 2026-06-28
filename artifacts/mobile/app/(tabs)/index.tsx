@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Dimensions,
   Image,
@@ -31,7 +31,6 @@ import Animated, {
   withSequence,
   withTiming,
   withSpring,
-  withDelay,
   Easing,
 } from "react-native-reanimated";
 
@@ -245,7 +244,6 @@ export default function ShopScreen() {
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [bannerIdx, setBannerIdx] = useState(0);
   const [sortBy, setSortBy] = useState<string>("default");
-  const [category, setCategory] = useState<string>("All");
   const bannerScrollRef = useRef<ScrollView>(null);
   const bannerTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const marqueeAnim = useRef(new RNAnimated.Value(SCREEN_WIDTH)).current;
@@ -316,21 +314,8 @@ export default function ShopScreen() {
     { key: "featured",   label: "⭐ Top"   },
   ];
 
-  const CATEGORY_OPTIONS = [
-    { key: "All",         label: "All",          icon: "grid"       },
-    { key: "Clothing",    label: "Clothing",      icon: "scissors"   },
-    { key: "Electronics", label: "Electronics",   icon: "cpu"        },
-    { key: "Books",       label: "Books",         icon: "book-open"  },
-    { key: "Home",        label: "Home",          icon: "home"       },
-    { key: "Beauty",      label: "Beauty",        icon: "sun"        },
-    { key: "Sports",      label: "Sports",        icon: "activity"   },
-    { key: "Food",        label: "Food",          icon: "coffee"     },
-    { key: "Other",       label: "Other",         icon: "package"    },
-  ];
-
   const sortedProducts = (() => {
     let list = [...products];
-    if (category !== "All") list = list.filter((p) => p.category === category);
     if (sortBy === "featured")   list = list.filter((p) => (p as any).featured);
     if (sortBy === "price_asc")  list.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
     if (sortBy === "price_desc") list.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
@@ -538,42 +523,6 @@ export default function ShopScreen() {
         <FloatIn delay={290} distance={20}>
           <SectionHeader title="All Products" />
 
-          {/* Category filter chips */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={[styles.filterRow, { paddingBottom: 4 }]}
-            style={{ marginBottom: 10 }}
-          >
-            {CATEGORY_OPTIONS.map((opt) => {
-              const active = category === opt.key;
-              return (
-                <Pressable
-                  key={opt.key}
-                  style={[
-                    styles.filterChip,
-                    styles.categoryChipFilter,
-                    {
-                      backgroundColor: active ? colors.primary : colors.card,
-                      borderColor: active ? colors.primary : colors.border,
-                      shadowColor: active ? colors.primary : "transparent",
-                    },
-                  ]}
-                  onPress={() => setCategory(opt.key)}
-                >
-                  <Feather
-                    name={opt.icon as any}
-                    size={12}
-                    color={active ? "#fff" : colors.mutedForeground}
-                  />
-                  <Text style={[styles.filterChipText, { color: active ? "#fff" : colors.mutedForeground }]}>
-                    {opt.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-
           {/* Sort chips */}
           <ScrollView
             horizontal
@@ -614,18 +563,10 @@ export default function ShopScreen() {
                 <Feather name="package" size={38} color={colors.primary} />
               </View>
               <Text style={[styles.emptyTitle, { color: colors.text }]}>
-                {category !== "All"
-                  ? `No ${category} products`
-                  : sortBy === "featured"
-                  ? "No featured products"
-                  : "No products yet"}
+                {sortBy === "featured" ? "No featured products" : "No products yet"}
               </Text>
               <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
-                {category !== "All"
-                  ? `No products in ${category} yet — check back soon`
-                  : sortBy === "featured"
-                  ? "Featured products will appear here"
-                  : "Check back soon for new arrivals"}
+                {sortBy === "featured" ? "Featured products will appear here" : "Check back soon for new arrivals"}
               </Text>
             </View>
           </FloatIn>
@@ -722,10 +663,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 8,
     borderRadius: 12, borderWidth: 1,
     shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4, elevation: 2,
-  },
-  categoryChipFilter: {
-    flexDirection: "row", alignItems: "center", gap: 5,
-    paddingHorizontal: 12, paddingVertical: 7,
   },
   filterChipText: { fontSize: 12, fontFamily: "DMSans_600SemiBold" },
 

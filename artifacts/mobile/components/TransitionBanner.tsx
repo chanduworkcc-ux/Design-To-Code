@@ -87,7 +87,7 @@ export function TransitionBanner({ visible, onDone, logoUrl }: Props) {
 
       <Animated.View style={[styles.brandRow, { opacity: textOpacity }]}>
         <Text style={styles.brandBy}>powered by</Text>
-        <Text style={styles.brandName}>FX PRIME 26</Text>
+        <Text style={styles.brandName}>XyloCart</Text>
       </Animated.View>
 
       <Pressable style={styles.skipBtn} onPress={dismiss}>
