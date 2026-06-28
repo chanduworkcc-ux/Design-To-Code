@@ -17,18 +17,31 @@ import { useAuth } from "@/context/AuthContext";
 
 interface Order {
   id: string;
+  orderNumber?: string | null;
   userId: string;
   productId: string;
+  productName?: string | null;
+  customerName?: string | null;
+  customerEmail?: string | null;
+  customerMobile?: string | null;
   status: string;
+  isLocked?: boolean;
   paymentMethod: string;
   paymentStatus: string;
   subtotal: number;
+  deliveryCharge?: number;
+  taxAmount?: number;
+  serviceCharge?: number;
+  discountAmount?: number;
   total: number;
   quantity: number;
   createdAt: string;
+  updatedAt?: string;
   shippingAddress?: string;
-  utrNumber?: string;
-  cancellationReason?: string;
+  courierPartner?: string | null;
+  trackingNumber?: string | null;
+  utrNumber?: string | null;
+  cancellationReason?: string | null;
 }
 
 interface ShippingInfo {
@@ -235,7 +248,15 @@ export default function OrdersScreen() {
                     <Feather name={cfg.icon as any} size={16} color={cfg.color} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.orderId}>#{order.id.slice(0, 8).toUpperCase()}</Text>
+                    <Text style={styles.orderId}>
+                      {order.orderNumber ? `#${order.orderNumber}` : `#${order.id.slice(0, 8).toUpperCase()}`}
+                    </Text>
+                    {order.productName && (
+                      <Text style={styles.productName} numberOfLines={1}>{order.productName}</Text>
+                    )}
+                    {order.customerName && (
+                      <Text style={styles.customerName} numberOfLines={1}>{order.customerName}</Text>
+                    )}
                     <Text style={styles.orderDate}>{new Date(order.createdAt).toLocaleString("en-IN")}</Text>
                   </View>
                   <View style={{ alignItems: "flex-end", gap: 4 }}>
@@ -253,7 +274,21 @@ export default function OrdersScreen() {
                       <Text style={styles.metaLabel}>Qty: <Text style={styles.metaValue}>{order.quantity}</Text></Text>
                       <Text style={styles.metaLabel}>Payment: <Text style={styles.metaValue}>{order.paymentMethod.toUpperCase()}</Text></Text>
                       <Text style={styles.metaLabel}>Pay Status: <Text style={styles.metaValue}>{order.paymentStatus}</Text></Text>
+                      {order.subtotal !== undefined && <Text style={styles.metaLabel}>Subtotal: <Text style={styles.metaValue}>₹{Number(order.subtotal).toLocaleString("en-IN")}</Text></Text>}
+                      {order.discountAmount && order.discountAmount > 0 ? <Text style={styles.metaLabel}>Discount: <Text style={[styles.metaValue, { color: "#10B981" }]}>-₹{Number(order.discountAmount).toLocaleString("en-IN")}</Text></Text> : null}
                     </View>
+
+                    {/* Courier / Tracking info */}
+                    {(order.courierPartner || order.trackingNumber) && (
+                      <View style={[styles.shipCard, { backgroundColor: "#F0FDF4", borderColor: "#BBF7D0" }]}>
+                        <View style={styles.shipCardHeader}>
+                          <Feather name="truck" size={13} color="#16A34A" />
+                          <Text style={[styles.shipCardTitle, { color: "#16A34A" }]}>Courier Details</Text>
+                        </View>
+                        {order.courierPartner && <Text style={styles.shipVal}>{order.courierPartner}</Text>}
+                        {order.trackingNumber && <Text style={[styles.shipKey, { color: "#6B7280" }]}>Tracking: {order.trackingNumber}</Text>}
+                      </View>
+                    )}
 
                     {/* Shipping Info Card */}
                     {(() => {
@@ -431,6 +466,8 @@ const styles = StyleSheet.create({
   orderHeader: { flexDirection: "row", alignItems: "center", gap: 10, padding: 14 },
   statusIcon: { width: 38, height: 38, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   orderId: { fontSize: 13, fontFamily: "Inter_700Bold", color: "#0F1740" },
+  productName: { fontSize: 11, fontFamily: "Inter_500Medium", color: "#374151", marginTop: 1 },
+  customerName: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#6B7280", marginTop: 1 },
   orderDate: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#9CA3AF", marginTop: 2 },
   orderTotal: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#0F1740" },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },

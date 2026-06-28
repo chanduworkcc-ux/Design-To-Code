@@ -27,8 +27,12 @@ import LoadingScreen from "@/components/LoadingScreen";
 
 interface Order {
   id: string;
+  orderNumber?: string | null;
   productId: string;
+  productName?: string | null;
+  productImage?: string | null;
   status: string;
+  isLocked?: boolean;
   paymentMethod: string;
   paymentStatus: string;
   total: number;
@@ -41,6 +45,9 @@ interface Order {
   quantity: number;
   shippingAddress: string | null;
   couponId: string | null;
+  courierPartner?: string | null;
+  trackingNumber?: string | null;
+  cancellationReason?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -427,7 +434,7 @@ export default function OrdersScreen() {
                       <View style={{ flex: 1 }}>
                         <View style={styles.orderIdRow}>
                           <Text style={[styles.orderId, { color: colors.text }]}>
-                            #{order.id.slice(0, 8).toUpperCase()}
+                            {order.orderNumber ? `#${order.orderNumber}` : `#${order.id.slice(0, 8).toUpperCase()}`}
                           </Text>
                           <View style={[styles.statusBadge, { backgroundColor: cfg.bg }]}>
                             <Text style={[styles.statusText, { color: cfg.color }]}>{cfg.label}</Text>
@@ -438,6 +445,11 @@ export default function OrdersScreen() {
                             </View>
                           )}
                         </View>
+                        {order.productName && (
+                          <Text style={[styles.productName, { color: colors.text }]} numberOfLines={1}>
+                            {order.productName}
+                          </Text>
+                        )}
                         <Text style={[styles.orderDate, { color: colors.mutedForeground }]}>
                           {date} at {time}
                         </Text>
@@ -484,12 +496,28 @@ export default function OrdersScreen() {
                       </View>
 
                       {/* Shipping Address */}
-                      {order.shippingAddress && (
-                        <View style={[styles.addressBox, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-                          <Feather name="map-pin" size={14} color={colors.mutedForeground} />
-                          <Text style={[styles.addressText, { color: colors.text }]}>{order.shippingAddress}</Text>
-                        </View>
-                      )}
+                      {order.shippingAddress && (() => {
+                        try {
+                          const a = JSON.parse(order.shippingAddress);
+                          const parts = [a.line1, a.landmark, a.city, a.state, a.pincode].filter(Boolean);
+                          return (
+                            <View style={[styles.addressBox, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                              <Feather name="map-pin" size={14} color={colors.mutedForeground} />
+                              <View style={{ flex: 1 }}>
+                                {a.fullName ? <Text style={[styles.addressText, { color: colors.text, fontFamily: "Inter_600SemiBold" }]}>{a.fullName} · {a.mobile}</Text> : null}
+                                <Text style={[styles.addressText, { color: colors.mutedForeground }]}>{parts.join(", ")}</Text>
+                              </View>
+                            </View>
+                          );
+                        } catch {
+                          return (
+                            <View style={[styles.addressBox, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                              <Feather name="map-pin" size={14} color={colors.mutedForeground} />
+                              <Text style={[styles.addressText, { color: colors.text }]}>{order.shippingAddress}</Text>
+                            </View>
+                          );
+                        }
+                      })()}
 
                       {/* Payment status */}
                       <View style={[styles.metaRow, { borderColor: colors.border }]}>
@@ -510,6 +538,17 @@ export default function OrdersScreen() {
                           <Text style={[styles.metaVal, { color: colors.text }]}>{order.quantity}</Text>
                         </View>
                       </View>
+
+                      {/* Courier / Tracking info */}
+                      {(order.courierPartner || order.trackingNumber) && (
+                        <View style={[styles.addressBox, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                          <Feather name="truck" size={14} color={colors.mutedForeground} />
+                          <View style={{ flex: 1 }}>
+                            {order.courierPartner && <Text style={[styles.addressText, { color: colors.text, fontFamily: "Inter_600SemiBold" }]}>{order.courierPartner}</Text>}
+                            {order.trackingNumber && <Text style={[styles.addressText, { color: colors.mutedForeground }]}>Tracking: {order.trackingNumber}</Text>}
+                          </View>
+                        </View>
+                      )}
 
                       {/* ── CUSTOMER CANCELLATION POLICY ─────────────────────
                            Customers are strictly prohibited from cancelling
@@ -582,6 +621,7 @@ const styles = StyleSheet.create({
   statusText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
   updatedPill: { backgroundColor: "#2563EB", paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8 },
   updatedPillText: { color: "#fff", fontSize: 10, fontFamily: "Inter_700Bold" },
+  productName: { fontSize: 12, fontFamily: "Inter_500Medium", marginTop: 2 },
   orderDate: { fontSize: 11, fontFamily: "Inter_400Regular" },
   lastUpdated: { fontSize: 10, fontFamily: "Inter_400Regular", marginTop: 1 },
   orderTotal: { fontSize: 16, fontFamily: "Inter_700Bold" },

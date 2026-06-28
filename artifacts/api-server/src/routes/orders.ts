@@ -177,6 +177,17 @@ router.post("/orders", authMiddleware, async (req: AuthRequest, res) => {
     .set({ stock: sql`${productsTable.stock} - 1` })
     .where(eq(productsTable.id, productId));
 
+  // Sync mobile number from shipping form to user profile so SMS notifications work
+  try {
+    const addrObj = JSON.parse(shippingAddress);
+    const mobile = (addrObj.mobile ?? "").replace(/\D/g, "");
+    if (mobile.length >= 10) {
+      await db.update(usersTable)
+        .set({ mobileNumber: mobile })
+        .where(eq(usersTable.id, req.userId!));
+    }
+  } catch {}
+
   try {
     getIO().to("admins").emit("new_order", {
       order,
@@ -188,8 +199,40 @@ router.post("/orders", authMiddleware, async (req: AuthRequest, res) => {
 });
 
 router.get("/orders", authMiddleware, async (req: AuthRequest, res) => {
-  const orders = await db.select().from(ordersTable).where(eq(ordersTable.userId, req.userId!)).orderBy(desc(ordersTable.createdAt));
-  res.json({ orders });
+  const rows = await db
+    .select({
+      id: ordersTable.id,
+      orderNumber: ordersTable.orderNumber,
+      productId: ordersTable.productId,
+      productName: productsTable.name,
+      productImage: productsTable.imageUrl,
+      userId: ordersTable.userId,
+      couponId: ordersTable.couponId,
+      quantity: ordersTable.quantity,
+      status: ordersTable.status,
+      isLocked: ordersTable.isLocked,
+      paymentMethod: ordersTable.paymentMethod,
+      paymentStatus: ordersTable.paymentStatus,
+      subtotal: ordersTable.subtotal,
+      deliveryCharge: ordersTable.deliveryCharge,
+      taxAmount: ordersTable.taxAmount,
+      serviceCharge: ordersTable.serviceCharge,
+      maintenanceCharge: ordersTable.maintenanceCharge,
+      discountAmount: ordersTable.discountAmount,
+      total: ordersTable.total,
+      shippingAddress: ordersTable.shippingAddress,
+      courierPartner: ordersTable.courierPartner,
+      trackingNumber: ordersTable.trackingNumber,
+      utrNumber: ordersTable.utrNumber,
+      cancellationReason: ordersTable.cancellationReason,
+      createdAt: ordersTable.createdAt,
+      updatedAt: ordersTable.updatedAt,
+    })
+    .from(ordersTable)
+    .leftJoin(productsTable, eq(ordersTable.productId, productsTable.id))
+    .where(eq(ordersTable.userId, req.userId!))
+    .orderBy(desc(ordersTable.createdAt));
+  res.json({ orders: rows });
 });
 
 router.get("/orders/:id", authMiddleware, async (req: AuthRequest, res) => {
@@ -209,8 +252,43 @@ router.post("/orders/:id/cancel", authMiddleware, async (_req: AuthRequest, res)
 });
 
 router.get("/admin/orders", authMiddleware, adminMiddleware, async (_req, res) => {
-  const orders = await db.select().from(ordersTable).orderBy(desc(ordersTable.createdAt));
-  res.json({ orders });
+  const rows = await db
+    .select({
+      id: ordersTable.id,
+      orderNumber: ordersTable.orderNumber,
+      productId: ordersTable.productId,
+      productName: productsTable.name,
+      productImage: productsTable.imageUrl,
+      userId: ordersTable.userId,
+      customerName: usersTable.name,
+      customerEmail: usersTable.email,
+      customerMobile: usersTable.mobileNumber,
+      couponId: ordersTable.couponId,
+      quantity: ordersTable.quantity,
+      status: ordersTable.status,
+      isLocked: ordersTable.isLocked,
+      paymentMethod: ordersTable.paymentMethod,
+      paymentStatus: ordersTable.paymentStatus,
+      subtotal: ordersTable.subtotal,
+      deliveryCharge: ordersTable.deliveryCharge,
+      taxAmount: ordersTable.taxAmount,
+      serviceCharge: ordersTable.serviceCharge,
+      maintenanceCharge: ordersTable.maintenanceCharge,
+      discountAmount: ordersTable.discountAmount,
+      total: ordersTable.total,
+      shippingAddress: ordersTable.shippingAddress,
+      courierPartner: ordersTable.courierPartner,
+      trackingNumber: ordersTable.trackingNumber,
+      utrNumber: ordersTable.utrNumber,
+      cancellationReason: ordersTable.cancellationReason,
+      createdAt: ordersTable.createdAt,
+      updatedAt: ordersTable.updatedAt,
+    })
+    .from(ordersTable)
+    .leftJoin(productsTable, eq(ordersTable.productId, productsTable.id))
+    .leftJoin(usersTable, eq(ordersTable.userId, usersTable.id))
+    .orderBy(desc(ordersTable.createdAt));
+  res.json({ orders: rows });
 });
 
 router.get("/admin/audit-logs", authMiddleware, adminMiddleware, async (_req, res) => {
