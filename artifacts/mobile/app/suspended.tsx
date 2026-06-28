@@ -1,52 +1,153 @@
-import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Animated,
   Dimensions,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import Animated, {
+  Easing,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 
 const { width: W } = Dimensions.get("window");
 
-function formatCountdown(ms: number): { days: number; hours: number; minutes: number; seconds: number } {
-  if (ms <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0 };
-  const totalSec = Math.floor(ms / 1000);
-  const days = Math.floor(totalSec / 86400);
-  const hours = Math.floor((totalSec % 86400) / 3600);
-  const minutes = Math.floor((totalSec % 3600) / 60);
-  const seconds = totalSec % 60;
-  return { days, hours, minutes, seconds };
-}
-
 function pad(n: number) { return String(n).padStart(2, "0"); }
 
-function CountUnit({ value, label }: { value: number; label: string }) {
+function getISTString(date: Date): string {
+  return date.toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+function formatCountdown(ms: number) {
+  if (ms <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0 };
+  const totalSec = Math.floor(ms / 1000);
+  return {
+    days: Math.floor(totalSec / 86400),
+    hours: Math.floor((totalSec % 86400) / 3600),
+    minutes: Math.floor((totalSec % 3600) / 60),
+    seconds: totalSec % 60,
+  };
+}
+
+function FlipUnit({ value, label }: { value: number; label: string }) {
   const prev = useRef(value);
-  const flip = useRef(new Animated.Value(0)).current;
+  const sc = useSharedValue(1);
+  const ty = useSharedValue(0);
 
   useEffect(() => {
     if (prev.current !== value) {
       prev.current = value;
-      flip.setValue(0);
-      Animated.timing(flip, { toValue: 1, duration: 220, useNativeDriver: true }).start();
+      sc.value = withSequence(
+        withTiming(0.7, { duration: 100, easing: Easing.out(Easing.quad) }),
+        withTiming(1.1, { duration: 160, easing: Easing.out(Easing.back(3)) }),
+        withTiming(1, { duration: 100 }),
+      );
+      ty.value = withSequence(
+        withTiming(-6, { duration: 100 }),
+        withTiming(0, { duration: 260, easing: Easing.out(Easing.back(2)) }),
+      );
     }
   }, [value]);
 
-  const scale = flip.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.85, 1.08, 1] });
+  const style = useAnimatedStyle(() => ({
+    transform: [{ scale: sc.value }, { translateY: ty.value }],
+  }));
 
   return (
     <View style={styles.unit}>
-      <Animated.View style={[styles.unitBox, { transform: [{ scale }] }]}>
+      <Animated.View style={[styles.unitBox, style]}>
         <Text style={styles.unitNum}>{pad(value)}</Text>
       </Animated.View>
       <Text style={styles.unitLabel}>{label}</Text>
     </View>
+  );
+}
+
+function PulseRing({ delay, size }: { delay: number; size: number }) {
+  const s = useSharedValue(0.5);
+  const op = useSharedValue(0.6);
+  useEffect(() => {
+    s.value = withDelay(delay, withRepeat(withTiming(1.6, { duration: 2200, easing: Easing.out(Easing.quad) }), -1));
+    op.value = withDelay(delay, withRepeat(withTiming(0, { duration: 2200, easing: Easing.out(Easing.quad) }), -1));
+  }, []);
+  const style = useAnimatedStyle(() => ({ transform: [{ scale: s.value }], opacity: op.value }));
+  return (
+    <Animated.View style={[{
+      position: "absolute",
+      width: size, height: size, borderRadius: size / 2,
+      borderWidth: 2, borderColor: "#EF4444",
+    }, style]} />
+  );
+}
+
+function Lock3D() {
+  const tiltX = useSharedValue(0);
+  const tiltY = useSharedValue(0);
+  const scl = useSharedValue(1);
+
+  useEffect(() => {
+    tiltX.value = withRepeat(
+      withSequence(
+        withTiming(14, { duration: 2200, easing: Easing.inOut(Easing.sin) }),
+        withTiming(-14, { duration: 2200, easing: Easing.inOut(Easing.sin) }),
+      ), -1, true,
+    );
+    tiltY.value = withRepeat(
+      withSequence(
+        withTiming(-18, { duration: 2800, easing: Easing.inOut(Easing.sin) }),
+        withTiming(18, { duration: 2800, easing: Easing.inOut(Easing.sin) }),
+      ), -1, true,
+    );
+    scl.value = withRepeat(
+      withSequence(
+        withTiming(1.04, { duration: 1400, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0.97, { duration: 1400, easing: Easing.inOut(Easing.sin) }),
+      ), -1, true,
+    );
+  }, []);
+
+  const style = useAnimatedStyle(() => ({
+    transform: [
+      { perspective: 700 },
+      { rotateX: `${tiltX.value}deg` },
+      { rotateY: `${tiltY.value}deg` },
+      { scale: scl.value },
+    ],
+  }));
+
+  return (
+    <Animated.View style={[styles.lockWrap, style]}>
+      {/* Lock shackle (arch on top) */}
+      <View style={styles.shackleOuter}>
+        <View style={styles.shackleInner} />
+      </View>
+      {/* Lock body */}
+      <View style={styles.lockBody}>
+        <View style={styles.keyhole}>
+          <View style={styles.keyholeCircle} />
+          <View style={styles.keyholeBar} />
+        </View>
+      </View>
+    </Animated.View>
   );
 }
 
@@ -76,9 +177,7 @@ export default function SuspendedScreen() {
 
   async function handleCheckStatus() {
     await refreshUser();
-    if (user?.status === "active") {
-      router.replace("/(tabs)");
-    }
+    router.replace("/(tabs)");
   }
 
   async function handleLogout() {
@@ -87,60 +186,74 @@ export default function SuspendedScreen() {
   }
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      <View style={styles.content}>
-        <View style={styles.iconWrap}>
-          <Feather name="slash" size={44} color="#EF4444" />
+    <View style={[styles.root, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 20 }]}>
+      <View style={styles.center}>
+        {/* 3D Lock */}
+        <View style={styles.lockStage}>
+          <PulseRing delay={0} size={180} />
+          <PulseRing delay={900} size={180} />
+          <Lock3D />
         </View>
 
-        <Text style={styles.title}>Account Suspended</Text>
-        <Text style={styles.sub}>
+        {/* Badge */}
+        <View style={styles.badge}>
+          <View style={styles.badgeDot} />
+          <Text style={styles.badgeText}>ACCOUNT SUSPENDED</Text>
+        </View>
+
+        <Text style={styles.title}>
+          {isExpired ? "Suspension Ended" : "Account Suspended"}
+        </Text>
+        <Text style={styles.subtitle}>
           {isExpired
-            ? "Your suspension period has ended. Tap 'Check Status' to regain access."
-            : "Your account has been temporarily restricted. Please wait for the suspension to lift."}
+            ? "Your suspension has ended. Tap 'Check Status' to regain access."
+            : "Your account has been temporarily restricted."}
         </Text>
 
+        {/* IST Countdown */}
         {!isExpired && (
-          <View style={styles.countdownRow}>
-            <CountUnit value={days} label="DAYS" />
-            <Text style={styles.colon}>:</Text>
-            <CountUnit value={hours} label="HRS" />
-            <Text style={styles.colon}>:</Text>
-            <CountUnit value={minutes} label="MIN" />
-            <Text style={styles.colon}>:</Text>
-            <CountUnit value={seconds} label="SEC" />
+          <View style={styles.countdownWrap}>
+            <Text style={styles.countdownLabel}>Time remaining (IST)</Text>
+            <View style={styles.countdownRow}>
+              <FlipUnit value={days} label="DAYS" />
+              <Text style={styles.colon}>:</Text>
+              <FlipUnit value={hours} label="HRS" />
+              <Text style={styles.colon}>:</Text>
+              <FlipUnit value={minutes} label="MIN" />
+              <Text style={styles.colon}>:</Text>
+              <FlipUnit value={seconds} label="SEC" />
+            </View>
           </View>
         )}
 
-        <View style={styles.reasonCard}>
-          <View style={styles.reasonHeader}>
-            <Feather name="file-text" size={16} color="#B45309" />
-            <Text style={styles.reasonHeaderText}>Suspension Reason</Text>
+        {/* Details card */}
+        <View style={styles.detailCard}>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailKey}>Reason</Text>
+            <Text style={styles.detailVal}>{reason}</Text>
           </View>
-          <Text style={styles.reasonText}>{reason}</Text>
           {suspendedUntil && (
-            <Text style={styles.reasonUntil}>
-              Suspended until: {suspendedUntil.toLocaleString("en-IN", {
-                dateStyle: "long", timeStyle: "short",
-              })}
-            </Text>
+            <View style={[styles.detailRow, { borderTopWidth: 1, borderTopColor: "rgba(239,68,68,0.15)", paddingTop: 10 }]}>
+              <Text style={styles.detailKey}>Unbanned at</Text>
+              <Text style={[styles.detailVal, { color: "#F87171" }]}>{getISTString(suspendedUntil)}</Text>
+            </View>
           )}
         </View>
 
         <View style={styles.helpBox}>
-          <Feather name="info" size={14} color="#6B7280" />
           <Text style={styles.helpText}>
-            If you believe this is an error, please contact XyloCart support with your registered email.
+            If you believe this is an error, contact XyloCart support with your registered email.
           </Text>
         </View>
 
-        <Pressable style={[styles.btn, { backgroundColor: isExpired ? "#10B981" : "#2563EB" }]} onPress={handleCheckStatus}>
-          <Feather name="refresh-cw" size={18} color="#fff" />
+        <Pressable
+          style={({ pressed }) => [styles.btn, { backgroundColor: isExpired ? "#10B981" : "#2563EB", opacity: pressed ? 0.85 : 1 }]}
+          onPress={handleCheckStatus}
+        >
           <Text style={styles.btnText}>{isExpired ? "Regain Access" : "Check Status"}</Text>
         </Pressable>
 
-        <Pressable style={styles.logoutBtn} onPress={handleLogout}>
-          <Feather name="log-out" size={16} color="#9CA3AF" />
+        <Pressable style={({ pressed }) => [styles.logoutBtn, pressed && { opacity: 0.7 }]} onPress={handleLogout}>
           <Text style={styles.logoutText}>Sign out</Text>
         </Pressable>
       </View>
@@ -149,39 +262,73 @@ export default function SuspendedScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#FEF2F2", alignItems: "center", justifyContent: "center" },
-  content: { width: W - 40, alignItems: "center", gap: 20 },
-  iconWrap: {
-    width: 88, height: 88, borderRadius: 44,
-    backgroundColor: "#FEE2E2", alignItems: "center", justifyContent: "center",
-    borderWidth: 3, borderColor: "#FECACA",
+  root: { flex: 1, backgroundColor: "#0A0000", alignItems: "center" },
+  center: { flex: 1, width: "100%", alignItems: "center", justifyContent: "center", paddingHorizontal: 28, gap: 16 },
+  lockStage: { width: 200, height: 200, alignItems: "center", justifyContent: "center" },
+  lockWrap: { alignItems: "center" },
+  shackleOuter: {
+    width: 52, height: 34, borderTopLeftRadius: 26, borderTopRightRadius: 26,
+    borderWidth: 8, borderBottomWidth: 0, borderColor: "#EF4444",
+    alignItems: "center", justifyContent: "flex-start",
+    overflow: "hidden",
   },
-  title: { fontSize: 24, fontFamily: "DMSans_700Bold", color: "#0F1740", textAlign: "center" },
-  sub: { fontSize: 14, fontFamily: "DMSans_400Regular", color: "#6B7280", textAlign: "center", lineHeight: 22, paddingHorizontal: 8 },
-  countdownRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  colon: { fontSize: 28, fontFamily: "DMSans_700Bold", color: "#EF4444", marginBottom: 18 },
-  unit: { alignItems: "center", gap: 6 },
-  unitBox: {
-    width: 64, height: 68, borderRadius: 14,
-    backgroundColor: "#fff", borderWidth: 2, borderColor: "#FECACA",
+  shackleInner: {
+    width: 18, height: 26, borderTopLeftRadius: 9, borderTopRightRadius: 9,
+    backgroundColor: "#0A0000", marginTop: 4,
+  },
+  lockBody: {
+    width: 72, height: 58, borderRadius: 14,
+    backgroundColor: "#EF4444",
     alignItems: "center", justifyContent: "center",
-    shadowColor: "#EF4444", shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
+    shadowColor: "#EF4444", shadowOpacity: 0.6, shadowRadius: 20, shadowOffset: { width: 0, height: 0 },
+    elevation: 10,
   },
-  unitNum: { fontSize: 26, fontFamily: "DMSans_700Bold", color: "#EF4444" },
-  unitLabel: { fontSize: 10, fontFamily: "DMSans_700Bold", color: "#9CA3AF", letterSpacing: 0.8 },
-  reasonCard: {
-    width: "100%", backgroundColor: "#FFFBEB", borderRadius: 14,
-    borderWidth: 1, borderColor: "#FDE68A", padding: 16, gap: 8,
+  keyhole: { alignItems: "center", gap: 0 },
+  keyholeCircle: {
+    width: 16, height: 16, borderRadius: 8,
+    backgroundColor: "rgba(0,0,0,0.4)",
   },
-  reasonHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
-  reasonHeaderText: { fontSize: 13, fontFamily: "DMSans_700Bold", color: "#B45309" },
-  reasonText: { fontSize: 14, fontFamily: "DMSans_400Regular", color: "#78350F", lineHeight: 20 },
-  reasonUntil: { fontSize: 12, fontFamily: "DMSans_500Medium", color: "#92400E" },
-  helpBox: { flexDirection: "row", alignItems: "flex-start", gap: 8, backgroundColor: "#F3F4F6", borderRadius: 10, padding: 12 },
-  helpText: { fontSize: 12, fontFamily: "DMSans_400Regular", color: "#6B7280", flex: 1, lineHeight: 18 },
-  btn: { width: "100%", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, borderRadius: 14, paddingVertical: 16 },
+  keyholeBar: {
+    width: 8, height: 10, borderBottomLeftRadius: 4, borderBottomRightRadius: 4,
+    backgroundColor: "rgba(0,0,0,0.4)", marginTop: -2,
+  },
+  badge: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    backgroundColor: "rgba(239,68,68,0.15)", paddingHorizontal: 14, paddingVertical: 6,
+    borderRadius: 20, borderWidth: 1, borderColor: "rgba(239,68,68,0.3)",
+  },
+  badgeDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#EF4444" },
+  badgeText: { fontSize: 10, fontFamily: "DMSans_700Bold", color: "#EF4444", letterSpacing: 1.5 },
+  title: { fontSize: 24, fontFamily: "DMSans_700Bold", color: "#F1F5F9", textAlign: "center" },
+  subtitle: { fontSize: 14, fontFamily: "DMSans_400Regular", color: "#64748B", textAlign: "center", lineHeight: 22 },
+  countdownWrap: { alignItems: "center", gap: 8 },
+  countdownLabel: { fontSize: 11, fontFamily: "DMSans_500Medium", color: "#64748B", letterSpacing: 0.8 },
+  countdownRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  colon: { fontSize: 24, fontFamily: "DMSans_700Bold", color: "#EF4444", marginBottom: 20 },
+  unit: { alignItems: "center", gap: 4 },
+  unitBox: {
+    width: 60, height: 64, borderRadius: 12,
+    backgroundColor: "#1A0505", borderWidth: 1, borderColor: "rgba(239,68,68,0.3)",
+    alignItems: "center", justifyContent: "center",
+    shadowColor: "#EF4444", shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 0 },
+  },
+  unitNum: { fontSize: 24, fontFamily: "DMSans_700Bold", color: "#EF4444" },
+  unitLabel: { fontSize: 9, fontFamily: "DMSans_700Bold", color: "#475569", letterSpacing: 0.8 },
+  detailCard: {
+    width: "100%", backgroundColor: "rgba(30,10,10,0.8)",
+    borderRadius: 14, borderWidth: 1, borderColor: "rgba(239,68,68,0.2)",
+    padding: 14, gap: 10,
+  },
+  detailRow: { gap: 4 },
+  detailKey: { fontSize: 11, fontFamily: "DMSans_700Bold", color: "#6B7280", letterSpacing: 0.5 },
+  detailVal: { fontSize: 14, fontFamily: "DMSans_400Regular", color: "#94A3B8", lineHeight: 20 },
+  helpBox: {
+    backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 10, padding: 12,
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.06)",
+  },
+  helpText: { fontSize: 12, fontFamily: "DMSans_400Regular", color: "#475569", textAlign: "center", lineHeight: 18 },
+  btn: { width: "100%", alignItems: "center", justifyContent: "center", borderRadius: 14, paddingVertical: 15 },
   btnText: { color: "#fff", fontSize: 16, fontFamily: "DMSans_600SemiBold" },
-  logoutBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 10 },
-  logoutText: { fontSize: 14, fontFamily: "DMSans_500Medium", color: "#9CA3AF" },
+  logoutBtn: { paddingVertical: 8 },
+  logoutText: { fontSize: 14, fontFamily: "DMSans_500Medium", color: "#374151" },
 });

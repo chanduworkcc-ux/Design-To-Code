@@ -13,6 +13,7 @@ import React, { useEffect, useState } from "react";
 import {
   Platform,
   StyleSheet,
+  View,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -26,8 +27,12 @@ import SplashOverlay from "@/components/SplashOverlay";
 import { NotificationProvider } from "@/context/NotificationContext";
 import { SocketProvider } from "@/context/SocketContext";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import MaintenanceScreen from "./maintenance";
 import ForceUpdateScreen from "./force-update";
+import NetworkErrorScreen from "@/components/NetworkErrorScreen";
+import SuspendedScreen from "./suspended";
+import BannedScreen from "./banned";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
@@ -87,13 +92,37 @@ function RootLayoutNav() {
       <Stack.Screen name="payment-methods" options={{ headerShown: false }} />
       <Stack.Screen name="product/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="suspended" options={{ headerShown: false }} />
+      <Stack.Screen name="banned" options={{ headerShown: false }} />
       <Stack.Screen name="track-order" options={{ headerShown: false }} />
       <Stack.Screen name="change-password" options={{ headerShown: false }} />
       <Stack.Screen name="login-devices" options={{ headerShown: false }} />
       <Stack.Screen name="account-security" options={{ headerShown: false }} />
       <Stack.Screen name="language" options={{ headerShown: false }} />
       <Stack.Screen name="addresses" options={{ headerShown: false }} />
+      <Stack.Screen name="refunds" options={{ headerShown: false }} />
     </Stack>
+  );
+}
+
+function UserStatusGuard({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  const isBanned = !loading && user?.status === "banned";
+  const isSuspended = !loading && user?.status === "suspended";
+
+  return (
+    <>
+      {children}
+      {isBanned && (
+        <View style={[StyleSheet.absoluteFill, { zIndex: 9998 }]}>
+          <BannedScreen />
+        </View>
+      )}
+      {isSuspended && (
+        <View style={[StyleSheet.absoluteFill, { zIndex: 9998 }]}>
+          <SuspendedScreen />
+        </View>
+      )}
+    </>
   );
 }
 
@@ -104,6 +133,7 @@ export default function RootLayout() {
   const [showSplash, setShowSplash] = useState(true);
   const [maintenance, setMaintenance] = useState<{ active: boolean; message?: string }>({ active: false });
   const [forceUpdate, setForceUpdate] = useState<{ active: boolean; url: string; version: string; notes: string }>({ active: false, url: "", version: "", notes: "" });
+  const { isOnline, retry } = useNetworkStatus();
 
   useEffect(() => {
     if (fontsLoaded || fontError) SplashScreen.hideAsync();
@@ -165,26 +195,37 @@ export default function RootLayout() {
             <LandingInitializer />
             <PushNotificationInit />
             <AppProvider>
-            <LanguageProvider>
-              <SocketInit>
-                <GestureHandlerRootView style={{ flex: 1 }}>
-                  {Platform.OS === "web" ? (
-                    <RootLayoutNav />
-                  ) : (
-                    <KeyboardProvider>
-                      <RootLayoutNav />
-                    </KeyboardProvider>
-                  )}
-                  {showSplash && (
-                    <SplashOverlay onDone={() => setShowSplash(false)} />
-                  )}
-                </GestureHandlerRootView>
-              </SocketInit>
-            </LanguageProvider>
+              <LanguageProvider>
+                <SocketInit>
+                  <GestureHandlerRootView style={{ flex: 1 }}>
+                    {Platform.OS === "web" ? (
+                      <UserStatusGuard>
+                        <RootLayoutNav />
+                      </UserStatusGuard>
+                    ) : (
+                      <KeyboardProvider>
+                        <UserStatusGuard>
+                          <RootLayoutNav />
+                        </UserStatusGuard>
+                      </KeyboardProvider>
+                    )}
+                    {showSplash && (
+                      <SplashOverlay onDone={() => setShowSplash(false)} />
+                    )}
+                  </GestureHandlerRootView>
+                </SocketInit>
+              </LanguageProvider>
             </AppProvider>
           </AuthProvider>
         </QueryClientProvider>
       </ErrorBoundary>
+
+      {/* Network loss overlay — shown on top of everything */}
+      {!isOnline && (
+        <View style={[StyleSheet.absoluteFill, { zIndex: 99999 }]}>
+          <NetworkErrorScreen onRetry={retry} />
+        </View>
+      )}
     </SafeAreaProvider>
   );
 }
