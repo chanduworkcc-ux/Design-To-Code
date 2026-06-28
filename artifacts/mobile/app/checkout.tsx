@@ -813,7 +813,12 @@ export default function CheckoutScreen() {
         total={successOrder?.total}
         onComplete={() => {
           setShowSuccessAnim(false);
-          router.replace("/orders" as any);
+          const orderNum = successOrder?.orderNumber ?? "";
+          if (orderNum) {
+            router.replace((`/track-order?orderId=${orderNum}`) as any);
+          } else {
+            router.replace("/orders" as any);
+          }
         }}
       />
     </>

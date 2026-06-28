@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import React, { useState, useEffect } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -107,15 +107,22 @@ export default function TrackOrderScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const params = useLocalSearchParams<{ orderId?: string }>();
   const topPadding = Platform.OS === "web" ? 0 : insets.top;
 
-  const [orderId, setOrderId] = useState("");
+  const [orderId, setOrderId] = useState(params.orderId ?? "");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<TrackResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleTrack() {
-    const clean = orderId.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  useEffect(() => {
+    if (params.orderId && params.orderId.length >= 6) {
+      handleTrack(params.orderId);
+    }
+  }, []);
+
+  async function handleTrack(overrideId?: string) {
+    const clean = (overrideId ?? orderId).trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
     if (clean.length < 6) {
       setError("Please enter at least 6 characters of your Order ID.");
       setResult(null);
@@ -183,7 +190,7 @@ export default function TrackOrderScreen() {
                   autoCapitalize="characters"
                   autoCorrect={false}
                   returnKeyType="search"
-                  onSubmitEditing={handleTrack}
+                  onSubmitEditing={() => handleTrack()}
                   maxLength={8}
                 />
                 {orderId.length > 0 && (
@@ -194,7 +201,7 @@ export default function TrackOrderScreen() {
               </View>
               <Pressable
                 style={[styles.trackBtn, { backgroundColor: colors.primary, opacity: loading ? 0.7 : 1 }]}
-                onPress={handleTrack}
+                onPress={() => handleTrack()}
                 disabled={loading}
               >
                 {loading

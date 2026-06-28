@@ -602,7 +602,7 @@ export default function OrdersScreen() {
                       {order.status !== "delivered" && order.status !== "cancelled" && (
                         <Pressable
                           style={styles.contactSupportBtn}
-                          onPress={() => router.push("/(tabs)/profile" as any)}
+                          onPress={() => router.push("/support-ticket" as any)}
                         >
                           <Feather name="headphones" size={15} color="#2563EB" />
                           <Text style={styles.contactSupportText}>Contact Support</Text>
