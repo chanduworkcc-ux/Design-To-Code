@@ -70,6 +70,28 @@ function proxyRequest(req, res) {
     targetPath = "/";
   }
 
+  // SPA fallback: paths without a file extension are app routes, not static
+  // assets. Forward them all to "/" so Metro always returns index.html and
+  // lets the client-side Expo Router do the matching — this prevents the
+  // "+not-found" flash on hard refresh from any deep link.
+  const isAsset = /\.\w{1,6}(\?.*)?$/.test(targetPath.split("?")[0]);
+  const isMetroInternal =
+    targetPath.startsWith("/_expo") ||
+    targetPath.startsWith("/bundle") ||
+    targetPath.startsWith("/packages") ||
+    targetPath.startsWith("/node_modules") ||
+    targetPath.startsWith("/index.bundle") ||
+    targetPath.startsWith("/debugger") ||
+    targetPath.startsWith("/status") ||
+    targetPath.startsWith("/logs") ||
+    targetPath.startsWith("/reload") ||
+    targetPath.startsWith("/symbolicate") ||
+    targetPath.startsWith("/open-stack-frame") ||
+    targetPath.startsWith("/assets");
+  if (!isAsset && !isMetroInternal && targetPath !== "/") {
+    targetPath = "/";
+  }
+
   const options = {
     hostname: "127.0.0.1",
     port: METRO_PORT,
