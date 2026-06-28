@@ -19,6 +19,7 @@ import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import PurchaseSuccessAnimation from "@/components/PurchaseSuccessAnimation";
+import PolicyBadges from "@/components/PolicyBadges";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
@@ -594,12 +595,15 @@ export default function CheckoutScreen() {
               </Text>
             )}
 
-            {/* Policy */}
-            <View style={[styles.policyBox, { backgroundColor: "#FEF3C7", borderColor: "#F59E0B" }]}>
-              <Text style={styles.policyBoxTitle}>Important Policy</Text>
+            {/* Policy — visual image-style badges */}
+            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>STORE POLICY</Text>
+            <PolicyBadges />
+
+            {/* One-time purchase notice */}
+            <View style={[styles.policyBox, { backgroundColor: "#FEF3C7", borderColor: "#F59E0B", marginTop: 12 }]}>
+              <Text style={styles.policyBoxTitle}>⚠️ One-Time Purchase Only</Text>
               <Text style={styles.policyBoxText}>
-                Strict No-Return, No-Refund, and No-Exchange Policy. All sales are final.{"\n"}
-                ⚠️ Each item can only be purchased <Text style={{ fontFamily: "Inter_700Bold" }}>once per account</Text>. This policy ensures fair access for all customers.
+                Each product can only be purchased <Text style={{ fontFamily: "Inter_700Bold" }}>once per account</Text>. This policy ensures fair access for all customers.
               </Text>
             </View>
           </ScrollView>

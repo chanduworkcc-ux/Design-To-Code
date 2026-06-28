@@ -19,6 +19,7 @@ import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { products as staticProducts } from "@/data/products";
 import LoadingScreen from "@/components/LoadingScreen";
+import PolicyBadges from "@/components/PolicyBadges";
 import { useColors } from "@/hooks/useColors";
 
 const { width } = Dimensions.get("window");
@@ -130,11 +131,13 @@ export default function ProductDetailScreen() {
   function handleAddToCart() {
     if (!product || product.stock <= 0) return;
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    addToCart(product as any);
+    if (!inCart) addToCart(product as any);
     Animated.sequence([
-      Animated.timing(addedAnim, { toValue: 0.88, duration: 90, useNativeDriver: true }),
+      Animated.timing(addedAnim, { toValue: 0.88, duration: 80, useNativeDriver: true }),
       Animated.spring(addedAnim, { toValue: 1, friction: 4, useNativeDriver: true }),
     ]).start();
+    // Auto-redirect to cart after brief haptic feedback
+    setTimeout(() => router.push("/(tabs)/cart" as any), 200);
   }
 
   function handleWishlist() {
@@ -326,32 +329,11 @@ export default function ProductDetailScreen() {
             </View>
           )}
 
-          {/* Policy badges */}
-          {(config["no_returns"] === "true" || config["no_refunds"] === "true" || config["no_exchanges"] === "true") && (
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Policy</Text>
-              <View style={styles.policyRow}>
-                {config["no_returns"] === "true" && (
-                  <View style={[styles.policyBadge, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}>
-                    <Feather name="x-circle" size={13} color="#EF4444" />
-                    <Text style={[styles.policyText, { color: "#EF4444" }]}>No Returns</Text>
-                  </View>
-                )}
-                {config["no_refunds"] === "true" && (
-                  <View style={[styles.policyBadge, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}>
-                    <Feather name="x-circle" size={13} color="#EF4444" />
-                    <Text style={[styles.policyText, { color: "#EF4444" }]}>No Refunds</Text>
-                  </View>
-                )}
-                {config["no_exchanges"] === "true" && (
-                  <View style={[styles.policyBadge, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}>
-                    <Feather name="x-circle" size={13} color="#EF4444" />
-                    <Text style={[styles.policyText, { color: "#EF4444" }]}>No Exchanges</Text>
-                  </View>
-                )}
-              </View>
-            </View>
-          )}
+          {/* Policy badges — visual image-style icons */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Store Policy</Text>
+            <PolicyBadges />
+          </View>
 
           {/* Delivery info */}
           {!!config["delivery_info"] && (
