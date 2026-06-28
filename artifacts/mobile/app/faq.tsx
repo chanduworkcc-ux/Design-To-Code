@@ -138,7 +138,7 @@ export default function FaqScreen() {
       const res = await apiRequest("/tickets", {
         method: "POST",
         body: JSON.stringify({
-          category: "Q&A",
+          category: "qa",
           title: askQuestion.trim(),
           description,
         }),

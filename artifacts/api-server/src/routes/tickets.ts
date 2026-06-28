@@ -26,7 +26,7 @@ async function generateTicketNumber(): Promise<string> {
 }
 
 const ticketSchema = z.object({
-  category: z.enum(["order_issue", "payment", "product", "account", "other"]),
+  category: z.enum(["order_issue", "payment", "product", "account", "other", "qa"]),
   title: z.string().min(3, "Title must be at least 3 characters"),
   description: z.string().min(10),
   imageUrl: z.string().url().optional(),
