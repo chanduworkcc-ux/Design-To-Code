@@ -69,6 +69,12 @@ router.post("/orders", authMiddleware, async (req: AuthRequest, res) => {
     return;
   }
 
+  const storeStatus = await getConfig("store_status");
+  if (storeStatus === "off") {
+    res.status(503).json({ error: "The store is currently closed. Please check back later." });
+    return;
+  }
+
   const activeGateway = await getConfig("active_payment_gateway");
   const effectiveGateway = activeGateway || "cod";
 

@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
+  Linking,
   Platform,
   Pressable,
   RefreshControl,
@@ -49,6 +50,8 @@ interface Order {
   couponId: string | null;
   courierPartner?: string | null;
   trackingNumber?: string | null;
+  trackingLink?: string | null;
+  estimatedDelivery?: string | null;
   cancellationReason?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -556,13 +559,35 @@ export default function OrdersScreen() {
                       </View>
 
                       {/* Courier / Tracking info */}
-                      {(order.courierPartner || order.trackingNumber) && (
-                        <View style={[styles.addressBox, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-                          <Feather name="truck" size={14} color={colors.mutedForeground} />
-                          <View style={{ flex: 1 }}>
-                            {order.courierPartner && <Text style={[styles.addressText, { color: colors.text, fontFamily: "Inter_600SemiBold" }]}>{order.courierPartner}</Text>}
-                            {order.trackingNumber && <Text style={[styles.addressText, { color: colors.mutedForeground }]}>Tracking: {order.trackingNumber}</Text>}
+                      {(order.courierPartner || order.trackingNumber || order.trackingLink || order.estimatedDelivery) && (
+                        <View style={[styles.shippingCard, { backgroundColor: "#F0FDF4", borderColor: "#BBF7D0" }]}>
+                          <View style={styles.shippingCardHeader}>
+                            <Feather name="truck" size={15} color="#16A34A" />
+                            <Text style={[styles.shippingCardTitle, { color: "#16A34A" }]}>Shipping Info</Text>
                           </View>
+                          {order.courierPartner && (
+                            <Text style={[styles.addressText, { color: colors.text, fontFamily: "Inter_600SemiBold" }]}>{order.courierPartner}</Text>
+                          )}
+                          {order.trackingNumber && (
+                            <Text style={[styles.addressText, { color: colors.mutedForeground }]}>Tracking No.: {order.trackingNumber}</Text>
+                          )}
+                          {order.estimatedDelivery && (
+                            <View style={styles.estDeliveryRow}>
+                              <Feather name="calendar" size={13} color="#16A34A" />
+                              <Text style={[styles.addressText, { color: "#16A34A", fontFamily: "Inter_600SemiBold" }]}>
+                                Est. Delivery: {order.estimatedDelivery}
+                              </Text>
+                            </View>
+                          )}
+                          {order.trackingLink && (
+                            <Pressable
+                              style={styles.trackingLinkBtn}
+                              onPress={() => order.trackingLink && Linking.openURL(order.trackingLink)}
+                            >
+                              <Feather name="external-link" size={14} color="#fff" />
+                              <Text style={styles.trackingLinkText}>Track Shipment</Text>
+                            </Pressable>
+                          )}
                         </View>
                       )}
 
@@ -683,6 +708,12 @@ const styles = StyleSheet.create({
   totalValue: { fontSize: 16, fontFamily: "Inter_700Bold" },
   addressBox: { flexDirection: "row", gap: 8, padding: 10, borderRadius: 10, borderWidth: 1, alignItems: "flex-start" },
   addressText: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 20 },
+  shippingCard: { borderRadius: 12, borderWidth: 1, padding: 12, gap: 6 },
+  shippingCardHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 },
+  shippingCardTitle: { fontSize: 13, fontFamily: "Inter_700Bold" },
+  estDeliveryRow: { flexDirection: "row", alignItems: "center", gap: 5 },
+  trackingLinkBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#16A34A", paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, alignSelf: "flex-start", marginTop: 4 },
+  trackingLinkText: { color: "#fff", fontSize: 13, fontFamily: "Inter_600SemiBold" },
   metaRow: { flexDirection: "row", borderRadius: 12, borderWidth: 1, overflow: "hidden" },
   metaItem: { flex: 1, alignItems: "center", padding: 10, gap: 3 },
   metaKey: { fontSize: 10, fontFamily: "Inter_400Regular" },

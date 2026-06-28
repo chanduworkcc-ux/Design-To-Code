@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Linking,
   Platform,
   Pressable,
   RefreshControl,
@@ -42,6 +43,8 @@ interface Order {
   shippingAddress?: string;
   courierPartner?: string | null;
   trackingNumber?: string | null;
+  trackingLink?: string | null;
+  estimatedDelivery?: string | null;
   utrNumber?: string | null;
   cancellationReason?: string | null;
 }
@@ -101,6 +104,11 @@ export default function OrdersScreen() {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [utrInput, setUtrInput] = useState("");
   const [cancelReason, setCancelReason] = useState("");
+
+  // Shipping form state
+  const [shippingFormId, setShippingFormId] = useState<string | null>(null);
+  const [shippingInput, setShippingInput] = useState({ courierPartner: "", trackingLink: "", estimatedDelivery: "" });
+  const [savingShipping, setSavingShipping] = useState(false);
 
   useEffect(() => { fetchOrders(); }, []);
 
@@ -295,14 +303,122 @@ export default function OrdersScreen() {
                     </View>
 
                     {/* Courier / Tracking info */}
-                    {(order.courierPartner || order.trackingNumber) && (
+                    {(order.courierPartner || order.trackingNumber || order.trackingLink || order.estimatedDelivery) && (
                       <View style={[styles.shipCard, { backgroundColor: "#F0FDF4", borderColor: "#BBF7D0" }]}>
                         <View style={styles.shipCardHeader}>
                           <Feather name="truck" size={13} color="#16A34A" />
                           <Text style={[styles.shipCardTitle, { color: "#16A34A" }]}>Courier Details</Text>
                         </View>
                         {order.courierPartner && <Text style={styles.shipVal}>{order.courierPartner}</Text>}
-                        {order.trackingNumber && <Text style={[styles.shipKey, { color: "#6B7280" }]}>Tracking: {order.trackingNumber}</Text>}
+                        {order.trackingNumber && <Text style={[styles.shipKey, { color: "#6B7280" }]}>Tracking No.: {order.trackingNumber}</Text>}
+                        {order.estimatedDelivery && <Text style={[styles.shipKey, { color: "#6B7280" }]}>Est. Delivery: {order.estimatedDelivery}</Text>}
+                        {order.trackingLink && (
+                          <Pressable onPress={() => Linking.openURL(order.trackingLink!)}>
+                            <Text style={[styles.shipKey, { color: "#2563EB", textDecorationLine: "underline" }]}>
+                              Track Shipment ↗
+                            </Text>
+                          </Pressable>
+                        )}
+                      </View>
+                    )}
+
+                    {/* Shipping Management Form */}
+                    {order.status !== "delivered" && order.status !== "cancelled" && (
+                      <View>
+                        {shippingFormId !== order.id ? (
+                          <Pressable
+                            style={[styles.statusBtn, { backgroundColor: "#F0FDF4", borderColor: "#16A34A", opacity: updatingId === order.id ? 0.5 : 1 }]}
+                            onPress={() => {
+                              setShippingFormId(order.id);
+                              setShippingInput({
+                                courierPartner: order.courierPartner || "",
+                                trackingLink: order.trackingLink || "",
+                                estimatedDelivery: order.estimatedDelivery || "",
+                              });
+                            }}
+                          >
+                            <Feather name="truck" size={14} color="#16A34A" />
+                            <Text style={[styles.statusBtnText, { color: "#16A34A" }]}>
+                              {order.courierPartner ? "Update Shipping Info" : "Add Shipping Info"}
+                            </Text>
+                          </Pressable>
+                        ) : (
+                          <View style={styles.shippingForm}>
+                            <Text style={styles.shippingFormTitle}>Shipping Management</Text>
+                            <View style={styles.inputGroup}>
+                              <Text style={styles.inputLabel}>Courier Partner *</Text>
+                              <TextInput
+                                style={styles.input}
+                                value={shippingInput.courierPartner}
+                                onChangeText={(t) => setShippingInput((s) => ({ ...s, courierPartner: t }))}
+                                placeholder="e.g. Delhivery, BlueDart, DTDC"
+                                placeholderTextColor="#9CA3AF"
+                                autoCorrect={false}
+                              />
+                            </View>
+                            <View style={styles.inputGroup}>
+                              <Text style={styles.inputLabel}>Tracking Link *</Text>
+                              <TextInput
+                                style={styles.input}
+                                value={shippingInput.trackingLink}
+                                onChangeText={(t) => setShippingInput((s) => ({ ...s, trackingLink: t }))}
+                                placeholder="https://..."
+                                placeholderTextColor="#9CA3AF"
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                                keyboardType="url"
+                              />
+                            </View>
+                            <View style={styles.inputGroup}>
+                              <Text style={styles.inputLabel}>Estimated Delivery Date *</Text>
+                              <TextInput
+                                style={styles.input}
+                                value={shippingInput.estimatedDelivery}
+                                onChangeText={(t) => setShippingInput((s) => ({ ...s, estimatedDelivery: t }))}
+                                placeholder="e.g. 3 Jul 2026 or 3–5 business days"
+                                placeholderTextColor="#9CA3AF"
+                                autoCorrect={false}
+                              />
+                            </View>
+                            <View style={styles.cancelFormButtons}>
+                              <Pressable
+                                style={styles.cancelFormBack}
+                                onPress={() => setShippingFormId(null)}
+                              >
+                                <Text style={styles.cancelFormBackText}>Cancel</Text>
+                              </Pressable>
+                              <Pressable
+                                style={[styles.cancelFormConfirm, { backgroundColor: "#16A34A", opacity: savingShipping ? 0.6 : 1 }]}
+                                disabled={savingShipping}
+                                onPress={async () => {
+                                  if (!shippingInput.courierPartner.trim() || !shippingInput.trackingLink.trim() || !shippingInput.estimatedDelivery.trim()) return;
+                                  setSavingShipping(true);
+                                  try {
+                                    const res = await apiRequest(`/admin/orders/${order.id}/shipping`, {
+                                      method: "PUT",
+                                      body: JSON.stringify({
+                                        courierPartner: shippingInput.courierPartner.trim(),
+                                        trackingLink: shippingInput.trackingLink.trim(),
+                                        estimatedDelivery: shippingInput.estimatedDelivery.trim(),
+                                      }),
+                                    });
+                                    if (res.ok) {
+                                      const data = await res.json();
+                                      setOrders((prev) => prev.map((o) => o.id === order.id ? { ...o, ...data.order } : o));
+                                      setShippingFormId(null);
+                                    }
+                                  } catch {}
+                                  setSavingShipping(false);
+                                }}
+                              >
+                                {savingShipping
+                                  ? <ActivityIndicator size="small" color="#fff" />
+                                  : <Text style={styles.cancelFormConfirmText}>Save Shipping</Text>
+                                }
+                              </Pressable>
+                            </View>
+                          </View>
+                        )}
                       </View>
                     )}
 
@@ -546,4 +662,6 @@ const styles = StyleSheet.create({
   shipFieldFull: { minWidth: "100%", flex: undefined, width: "100%" },
   shipKey: { fontSize: 10, fontFamily: "Inter_600SemiBold", color: "#3B82F6", letterSpacing: 0.3, marginBottom: 2 },
   shipVal: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#0F1740" },
+  shippingForm: { backgroundColor: "#F0FDF4", borderRadius: 12, borderWidth: 1, borderColor: "#BBF7D0", padding: 14, gap: 10 },
+  shippingFormTitle: { fontSize: 14, fontFamily: "Inter_700Bold", color: "#15803D" },
 });

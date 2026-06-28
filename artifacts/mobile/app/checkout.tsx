@@ -105,6 +105,7 @@ export default function CheckoutScreen() {
   const [checkingStock, setCheckingStock] = useState(false);
   const [activeGateway, setActiveGateway] = useState<PaymentMethod>("cod");
   const [gatewayLoading, setGatewayLoading] = useState(true);
+  const [storeOpen, setStoreOpen] = useState(true);
 
   const product = cart[0];
 
@@ -115,6 +116,7 @@ export default function CheckoutScreen() {
         const gw = (d.active_payment_gateway as PaymentMethod) || "cod";
         setActiveGateway(gw);
         setPaymentMethod(gw);
+        setStoreOpen((d.store_status ?? "on") !== "off");
       })
       .catch(() => {
         setActiveGateway("cod");
@@ -204,6 +206,10 @@ export default function CheckoutScreen() {
   }
 
   async function handlePlaceOrder() {
+    if (!storeOpen) {
+      Alert.alert("Store Closed", "The store is currently closed and not accepting new orders. Please check back later.");
+      return;
+    }
     if (!user) {
       Alert.alert("Sign In Required", "Please sign in to place an order.", [
         { text: "Cancel", style: "cancel" },

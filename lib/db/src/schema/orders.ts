@@ -26,6 +26,8 @@ export const ordersTable = pgTable("orders", {
   shippingAddress: text("shipping_address"),
   courierPartner: text("courier_partner"),
   trackingNumber: text("tracking_number"),
+  trackingLink: text("tracking_link"),
+  estimatedDelivery: text("estimated_delivery"),
   utrNumber: text("utr_number"),
   cancellationReason: text("cancellation_reason"),
   isLocked: boolean("is_locked").notNull().default(false),

@@ -458,6 +458,30 @@ router.put("/admin/config", authMiddleware, adminMiddleware, async (req: AuthReq
   res.json({ config });
 });
 
+// ─── Shipping Management ──────────────────────────────────────────────────────
+
+const shippingUpdateSchema = z.object({
+  courierPartner: z.string().min(1),
+  trackingLink: z.string().url("Must be a valid URL"),
+  estimatedDelivery: z.string().min(1),
+});
+
+router.put("/admin/orders/:id/shipping", authMiddleware, adminMiddleware, async (req, res) => {
+  const parsed = shippingUpdateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "courierPartner, trackingLink (valid URL), and estimatedDelivery are required" });
+    return;
+  }
+  const { courierPartner, trackingLink, estimatedDelivery } = parsed.data;
+  const [updated] = await db
+    .update(ordersTable)
+    .set({ courierPartner, trackingLink, estimatedDelivery, updatedAt: new Date() })
+    .where(eq(ordersTable.id, req.params.id))
+    .returning();
+  if (!updated) { res.status(404).json({ error: "Order not found" }); return; }
+  res.json({ order: updated });
+});
+
 // ─── Announcements (public read) ──────────────────────────────────────────────
 
 router.get("/announcement", async (_req, res) => {
@@ -480,6 +504,7 @@ router.get("/config/public", async (_req, res) => {
     no_returns, no_refunds, no_exchanges,
     delivery_info, product_disclaimer,
     delivery_charge, tax_percent, service_charge, maintenance_charge,
+    store_status,
   ] = await Promise.all([
     getConfig("maintenance_mode"),
     getConfig("maintenance_message"),
@@ -501,6 +526,7 @@ router.get("/config/public", async (_req, res) => {
     getConfig("tax_percent"),
     getConfig("service_charge"),
     getConfig("maintenance_charge"),
+    getConfig("store_status"),
   ]);
   res.json({
     maintenance_mode,
@@ -523,6 +549,7 @@ router.get("/config/public", async (_req, res) => {
     tax_percent,
     service_charge,
     maintenance_charge,
+    store_status: store_status || "on",
   });
 });
 

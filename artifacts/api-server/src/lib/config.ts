@@ -27,6 +27,7 @@ const DEFAULTS: Record<string, string> = {
   maintenance_message: "We are performing scheduled maintenance. Please check back soon.",
   login_closed_message: "Logins are temporarily paused. Please try again later or contact support.",
   registration_closed_message: "New registrations are currently closed. Please check back soon.",
+  store_status: "on",
   min_app_version: "1.0.0",
   sms_enabled: "false",
   twilio_account_sid: "",

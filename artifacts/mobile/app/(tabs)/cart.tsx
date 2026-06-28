@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
-import React, { useCallback, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -24,6 +24,8 @@ import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { FloatingOrb, PulsingRing } from "@/components/ThreeD";
+
+const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
 function Empty3DCart() {
   const colors = useColors();
@@ -87,9 +89,17 @@ export default function CartScreen() {
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomInset = Platform.OS === "web" ? 34 : insets.bottom;
   const checkingRef = useRef(false);
+  const [storeOpen, setStoreOpen] = useState(true);
 
   const delivery = 0;
   const total = Number(cartTotal) + delivery;
+
+  useEffect(() => {
+    fetch(`${BASE_URL}/config/public`)
+      .then((r) => r.json())
+      .then((d) => setStoreOpen((d.store_status ?? "on") !== "off"))
+      .catch(() => {});
+  }, []);
 
   // Check live stock every time the cart screen is focused
   useFocusEffect(
@@ -139,6 +149,18 @@ export default function CartScreen() {
             <Pressable style={styles.removalDismiss} onPress={dismissCartRemovalNotice}>
               <Feather name="x" size={15} color="#92400E" />
             </Pressable>
+          </View>
+        )}
+
+        {/* Store Closed Banner */}
+        {!storeOpen && (
+          <View style={[styles.storeClosedBanner, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}>
+            <View style={[styles.policyIconBox, { backgroundColor: "#FEE2E2" }]}>
+              <Feather name="x-circle" size={14} color="#DC2626" />
+            </View>
+            <Text style={[styles.policyText, { color: "#991B1B" }]}>
+              The store is currently closed. You can browse items but cannot place orders right now.
+            </Text>
           </View>
         )}
 
@@ -278,18 +300,30 @@ export default function CartScreen() {
             },
           ]}
         >
-          <Pressable
-            style={[styles.checkoutBtn, { backgroundColor: colors.primary }]}
-            onPress={() => router.push("/checkout" as any)}
-          >
-            <Text style={styles.checkoutText}>Proceed to Checkout</Text>
-            <View style={[styles.checkoutArrow, { backgroundColor: "rgba(255,255,255,0.2)" }]}>
-              <Feather name="arrow-right" size={16} color="#fff" />
+          {storeOpen ? (
+            <Pressable
+              style={[styles.checkoutBtn, { backgroundColor: colors.primary }]}
+              onPress={() => router.push("/checkout" as any)}
+            >
+              <Text style={styles.checkoutText}>Proceed to Checkout</Text>
+              <View style={[styles.checkoutArrow, { backgroundColor: "rgba(255,255,255,0.2)" }]}>
+                <Feather name="arrow-right" size={16} color="#fff" />
+              </View>
+            </Pressable>
+          ) : (
+            <View style={[styles.checkoutBtn, { backgroundColor: "#9CA3AF" }]}>
+              <Text style={styles.checkoutText}>Store Closed</Text>
+              <View style={[styles.checkoutArrow, { backgroundColor: "rgba(255,255,255,0.2)" }]}>
+                <Feather name="x" size={16} color="#fff" />
+              </View>
             </View>
-          </Pressable>
+          )}
 
           <Text style={[styles.secureNote, { color: colors.mutedForeground }]}>
-            <Feather name="lock" size={11} color={colors.mutedForeground} /> Secure checkout
+            {storeOpen
+              ? <><Feather name="lock" size={11} color={colors.mutedForeground} /> Secure checkout</>
+              : "Store is currently closed. Please check back later."
+            }
           </Text>
         </View>
       )}
@@ -351,6 +385,9 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     marginTop: 2,
   },
+
+  /* Store closed banner */
+  storeClosedBanner: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12, borderRadius: 12, borderWidth: 1.5, marginBottom: 12 },
 
   /* Policy banner */
   policyBanner: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12, borderRadius: 12, borderWidth: 1, marginBottom: 20 },

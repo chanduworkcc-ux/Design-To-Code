@@ -61,9 +61,36 @@ export default function AdminDashboardScreen() {
   const [walletSummary, setWalletSummary] = useState<WalletSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [storeStatus, setStoreStatus] = useState<"on" | "off">("on");
+  const [togglingStore, setTogglingStore] = useState(false);
   const topPadding = Platform.OS === "web" ? 0 : insets.top;
 
-  useEffect(() => { fetchStats(); }, []);
+  useEffect(() => { fetchStats(); fetchStoreStatus(); }, []);
+
+  async function fetchStoreStatus() {
+    try {
+      const res = await apiRequest("/admin/config");
+      if (res.ok) {
+        const d = await res.json();
+        setStoreStatus((d.config?.store_status ?? "on") as "on" | "off");
+      }
+    } catch {}
+  }
+
+  async function handleToggleStore() {
+    const next = storeStatus === "on" ? "off" : "on";
+    setTogglingStore(true);
+    try {
+      const res = await apiRequest("/admin/config", {
+        method: "PUT",
+        body: JSON.stringify({ store_status: next }),
+      });
+      if (res.ok) {
+        setStoreStatus(next);
+      }
+    } catch {}
+    setTogglingStore(false);
+  }
 
   async function fetchStats() {
     try {
@@ -276,6 +303,33 @@ export default function AdminDashboardScreen() {
               </View>
             </Pressable>
           )}
+
+          {/* Store Status Toggle */}
+          <View style={[styles.section, { backgroundColor: storeStatus === "off" ? "#FEF2F2" : "#F0FDF4", borderColor: storeStatus === "off" ? "#FECACA" : "#BBF7D0" }]}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <View style={[styles.settingsIcon, { backgroundColor: storeStatus === "off" ? "#FEE2E2" : "#DCFCE7" }]}>
+                <Feather name={storeStatus === "off" ? "shopping-cart" : "shopping-cart"} size={20} color={storeStatus === "off" ? "#DC2626" : "#16A34A"} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.sectionTitle, { color: storeStatus === "off" ? "#991B1B" : "#15803D" }]}>
+                  Store is {storeStatus === "on" ? "Open" : "Closed"}
+                </Text>
+                <Text style={[styles.noDataText, { paddingTop: 0, color: storeStatus === "off" ? "#B91C1C" : "#16A34A" }]}>
+                  {storeStatus === "off" ? "Customers cannot place new orders right now." : "Customers can browse and place orders."}
+                </Text>
+              </View>
+              <Pressable
+                style={[styles.storeToggleBtn, { backgroundColor: storeStatus === "off" ? "#DC2626" : "#16A34A", opacity: togglingStore ? 0.6 : 1 }]}
+                onPress={handleToggleStore}
+                disabled={togglingStore}
+              >
+                {togglingStore
+                  ? <ActivityIndicator size="small" color="#fff" />
+                  : <Text style={styles.storeToggleBtnText}>{storeStatus === "on" ? "Close Store" : "Open Store"}</Text>
+                }
+              </Pressable>
+            </View>
+          </View>
 
           {/* Quick Nav Grid */}
           <View style={[styles.section, { backgroundColor: "#fff", borderColor: "#E5EAF8" }]}>
@@ -506,4 +560,6 @@ const styles = StyleSheet.create({
   finIcon: { width: 30, height: 30, borderRadius: 8, alignItems: "center", justifyContent: "center", flexShrink: 0 },
   finLabel: { fontSize: 12, fontFamily: "Inter_500Medium", color: "#6B7280" },
   finValue: { fontSize: 14, fontFamily: "Inter_700Bold", color: "#0F1740", marginTop: 1 },
+  storeToggleBtn: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, minWidth: 90, alignItems: "center", justifyContent: "center" },
+  storeToggleBtnText: { color: "#fff", fontSize: 13, fontFamily: "Inter_700Bold" },
 });
