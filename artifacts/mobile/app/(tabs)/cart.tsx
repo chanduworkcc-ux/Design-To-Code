@@ -111,7 +111,10 @@ export default function CartScreen() {
     return (
       <View style={[styles.root, { backgroundColor: colors.background }]}>
         <View style={[styles.emptyWrap, { paddingTop: topPadding + 24 }]}>
-          <Text style={[styles.title, { color: colors.text }]}>Cart</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 0 }}>
+            <Image source={require("@/assets/logo-transparent.png")} style={{ width: 36, height: 36 }} resizeMode="contain" />
+            <Text style={[styles.title, { color: colors.text }]}>Cart</Text>
+          </View>
           <Empty3DCart />
         </View>
       </View>
@@ -124,7 +127,10 @@ export default function CartScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scroll, { paddingTop: topPadding + 24, paddingBottom: 260 + bottomInset }]}
       >
-        <Text style={[styles.title, { color: colors.text }]}>Cart</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <Image source={require("@/assets/logo-transparent.png")} style={{ width: 36, height: 36 }} resizeMode="contain" />
+          <Text style={[styles.title, { color: colors.text }]}>Cart</Text>
+        </View>
 
         {/* Out-of-stock removal banner */}
         {cartRemovalNotice && (
