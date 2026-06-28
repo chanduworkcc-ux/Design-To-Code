@@ -25,7 +25,6 @@ import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
 import BurstAnimation, { type BurstHandle } from "@/components/BurstAnimation";
 import { useSocket } from "@/context/SocketContext";
-import { FloatingOrb, PulsingRing } from "@/components/ThreeD";
 
 function HeartBurst({ onDone }: { onDone?: () => void }) {
   return null;
@@ -54,11 +53,7 @@ function WishlistEmpty3D() {
   }));
   return (
     <View style={{ width: "100%", height: 190, alignItems: "center", justifyContent: "center", overflow: "visible", marginBottom: 8 }}>
-      <FloatingOrb color="#EF4444" size={160} style={{ top: -20, left: -40 }} amplitude={9} duration={3200} />
-      <FloatingOrb color="#7C3AED" size={110} style={{ top: 50, right: -30 }} delay={600} amplitude={11} duration={2700} />
       <View style={{ width: 130, height: 130, alignItems: "center", justifyContent: "center" }}>
-        <PulsingRing color="#EF4444" size={118} duration={2000} />
-        <PulsingRing color="#EF4444" size={118} delay={1000} duration={2000} />
         <Animated.View style={[{ width: 90, height: 90, borderRadius: 45, alignItems: "center", justifyContent: "center", backgroundColor: colors.card }, iconStyle]}>
           <Feather name="heart" size={42} color="#EF4444" />
         </Animated.View>

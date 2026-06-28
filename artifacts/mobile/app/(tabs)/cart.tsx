@@ -23,7 +23,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
-import { FloatingOrb, PulsingRing } from "@/components/ThreeD";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
@@ -55,11 +54,7 @@ function Empty3DCart() {
   return (
     <View style={styles.emptyState}>
       <View style={styles.emptyScene}>
-        <FloatingOrb color={colors.primary} size={180} style={{ top: -30, left: -50 }} amplitude={10} duration={3400} />
-        <FloatingOrb color="#7C3AED" size={120} style={{ top: 50, right: -35 }} delay={700} amplitude={12} duration={2900} />
         <View style={styles.emptyIconBox}>
-          <PulsingRing color={colors.primary} size={118} duration={2100} />
-          <PulsingRing color={colors.primary} size={118} delay={1050} duration={2100} />
           <Animated2.View style={[styles.emptyIconCircle, { backgroundColor: colors.card }, iconStyle]}>
             <Feather name="shopping-cart" size={42} color={colors.primary} />
           </Animated2.View>

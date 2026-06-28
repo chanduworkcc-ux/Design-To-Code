@@ -18,7 +18,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
-import { GlowPulse, ShimmerWallet, FloatIn } from "@/components/ThreeD";
 import { GlobalFooter } from "@/components/GlobalFooter";
 
 interface MenuItemProps {
@@ -152,9 +151,9 @@ export default function ProfileScreen() {
         <Text style={[styles.title, { color: colors.text }]}>Profile</Text>
 
         {/* User Card — avatar has 3D glow pulse ring */}
-        <FloatIn delay={0} distance={24}>
+        <View>
           <View style={[styles.userCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <GlowPulse color={colors.primary} size={54}>
+            <View>
               {avatarUri ? (
                 <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
               ) : (
@@ -162,7 +161,7 @@ export default function ProfileScreen() {
                   <Text style={styles.avatarText}>{avatarLetter}</Text>
                 </View>
               )}
-            </GlowPulse>
+            </View>
             <View style={styles.userInfo}>
               <Text style={[styles.userName, { color: colors.text }]}>{user.name}</Text>
               <Text style={[styles.userEmail, { color: colors.mutedForeground }]} numberOfLines={1}>{user.email}</Text>
@@ -180,10 +179,10 @@ export default function ProfileScreen() {
               <Feather name="edit-2" size={16} color={colors.mutedForeground} />
             </Pressable>
           </View>
-        </FloatIn>
+        </View>
 
         {/* Stats */}
-        <FloatIn delay={80} distance={24}>
+        <View>
           <View style={[styles.statsRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Pressable style={styles.statItem} onPress={() => router.push("/orders" as any)}>
               <Text style={[styles.statNum, { color: colors.text }]}>View</Text>
@@ -200,12 +199,12 @@ export default function ProfileScreen() {
               <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Cart</Text>
             </View>
           </View>
-        </FloatIn>
+        </View>
 
         {/* Wallet — 3D shimmer tilt card */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>WALLET</Text>
-        <FloatIn delay={160} distance={24}>
-          <ShimmerWallet style={[styles.walletCard, { backgroundColor: colors.primary }]}>
+        <View>
+          <View style={[styles.walletCard, { backgroundColor: colors.primary }]}>
             <View>
               <Text style={styles.walletLabel}>Coin Balance</Text>
               <Text style={styles.walletBalance}>{user.walletBalance} coins</Text>
@@ -214,12 +213,12 @@ export default function ProfileScreen() {
             <View style={[styles.walletBadge, { backgroundColor: "rgba(255,255,255,0.2)" }]}>
               <Feather name="award" size={24} color="#fff" />
             </View>
-          </ShimmerWallet>
-        </FloatIn>
+          </View>
+        </View>
 
         {/* Account */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>ACCOUNT</Text>
-        <FloatIn delay={240} distance={20}>
+        <View>
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <MenuItem icon="user"        label="Personal Information" onPress={() => router.push("/personal-info" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -227,11 +226,11 @@ export default function ProfileScreen() {
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <MenuItem icon="credit-card" label="Payment Methods"      onPress={() => router.push("/payment-methods" as any)} />
           </View>
-        </FloatIn>
+        </View>
 
         {/* Orders */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>ORDERS</Text>
-        <FloatIn delay={300} distance={20}>
+        <View>
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <MenuItem icon="package"    label="Order History"    onPress={() => router.push("/orders" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -239,21 +238,21 @@ export default function ProfileScreen() {
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <MenuItem icon="truck"      label="Track Orders"     onPress={() => router.push("/track-order" as any)} />
           </View>
-        </FloatIn>
+        </View>
 
         {/* Referrals */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>REFERRALS</Text>
-        <FloatIn delay={360} distance={20}>
+        <View>
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <MenuItem icon="users" label="My Referral Network" onPress={() => router.push("/referrals" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <MenuItem icon="gift"  label="Invite & Earn"       onPress={handleInvite} />
           </View>
-        </FloatIn>
+        </View>
 
         {/* Preferences */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>PREFERENCES</Text>
-        <FloatIn delay={420} distance={20}>
+        <View>
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <MenuItem icon="bell"  label="Notifications"    onPress={() => router.push("/notifications-user" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -261,21 +260,21 @@ export default function ProfileScreen() {
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <MenuItem icon="globe" label="Language & Region" value="English (IN)" onPress={() => Alert.alert("Coming Soon", "Language settings will be available soon.")} />
           </View>
-        </FloatIn>
+        </View>
 
         {/* App */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>APP</Text>
-        <FloatIn delay={460} distance={20}>
+        <View>
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <MenuItem icon="download-cloud" label="Check for Updates" onPress={handleCheckUpdates} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <MenuItem icon="info" label="App Version" value={`v${appVersion}`} />
           </View>
-        </FloatIn>
+        </View>
 
         {/* Support */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>SUPPORT</Text>
-        <FloatIn delay={480} distance={20}>
+        <View>
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <MenuItem icon="help-circle"    label="Help Center"  onPress={() => router.push("/support-ticket" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -283,11 +282,11 @@ export default function ProfileScreen() {
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <MenuItem icon="star"           label="Rate the App" onPress={handleRateApp} />
           </View>
-        </FloatIn>
+        </View>
 
         {/* Legal */}
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>LEGAL</Text>
-        <FloatIn delay={540} distance={20}>
+        <View>
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <MenuItem icon="file-text" label="Terms & Conditions" onPress={() => router.push("/policies" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -295,7 +294,7 @@ export default function ProfileScreen() {
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <MenuItem icon="info"      label="General Policies"   onPress={() => router.push("/policies" as any)} />
           </View>
-        </FloatIn>
+        </View>
 
         {user.role === "admin" && (
           <Pressable style={[styles.adminBtn, { backgroundColor: colors.primary }]} onPress={() => router.push("/admin" as any)}>

@@ -23,7 +23,6 @@ import Animated, {
 } from "react-native-reanimated";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
-import { FloatingOrb, FloatIn, TiltCard3D } from "@/components/ThreeD";
 
 const { width: W, height: H } = Dimensions.get("window");
 
@@ -109,9 +108,7 @@ export default function RegisterScreen() {
   if (pendingApproval) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 32, backgroundColor: colors.background }}>
-        <FloatingOrb color="#10B981" size={220} style={{ top: -60, right: -70 }} delay={0} />
-        <FloatingOrb color="#2563EB" size={160} style={{ bottom: 30, left: -50 }} delay={500} />
-        <FloatIn delay={200}>
+        <View>
           <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "#ECFDF5", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
             <Feather name="check-circle" size={36} color="#10B981" />
           </View>
@@ -125,7 +122,7 @@ export default function RegisterScreen() {
           >
             <Text style={styles.btnText}>Back to Login</Text>
           </Pressable>
-        </FloatIn>
+        </View>
       </View>
     );
   }
@@ -135,22 +132,18 @@ export default function RegisterScreen() {
       style={[styles.root, { backgroundColor: colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <FloatingOrb color="#10B981" size={260} style={{ top: -70, right: -90 }} delay={0}    amplitude={20} duration={3800} />
-      <FloatingOrb color="#2563EB" size={200} style={{ top: H * 0.4,  left: -80  }} delay={600}  amplitude={16} duration={3400} />
-      <FloatingOrb color="#F472B6" size={160} style={{ bottom: 50, right: -40 }} delay={300}  amplitude={18} duration={3200} />
-      <FloatingOrb color="#A78BFA" size={120} style={{ top: H * 0.6, left: W * 0.55 }} delay={900} amplitude={14} duration={4200} />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 32 }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <FloatIn delay={0} distance={30} style={styles.logoArea}>
-          <Image source={require("@/assets/logo.png")} style={styles.logoImg} resizeMode="contain" />
+        <View style={styles.logoArea}>
+          <Image source={require("@/assets/logo-transparent.png")} style={styles.logoImg} resizeMode="contain" />
           <Text style={[styles.tagline, { color: colors.mutedForeground }]}>Join millions of smart shoppers</Text>
-        </FloatIn>
+        </View>
 
-        <TiltCard3D delay={200} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>Create Account</Text>
           <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>Start your XyloCart journey</Text>
 
@@ -280,7 +273,7 @@ export default function RegisterScreen() {
             <Text style={[styles.switchText, { color: colors.mutedForeground }]}>Already have an account? </Text>
             <Text style={[styles.switchLink, { color: colors.primary }]}>Sign In</Text>
           </Pressable>
-        </TiltCard3D>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );

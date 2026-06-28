@@ -24,7 +24,6 @@ import Animated, {
 } from "react-native-reanimated";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
-import { FloatingOrb, FloatIn, TiltCard3D } from "@/components/ThreeD";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
@@ -115,9 +114,7 @@ export default function LoginScreen() {
   if (portalClosed.active) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 32, backgroundColor: colors.background }}>
-        <FloatingOrb color="#EF4444" size={220} style={{ top: -60, right: -60 }} delay={0} />
-        <FloatingOrb color="#F97316" size={160} style={{ bottom: 20, left: -50 }} delay={600} />
-        <FloatIn delay={200}>
+        <View>
           <View style={{ alignItems: "center", gap: 20 }}>
             <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "#FEE2E2", alignItems: "center", justifyContent: "center" }}>
               <Feather name="lock" size={36} color="#EF4444" />
@@ -134,7 +131,7 @@ export default function LoginScreen() {
               Contact support if you need immediate assistance.
             </Text>
           </View>
-        </FloatIn>
+        </View>
       </View>
     );
   }
@@ -143,8 +140,7 @@ export default function LoginScreen() {
     const until = suspended.until ? new Date(suspended.until) : null;
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 32, backgroundColor: colors.background }}>
-        <FloatingOrb color="#F59E0B" size={200} style={{ top: -40, right: -60 }} delay={0} />
-        <FloatIn delay={200}>
+        <View>
           <View style={{ alignItems: "center", gap: 20 }}>
             <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "#FFFBEB", alignItems: "center", justifyContent: "center" }}>
               <Feather name="slash" size={36} color="#F59E0B" />
@@ -166,7 +162,7 @@ export default function LoginScreen() {
               <Text style={{ fontSize: 14, fontFamily: "Inter_600SemiBold", color: colors.text }}>Go Back</Text>
             </Pressable>
           </View>
-        </FloatIn>
+        </View>
       </View>
     );
   }
@@ -174,9 +170,7 @@ export default function LoginScreen() {
   if (unverifiedEmail) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 32, backgroundColor: colors.background }}>
-        <FloatingOrb color="#10B981" size={200} style={{ top: -40, right: -60 }} delay={0} />
-        <FloatingOrb color="#2563EB" size={160} style={{ bottom: 20, left: -50 }} delay={600} />
-        <FloatIn delay={200}>
+        <View>
           <View style={{ alignItems: "center", gap: 20 }}>
             <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "#ECFDF5", alignItems: "center", justifyContent: "center" }}>
               <Feather name="mail" size={36} color="#10B981" />
@@ -198,7 +192,7 @@ export default function LoginScreen() {
               <Text style={{ fontSize: 14, fontFamily: "Inter_600SemiBold", color: colors.text }}>Back</Text>
             </Pressable>
           </View>
-        </FloatIn>
+        </View>
       </View>
     );
   }
@@ -206,8 +200,7 @@ export default function LoginScreen() {
   if (rejected) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 32, backgroundColor: colors.background }}>
-        <FloatingOrb color="#EF4444" size={200} style={{ top: -40, right: -60 }} delay={0} />
-        <FloatIn delay={200}>
+        <View>
           <View style={{ alignItems: "center", gap: 20 }}>
             <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "#FEF2F2", alignItems: "center", justifyContent: "center" }}>
               <Feather name="x-circle" size={36} color="#EF4444" />
@@ -225,7 +218,7 @@ export default function LoginScreen() {
               <Text style={{ fontSize: 14, fontFamily: "Inter_600SemiBold", color: colors.text }}>Go Back</Text>
             </Pressable>
           </View>
-        </FloatIn>
+        </View>
       </View>
     );
   }
@@ -234,10 +227,8 @@ export default function LoginScreen() {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 32, backgroundColor: colors.background }}>
         {/* 3D floating orbs even on pending screen */}
-        <FloatingOrb color="#8B5CF6" size={200} style={{ top: -40, right: -60 }} delay={0} />
-        <FloatingOrb color="#2563EB" size={160} style={{ bottom: 20, left: -50 }} delay={600} />
 
-        <FloatIn delay={200}>
+        <View>
           <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
             <Feather name="clock" size={36} color="#8B5CF6" />
           </View>
@@ -258,7 +249,7 @@ export default function LoginScreen() {
           >
             <Text style={{ fontSize: 14, fontFamily: "Inter_600SemiBold", color: colors.text }}>Go Back</Text>
           </Pressable>
-        </FloatIn>
+        </View>
       </View>
     );
   }
@@ -269,10 +260,6 @@ export default function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       {/* 3D Floating background orbs */}
-      <FloatingOrb color="#2563EB" size={280} style={{ top: -80,   left: -100 }} delay={0}    amplitude={22} duration={3600} />
-      <FloatingOrb color="#7C3AED" size={200} style={{ top: H * 0.35, right: -80 }} delay={700}  amplitude={18} duration={3200} />
-      <FloatingOrb color="#0EA5E9" size={160} style={{ bottom: 60, left: -40  }} delay={1200} amplitude={14} duration={4000} />
-      <FloatingOrb color="#F472B6" size={120} style={{ top: H * 0.55, left: W * 0.5 }} delay={400} amplitude={20} duration={2900} />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 32 }]}
@@ -280,13 +267,13 @@ export default function LoginScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Logo with float-in */}
-        <FloatIn delay={0} distance={30} style={styles.logoArea}>
-          <Image source={require("@/assets/logo.png")} style={styles.logoImg} resizeMode="contain" />
+        <View style={styles.logoArea}>
+          <Image source={require("@/assets/logo-transparent.png")} style={styles.logoImg} resizeMode="contain" />
           <Text style={[styles.tagline, { color: colors.mutedForeground }]}>Shop smarter, live better</Text>
-        </FloatIn>
+        </View>
 
         {/* 3D tilt-in card */}
-        <TiltCard3D delay={200} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>Welcome back</Text>
           <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>Sign in to your account</Text>
 
@@ -343,7 +330,7 @@ export default function LoginScreen() {
             <Text style={[styles.switchText, { color: colors.mutedForeground }]}>Don't have an account? </Text>
             <Text style={[styles.switchLink, { color: colors.primary }]}>Create one</Text>
           </Pressable>
-        </TiltCard3D>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );

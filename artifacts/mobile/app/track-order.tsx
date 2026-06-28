@@ -14,7 +14,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-import { FloatingOrb, PulsingRing } from "@/components/ThreeD";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
@@ -158,10 +157,7 @@ export default function TrackOrderScreen() {
         >
           {/* Hero 3D section */}
           <View style={styles.heroSection}>
-            <FloatingOrb color={colors.primary} size={140} style={{ top: -20, right: -20 }} amplitude={8} duration={3200} />
-            <FloatingOrb color="#7C3AED" size={90} style={{ top: 40, left: -20 }} delay={600} amplitude={10} duration={2700} />
             <View style={styles.heroIcon}>
-              <PulsingRing color={colors.primary} size={90} duration={2000} />
               <View style={[styles.heroIconCircle, { backgroundColor: colors.card }]}>
                 <Feather name="package" size={34} color={colors.primary} />
               </View>

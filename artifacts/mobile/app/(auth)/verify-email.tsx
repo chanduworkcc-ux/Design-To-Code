@@ -21,7 +21,6 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
-import { FloatingOrb, FloatIn, TiltCard3D } from "@/components/ThreeD";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
@@ -116,11 +115,9 @@ export default function VerifyEmailScreen() {
   if (pendingApproval) {
     return (
       <View style={[s.root, { backgroundColor: colors.background }]}>
-        <FloatingOrb color="#8B5CF6" size={220} style={{ top: -60, right: -60 }} delay={0} />
-        <FloatingOrb color="#2563EB" size={160} style={{ bottom: 40, left: -50 }} delay={600} />
         <View style={{ flex: 1, justifyContent: "center", padding: 28 }}>
-          <FloatIn delay={100}>
-            <TiltCard3D delay={200} style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View>
+            <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={{ alignItems: "center", gap: 16 }}>
                 <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center" }}>
                   <Feather name="clock" size={32} color="#8B5CF6" />
@@ -138,8 +135,8 @@ export default function VerifyEmailScreen() {
                   <Text style={s.btnText}>Back to Login</Text>
                 </Pressable>
               </View>
-            </TiltCard3D>
-          </FloatIn>
+            </View>
+          </View>
         </View>
       </View>
     );
@@ -147,15 +144,13 @@ export default function VerifyEmailScreen() {
 
   return (
     <KeyboardAvoidingView style={[s.root, { backgroundColor: colors.background }]} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-      <FloatingOrb color="#10B981" size={260} style={{ top: -80, left: -80 }} delay={0} amplitude={20} duration={3600} />
-      <FloatingOrb color="#2563EB" size={180} style={{ bottom: 80, right: -70 }} delay={700} amplitude={16} duration={3200} />
 
       <ScrollView
         contentContainerStyle={[s.scroll, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 32 }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <FloatIn delay={0} distance={30} style={{ alignItems: "center", marginBottom: 32, gap: 8 }}>
+        <View style={{ alignItems: "center", marginBottom: 32, gap: 8 }}>
           <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: "#ECFDF5", alignItems: "center", justifyContent: "center" }}>
             <Feather name="mail" size={28} color="#10B981" />
           </View>
@@ -164,9 +159,9 @@ export default function VerifyEmailScreen() {
             We sent a 6-digit code to{"\n"}
             <Text style={{ fontFamily: "Inter_600SemiBold", color: colors.text }}>{email}</Text>
           </Text>
-        </FloatIn>
+        </View>
 
-        <TiltCard3D delay={200} style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {!!error && (
             <View style={[s.errorBox, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}>
               <Feather name="alert-circle" size={14} color="#EF4444" />
@@ -216,7 +211,7 @@ export default function VerifyEmailScreen() {
             <Feather name="arrow-left" size={14} color={colors.mutedForeground} />
             <Text style={[s.switchText, { color: colors.mutedForeground }]}>Back to login</Text>
           </Pressable>
-        </TiltCard3D>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );

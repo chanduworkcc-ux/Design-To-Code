@@ -21,7 +21,6 @@ import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
 import { useNotifications } from "@/context/NotificationContext";
 import { Product } from "@/data/products";
-import { FloatingOrb, FloatIn, PulsingRing } from "@/components/ThreeD";
 import LoadingScreen from "@/components/LoadingScreen";
 import { GlobalFooter } from "@/components/GlobalFooter";
 import Animated2, {
@@ -231,8 +230,6 @@ export default function ShopScreen() {
       <LoadingScreen visible={loadingProducts} message="Loading products" />
 
       {/* Subtle 3D background orbs — only in top area so they don't cover products */}
-      <FloatingOrb color={colors.primary} size={160} style={{ top: -40, right: -50 }} delay={0}   amplitude={14} duration={4000} />
-      <FloatingOrb color="#7C3AED"        size={120} style={{ top: 60,  left: -40  }} delay={800} amplitude={10} duration={3600} />
 
       {/* Announcement Bar */}
       {announcement?.enabled && !!announcement.text && (
@@ -246,9 +243,9 @@ export default function ShopScreen() {
         contentContainerStyle={[styles.scroll, { paddingTop: (announcement?.enabled && announcement.text ? 0 : topPadding) + 12, paddingBottom: 100 }]}
       >
         {/* Header — float-in from top */}
-        <FloatIn delay={0} distance={-20} style={styles.header}>
+        <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Image source={require("@/assets/logo.png")} style={styles.headerLogo} resizeMode="contain" />
+            <Image source={require("@/assets/logo-transparent.png")} style={styles.headerLogo} resizeMode="contain" />
             <View>
               <Text style={[styles.welcomeText, { color: colors.mutedForeground }]}>{getISTGreeting()} 👋</Text>
               <Text style={[styles.brandName, { color: colors.text }]}>{user?.name?.split(" ")[0] ?? "XyloCart"}</Text>
@@ -270,10 +267,10 @@ export default function ShopScreen() {
               <CartBadge count={cartCount} />
             </Pressable>
           </View>
-        </FloatIn>
+        </View>
 
         {/* Search Bar — float-in */}
-        <FloatIn delay={80} distance={16}>
+        <View>
           <Pressable
             style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}
             onPress={() => router.push("/(tabs)/search")}
@@ -281,10 +278,10 @@ export default function ShopScreen() {
             <Feather name="search" size={18} color={colors.mutedForeground} />
             <Text style={[styles.searchPlaceholder, { color: colors.mutedForeground }]}>Search products...</Text>
           </Pressable>
-        </FloatIn>
+        </View>
 
         {/* Filter Bar */}
-        <FloatIn delay={120} distance={12}>
+        <View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow} style={{ marginBottom: 16 }}>
             {SORT_OPTIONS.map((opt) => {
               const active = sortBy === opt.key;
@@ -299,10 +296,10 @@ export default function ShopScreen() {
               );
             })}
           </ScrollView>
-        </FloatIn>
+        </View>
 
         {/* Banners */}
-        <FloatIn delay={160} distance={20}>
+        <View>
           {banners.length > 0 ? (
             <View style={[styles.bannerWrapper, { marginBottom: 20 }]}>
               <ScrollView
@@ -331,7 +328,6 @@ export default function ShopScreen() {
                     </View>
                     {/* 3D pulsing ring around banner icon */}
                     <View style={[styles.bannerIconBox, { backgroundColor: banner.textColor + "20" }]}>
-                      <PulsingRing color={banner.textColor} size={70} delay={0} duration={2000} thickness={1.5} />
                       <Feather name="shopping-bag" size={32} color={banner.textColor} />
                     </View>
                   </View>
@@ -373,7 +369,7 @@ export default function ShopScreen() {
               </View>
             </View>
           )}
-        </FloatIn>
+        </View>
 
         {/* Featured Section */}
         {featured.length > 0 && (
@@ -382,13 +378,13 @@ export default function ShopScreen() {
               <SectionHeader3D title="Featured" />
               <FloatingLabel label="✦ HOT" color="#EF4444" />
             </View>
-            <FloatIn delay={240} distance={16}>
+            <View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredList}>
                 {featured.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
               </ScrollView>
-            </FloatIn>
+            </View>
           </>
         )}
 
@@ -406,10 +402,8 @@ export default function ShopScreen() {
         </View>
 
         {sortedProducts.length === 0 ? (
-          <FloatIn delay={300} distance={20} style={{ alignItems: "center", paddingVertical: 40, gap: 0 }}>
+          <View style={{ alignItems: "center", paddingVertical: 40, gap: 0 }}>
             <View style={{ width: 120, height: 120, alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
-              <PulsingRing color={colors.primary} size={110} duration={2200} />
-              <PulsingRing color={colors.primary} size={110} delay={1100} duration={2200} />
               <Animated2.View style={[styles.emptyIconCircle, { backgroundColor: colors.card }]}>
                 <Feather name="package" size={38} color={colors.primary} />
               </Animated2.View>
@@ -420,15 +414,15 @@ export default function ShopScreen() {
             <Text style={[{ color: colors.mutedForeground, fontFamily: "Inter_400Regular", fontSize: 13, textAlign: "center" }]}>
               {sortBy === "pro" ? "Pro-tier products will appear here" : "Check back soon for new arrivals"}
             </Text>
-          </FloatIn>
+          </View>
         ) : (
-          <FloatIn delay={280} distance={20}>
+          <View>
             <View style={styles.grid}>
               {sortedProducts.map((product) => (
                 <ProductCard key={product.id} product={product} style={{ width: "47%" }} />
               ))}
             </View>
-          </FloatIn>
+          </View>
         )}
 
         <GlobalFooter />

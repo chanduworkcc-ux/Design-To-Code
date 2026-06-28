@@ -20,7 +20,6 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-import { FloatingOrb, FloatIn, TiltCard3D } from "@/components/ThreeD";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
@@ -89,11 +88,9 @@ export default function ResetPasswordScreen() {
   if (done) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background }]}>
-        <FloatingOrb color="#10B981" size={240} style={{ top: -60, right: -80 }} delay={0} />
-        <FloatingOrb color="#2563EB" size={160} style={{ bottom: 60, left: -60 }} delay={600} />
         <View style={{ flex: 1, justifyContent: "center", padding: 24 }}>
-          <FloatIn delay={0}>
-            <TiltCard3D delay={100} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View>
+            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={{ alignItems: "center", gap: 16 }}>
                 <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: "#ECFDF5", alignItems: "center", justifyContent: "center" }}>
                   <Feather name="check-circle" size={36} color="#10B981" />
@@ -104,8 +101,8 @@ export default function ResetPasswordScreen() {
                 </Text>
                 <Btn3D onPress={() => router.replace("/(auth)/login")} loading={false} label="Sign In" />
               </View>
-            </TiltCard3D>
-          </FloatIn>
+            </View>
+          </View>
         </View>
       </View>
     );
@@ -116,15 +113,13 @@ export default function ResetPasswordScreen() {
       style={[styles.root, { backgroundColor: colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <FloatingOrb color="#2563EB" size={260} style={{ top: -80, left: -100 }} delay={0} amplitude={20} duration={3600} />
-      <FloatingOrb color="#7C3AED" size={180} style={{ bottom: 80, right: -70 }} delay={700} amplitude={16} duration={3200} />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 32 }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <FloatIn delay={0} distance={30} style={{ alignItems: "center", marginBottom: 32, gap: 8 }}>
+        <View style={{ alignItems: "center", marginBottom: 32, gap: 8 }}>
           <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center" }}>
             <Feather name="shield" size={28} color="#2563EB" />
           </View>
@@ -132,9 +127,9 @@ export default function ResetPasswordScreen() {
           <Text style={[styles.subheading, { color: colors.mutedForeground }]}>
             Enter the code from your email and choose a new password
           </Text>
-        </FloatIn>
+        </View>
 
-        <TiltCard3D delay={200} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {!!error && (
             <View style={[styles.errorBox, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}>
               <Feather name="alert-circle" size={14} color="#EF4444" />
@@ -203,7 +198,7 @@ export default function ResetPasswordScreen() {
             <Feather name="arrow-left" size={14} color={colors.mutedForeground} />
             <Text style={[styles.backText, { color: colors.mutedForeground }]}>Back</Text>
           </Pressable>
-        </TiltCard3D>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );

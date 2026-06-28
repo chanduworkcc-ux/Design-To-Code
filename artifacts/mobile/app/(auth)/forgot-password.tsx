@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-import { FloatingOrb, FloatIn, TiltCard3D } from "@/components/ThreeD";
 
 const ADMIN_EMAIL = "admin@integratedgmail.com";
 
@@ -21,11 +20,9 @@ export default function ForgotPasswordScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      <FloatingOrb color="#2563EB" size={260} style={{ top: -80, left: -100 }} delay={0} amplitude={20} duration={3600} />
-      <FloatingOrb color="#7C3AED" size={180} style={{ bottom: 80, right: -70 }} delay={700} amplitude={16} duration={3200} />
 
       <View style={styles.content}>
-        <FloatIn delay={0} distance={30} style={{ alignItems: "center", marginBottom: 32, gap: 10 }}>
+        <View style={{ alignItems: "center", marginBottom: 32, gap: 10 }}>
           <View style={[styles.iconCircle, { backgroundColor: "#EFF6FF" }]}>
             <Feather name="shield" size={32} color="#2563EB" />
           </View>
@@ -33,9 +30,9 @@ export default function ForgotPasswordScreen() {
           <Text style={[styles.subheading, { color: colors.mutedForeground }]}>
             Contact our support team to reset your password
           </Text>
-        </FloatIn>
+        </View>
 
-        <TiltCard3D delay={200} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.infoSection}>
             <Feather name="info" size={18} color="#2563EB" />
             <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
@@ -63,7 +60,7 @@ export default function ForgotPasswordScreen() {
             <Feather name="arrow-left" size={14} color={colors.mutedForeground} />
             <Text style={[styles.backText, { color: colors.mutedForeground }]}>Back to login</Text>
           </Pressable>
-        </TiltCard3D>
+        </View>
       </View>
     </View>
   );
