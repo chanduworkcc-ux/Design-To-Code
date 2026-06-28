@@ -7,6 +7,7 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   View,
@@ -75,6 +76,16 @@ export default function ReferralsScreen() {
     setRefreshing(false);
   }
 
+  async function handleShare() {
+    if (!user?.referralCode) return;
+    try {
+      await Share.share({
+        message: `Join XyloCart with my referral code **${user.referralCode}** and earn bonus coins on your first order! 🛒\n\nDownload XyloCart and use my code at signup.`,
+        title: "Join XyloCart — Earn Free Coins!",
+      });
+    } catch {}
+  }
+
   function timeAgo(dateStr: string) {
     const diff = Date.now() - new Date(dateStr).getTime();
     const d = Math.floor(diff / 86400000);
@@ -119,9 +130,12 @@ export default function ReferralsScreen() {
                 <Text style={styles.codeValue}>{user.referralCode}</Text>
                 <Text style={styles.codeHint}>Share this code to earn 100 coins per referral</Text>
               </View>
-              <View style={styles.codeIconBox}>
-                <Feather name="share-2" size={24} color="rgba(255,255,255,0.8)" />
-              </View>
+              <Pressable
+                style={({ pressed }) => [styles.codeIconBox, { opacity: pressed ? 0.7 : 1 }]}
+                onPress={handleShare}
+              >
+                <Feather name="share-2" size={24} color="#fff" />
+              </Pressable>
             </View>
           )}
 
