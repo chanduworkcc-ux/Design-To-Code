@@ -92,6 +92,7 @@ function RootLayoutNav() {
       <Stack.Screen name="login-devices" options={{ headerShown: false }} />
       <Stack.Screen name="account-security" options={{ headerShown: false }} />
       <Stack.Screen name="language" options={{ headerShown: false }} />
+      <Stack.Screen name="addresses" options={{ headerShown: false }} />
     </Stack>
   );
 }
