@@ -96,6 +96,20 @@ export default function ProfileScreen() {
     } catch {}
   }
 
+  const [appVersion, setAppVersion] = useState<string>("1.0");
+  const [rateAppUrl, setRateAppUrl] = useState<string>("");
+
+  useEffect(() => {
+    const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
+    fetch(`${BASE_URL}/config/public`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.app_version) setAppVersion(d.app_version);
+        if (d?.rate_app_url) setRateAppUrl(d.rate_app_url);
+      })
+      .catch(() => {});
+  }, []);
+
   async function handleCheckUpdates() {
     try {
       const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
@@ -109,10 +123,24 @@ export default function ProfileScreen() {
           [{ text: "OK" }]
         );
       } else {
-        Alert.alert("You're up to date!", "FX PRIME 26 is running the latest version.", [{ text: "Great" }]);
+        Alert.alert("You're up to date!", `FX PRIME 26 v${appVersion} is running the latest version.`, [{ text: "Great" }]);
       }
     } catch {
       Alert.alert("Error", "Could not check for updates. Please check your connection.");
+    }
+  }
+
+  async function handleRateApp() {
+    if (!rateAppUrl) {
+      Alert.alert("Thank You!", "Rating will be available in the published app.");
+      return;
+    }
+    const { Linking } = await import("react-native");
+    const supported = await Linking.canOpenURL(rateAppUrl).catch(() => false);
+    if (supported) {
+      await Linking.openURL(rateAppUrl);
+    } else {
+      Alert.alert("Cannot Open", "Could not open the store link. Please try again later.");
     }
   }
 
@@ -242,7 +270,7 @@ export default function ProfileScreen() {
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <MenuItem icon="download-cloud" label="Check for Updates" onPress={handleCheckUpdates} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <MenuItem icon="info" label="App Version" value={`v1.0.0`} />
+            <MenuItem icon="info" label="App Version" value={`v${appVersion}`} />
           </View>
         </FloatIn>
 
@@ -254,7 +282,7 @@ export default function ProfileScreen() {
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <MenuItem icon="message-circle" label="Contact Us"   onPress={() => router.push("/support-ticket" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <MenuItem icon="star"           label="Rate the App" onPress={() => Alert.alert("Thank You!", "You'll be redirected to the app store to leave a review.")} />
+            <MenuItem icon="star"           label="Rate the App" onPress={handleRateApp} />
           </View>
         </FloatIn>
 

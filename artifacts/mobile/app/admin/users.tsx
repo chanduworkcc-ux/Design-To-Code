@@ -30,6 +30,9 @@ interface AdminUser {
   walletBalance: number;
   referralCode: string;
   deviceUuid: string | null;
+  mobileNumber: string | null;
+  registrationIp: string | null;
+  lastLoginIp: string | null;
   createdAt: string;
   banReason: string | null;
   suspendedUntil: string | null;
@@ -131,15 +134,39 @@ function UserCard({
               <Text style={styles.infoLabel}>Joined</Text>
               <Text style={styles.infoValue}>{new Date(user.createdAt).toLocaleDateString("en-IN")}</Text>
             </View>
+            {user.mobileNumber && (
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>Mobile</Text>
+                <Text style={styles.infoValue}>{user.mobileNumber}</Text>
+              </View>
+            )}
+            {user.registrationIp && (
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>Reg. IP</Text>
+                <Text style={styles.infoValue}>{user.registrationIp}</Text>
+              </View>
+            )}
+            {user.lastLoginIp && (
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>Last Login IP</Text>
+                <Text style={styles.infoValue}>{user.lastLoginIp}</Text>
+              </View>
+            )}
             {user.verifiedAt && (
               <View style={styles.infoItem}>
                 <Text style={styles.infoLabel}>Verified</Text>
                 <Text style={styles.infoValue}>{new Date(user.verifiedAt).toLocaleDateString("en-IN")}</Text>
               </View>
             )}
+            {user.suspendedUntil && user.status === "suspended" && (
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>Suspended Until</Text>
+                <Text style={[styles.infoValue, { color: "#F59E0B" }]}>{new Date(user.suspendedUntil).toLocaleString("en-IN")}</Text>
+              </View>
+            )}
             {user.banReason && (
               <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Ban Reason</Text>
+                <Text style={styles.infoLabel}>{user.status === "suspended" ? "Suspension Reason" : "Ban Reason"}</Text>
                 <Text style={[styles.infoValue, { color: "#EF4444" }]}>{user.banReason}</Text>
               </View>
             )}
@@ -312,6 +339,92 @@ function LogsModal({
             )})}
           </ScrollView>
         )}
+      </View>
+    </View>
+  );
+}
+
+function BanModal({
+  user,
+  onClose,
+  onDone,
+  apiRequest,
+}: {
+  user: AdminUser;
+  onClose: () => void;
+  onDone: (userId: string, reason: string) => void;
+  apiRequest: (path: string, options?: RequestInit) => Promise<Response>;
+}) {
+  const [reason, setReason] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSubmit() {
+    if (!reason.trim()) { setError("Ban reason is required"); return; }
+    setLoading(true);
+    setError("");
+    try {
+      const res = await apiRequest(`/admin/users/${user.id}/ban`, {
+        method: "POST",
+        body: JSON.stringify({ reason: reason.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error ?? "Failed"); setLoading(false); return; }
+      onDone(user.id, reason.trim());
+      Alert.alert("Banned", `${user.name} has been permanently banned.`);
+      onClose();
+    } catch { setError("Network error"); }
+    setLoading(false);
+  }
+
+  return (
+    <View style={styles.modalOverlay}>
+      <View style={[styles.modal, { height: "auto", maxHeight: "65%" }]}>
+        <View style={styles.modalHeader}>
+          <View>
+            <Text style={styles.modalTitle}>Permanent Ban</Text>
+            <Text style={styles.modalSub}>{user.name} · {user.email}</Text>
+          </View>
+          <Pressable onPress={onClose} style={styles.modalClose}>
+            <Feather name="x" size={20} color="#6B7280" />
+          </Pressable>
+        </View>
+        <View style={{ padding: 20, gap: 14 }}>
+          <View style={[{ padding: 12, backgroundColor: "#FEF2F2", borderRadius: 10, borderWidth: 1, borderColor: "#FECACA" }]}>
+            <Text style={{ fontSize: 13, fontFamily: "Inter_500Medium", color: "#DC2626" }}>
+              ⚠️ This will permanently ban the user. They will not be able to log in or register again with this account.
+            </Text>
+          </View>
+          <View style={styles.walletField}>
+            <Text style={styles.walletLabel}>Ban Reason *</Text>
+            <TextInput
+              style={[styles.walletInput, { height: 80, textAlignVertical: "top" }]}
+              placeholder="e.g. Fraudulent activity, repeat policy violations, etc."
+              placeholderTextColor="#9CA3AF"
+              value={reason}
+              onChangeText={(t) => { setReason(t); setError(""); }}
+              multiline
+            />
+          </View>
+          {!!error && (
+            <View style={[styles.walletError, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}>
+              <Feather name="alert-circle" size={13} color="#EF4444" />
+              <Text style={{ color: "#EF4444", fontSize: 13, fontFamily: "Inter_400Regular", flex: 1 }}>{error}</Text>
+            </View>
+          )}
+          <Pressable
+            style={[styles.walletSubmitBtn, { backgroundColor: "#EF4444", opacity: loading ? 0.7 : 1 }]}
+            onPress={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? <ActivityIndicator color="#fff" /> : (
+              <>
+                <Feather name="user-x" size={16} color="#fff" />
+                <Text style={styles.walletSubmitText}>Permanently Ban User</Text>
+              </>
+            )}
+          </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -571,6 +684,7 @@ export default function UsersScreen() {
   const [logsLoading, setLogsLoading] = useState(false);
   const [walletUser, setWalletUser] = useState<AdminUser | null>(null);
   const [suspendUser, setSuspendUser] = useState<AdminUser | null>(null);
+  const [banUser, setBanUser] = useState<AdminUser | null>(null);
   const topPadding = Platform.OS === "web" ? 0 : insets.top;
 
   async function handleApprove(user: AdminUser) {
@@ -650,30 +764,12 @@ export default function UsersScreen() {
     }
   }
 
-  async function handleBan(user: AdminUser) {
-    if (Platform.OS === "web") {
-      const reason = prompt(`Ban reason for ${user.name}:`);
-      if (reason === null) return;
-      await doBan(user.id, reason);
-    } else {
-      Alert.prompt(
-        "Ban User",
-        `Enter reason for banning ${user.name}:`,
-        async (reason) => { if (reason !== undefined) await doBan(user.id, reason); },
-        "plain-text",
-        "",
-      );
-    }
+  function handleBan(user: AdminUser) {
+    setBanUser(user);
   }
 
-  async function doBan(id: string, reason: string) {
-    const res = await apiRequest(`/admin/users/${id}/ban`, {
-      method: "POST",
-      body: JSON.stringify({ reason }),
-    });
-    if (res.ok) {
-      setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, status: "banned", banReason: reason } : u)));
-    }
+  function handleBanDone(userId: string, reason: string) {
+    setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, status: "banned" as const, banReason: reason } : u)));
   }
 
   async function handleUnban(user: AdminUser) {
@@ -815,6 +911,15 @@ export default function UsersScreen() {
           user={suspendUser}
           onClose={() => setSuspendUser(null)}
           onDone={handleSuspendDone}
+          apiRequest={apiRequest}
+        />
+      )}
+
+      {banUser && (
+        <BanModal
+          user={banUser}
+          onClose={() => setBanUser(null)}
+          onDone={handleBanDone}
           apiRequest={apiRequest}
         />
       )}

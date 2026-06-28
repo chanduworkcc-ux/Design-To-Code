@@ -13,6 +13,7 @@ import {
   Animated,
   Dimensions,
   Image,
+  Platform,
   StyleSheet,
   Text,
   View,
@@ -217,20 +218,37 @@ export default function RootLayout() {
             <AppProvider>
               <SocketInit>
                 <GestureHandlerRootView style={{ flex: 1 }}>
-                  <KeyboardProvider>
-                    <RootLayoutNav />
-                    {showSplash && (
-                      <AppSplash
+                  {Platform.OS === "web" ? (
+                    <>
+                      <RootLayoutNav />
+                      {showSplash && (
+                        <AppSplash
+                          logoUrl={logoUrl}
+                          onDone={() => { setShowSplash(false); setShowTransition(true); }}
+                        />
+                      )}
+                      <TransitionBanner
+                        visible={showTransition}
                         logoUrl={logoUrl}
-                        onDone={() => { setShowSplash(false); setShowTransition(true); }}
+                        onDone={() => setShowTransition(false)}
                       />
-                    )}
-                    <TransitionBanner
-                      visible={showTransition}
-                      logoUrl={logoUrl}
-                      onDone={() => setShowTransition(false)}
-                    />
-                  </KeyboardProvider>
+                    </>
+                  ) : (
+                    <KeyboardProvider>
+                      <RootLayoutNav />
+                      {showSplash && (
+                        <AppSplash
+                          logoUrl={logoUrl}
+                          onDone={() => { setShowSplash(false); setShowTransition(true); }}
+                        />
+                      )}
+                      <TransitionBanner
+                        visible={showTransition}
+                        logoUrl={logoUrl}
+                        onDone={() => setShowTransition(false)}
+                      />
+                    </KeyboardProvider>
+                  )}
                 </GestureHandlerRootView>
               </SocketInit>
             </AppProvider>

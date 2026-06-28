@@ -51,6 +51,12 @@ const TEXT_CONFIGS: Record<string, { label: string; description: string; placeho
   announcement_color: { label: "Announcement Color", description: "Hex color for the announcement bar (e.g. #2563EB)", placeholder: "#2563EB" },
   delivery_info: { label: "Delivery Info", description: "Short delivery estimate shown on product pages", placeholder: "Delivered in 5–10 business days" },
   product_disclaimer: { label: "Product Disclaimer", description: "Disclaimer text shown at the bottom of every product page", placeholder: "This product will be delivered in 5–10 days.", multiline: true },
+  maintenance_message: { label: "Maintenance Message", description: "Message shown to users when maintenance mode is active", placeholder: "We are performing scheduled maintenance. Please check back soon.", multiline: true },
+};
+
+const APP_VERSION_CONFIGS: Record<string, { label: string; description: string; placeholder?: string }> = {
+  app_version: { label: "Current App Version", description: "Live platform version displayed to users (e.g. 1.0, 1.1, 2.0)", placeholder: "1.0" },
+  rate_app_url: { label: "Rate Our App URL", description: "App Store or Play Store URL shown when users tap 'Rate the App'", placeholder: "https://play.google.com/store/apps/details?id=com.yourapp" },
 };
 
 interface GatewayFieldMeta { label: string; description: string; secure?: boolean; required?: boolean; placeholder?: string }
@@ -613,6 +619,35 @@ export default function SettingsScreen() {
                   </React.Fragment>
                 );
               })}
+            </View>
+          </View>
+
+          {/* App Version Control */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>APP VERSION CONTROL</Text>
+            <Text style={[styles.configDesc, { marginBottom: 10, marginLeft: 4 }]}>
+              Manage the live platform version and the Rate Our App redirect destination.
+            </Text>
+            <View style={styles.card}>
+              {Object.entries(APP_VERSION_CONFIGS).map(([key, meta], i, arr) => (
+                <React.Fragment key={key}>
+                  <View style={styles.textInputRow}>
+                    <Text style={styles.configLabel}>{meta.label}</Text>
+                    <Text style={styles.configDesc}>{meta.description}</Text>
+                    <TextInput
+                      style={styles.textInput}
+                      value={edited[key] ?? ""}
+                      onChangeText={(v) => setEdited((prev) => ({ ...prev, [key]: v }))}
+                      placeholder={meta.placeholder ?? ""}
+                      placeholderTextColor="#9CA3AF"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      keyboardType={key === "rate_app_url" ? "url" : "default"}
+                    />
+                  </View>
+                  {i < arr.length - 1 && <View style={styles.divider} />}
+                </React.Fragment>
+              ))}
             </View>
           </View>
 

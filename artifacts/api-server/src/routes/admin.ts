@@ -136,6 +136,9 @@ router.get("/admin/users", authMiddleware, adminMiddleware, async (req, res) => 
       walletBalance: usersTable.walletBalance,
       referralCode: usersTable.referralCode,
       deviceUuid: usersTable.deviceUuid,
+      mobileNumber: usersTable.mobileNumber,
+      registrationIp: usersTable.registrationIp,
+      lastLoginIp: usersTable.lastLoginIp,
       createdAt: usersTable.createdAt,
       banReason: usersTable.banReason,
       suspendedUntil: usersTable.suspendedUntil,
@@ -511,6 +514,7 @@ router.get("/config/public", async (_req, res) => {
     delivery_info, product_disclaimer,
     delivery_charge, tax_percent, service_charge, maintenance_charge,
     store_status, force_update, update_url, update_version, update_notes,
+    app_version, rate_app_url,
   ] = await Promise.all([
     getConfig("maintenance_mode"),
     getConfig("maintenance_message"),
@@ -538,6 +542,8 @@ router.get("/config/public", async (_req, res) => {
     getConfig("update_url"),
     getConfig("update_version"),
     getConfig("update_notes"),
+    getConfig("app_version"),
+    getConfig("rate_app_url"),
   ]);
   res.json({
     maintenance_mode,
@@ -566,6 +572,8 @@ router.get("/config/public", async (_req, res) => {
     update_url: update_url || "",
     update_version: update_version || "1.0.0",
     update_notes: update_notes || "",
+    app_version: app_version || "1.0",
+    rate_app_url: rate_app_url || "",
   });
 });
 
