@@ -372,6 +372,57 @@ router.put("/admin/orders/:id/status", authMiddleware, adminMiddleware, async (r
   await handleOrderStatusUpdate(req.params.id, req.body.status, res);
 });
 
+// ─── Admin Cancel Order with UTR + Reason ─────────────────────────────────────
+
+const cancelSchema = z.object({
+  cancellationReason: z.string().min(1),
+  utrNumber: z.string().optional(),
+});
+
+router.patch("/admin/orders/:id/cancel", authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
+  const parsed = cancelSchema.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: "cancellationReason is required" }); return; }
+  const { cancellationReason, utrNumber } = parsed.data;
+
+  const [before] = await db.select({ status: ordersTable.status }).from(ordersTable).where(eq(ordersTable.id, req.params.id));
+  if (!before) { res.status(404).json({ error: "Order not found" }); return; }
+
+  const [updated] = await db
+    .update(ordersTable)
+    .set({ status: "cancelled", cancellationReason, utrNumber: utrNumber || null, updatedAt: new Date() })
+    .where(eq(ordersTable.id, req.params.id))
+    .returning();
+
+  await db.insert(adminAuditLogsTable).values({
+    id: uuidv4(), adminId: req.userId!, action: "cancel_order",
+    entityType: "order", entityId: req.params.id,
+    previousState: JSON.stringify({ status: before.status }),
+    newState: JSON.stringify({ status: "cancelled", cancellationReason, utrNumber }),
+  }).catch(() => {});
+
+  const [user] = await db
+    .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email })
+    .from(usersTable)
+    .where(eq(usersTable.id, updated.userId));
+
+  if (user) {
+    try {
+      await insertAutoNotification(
+        user.id,
+        "Order Cancelled",
+        `Your order ${updated.orderNumber ?? req.params.id.slice(0, 8).toUpperCase()} has been cancelled. Reason: ${cancellationReason}${utrNumber ? ` | UTR: ${utrNumber}` : ""}`,
+        "alert-circle",
+        { targetType: "refunds" },
+      );
+    } catch {}
+    try {
+      getIO().to(`user:${user.id}`).emit("order_cancelled", { orderId: req.params.id, cancellationReason, utrNumber });
+    } catch {}
+  }
+
+  res.json({ order: updated });
+});
+
 // ─── Referral Network (User) ──────────────────────────────────────────────────
 
 router.get("/referrals/network", authMiddleware, async (req: AuthRequest, res) => {
@@ -544,7 +595,9 @@ router.get("/config/public", async (_req, res) => {
     getConfig("update_notes"),
     getConfig("app_version"),
     getConfig("rate_app_url"),
+    getConfig("referral_base_url"),
   ]);
+  const referral_base_url = await getConfig("referral_base_url");
   res.json({
     maintenance_mode,
     maintenance_message,
@@ -574,6 +627,7 @@ router.get("/config/public", async (_req, res) => {
     update_notes: update_notes || "",
     app_version: app_version || "1.0",
     rate_app_url: rate_app_url || "",
+    referral_base_url: referral_base_url || "",
   });
 });
 

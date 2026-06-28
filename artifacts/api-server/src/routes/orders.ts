@@ -147,6 +147,7 @@ router.get("/orders", authMiddleware, async (req: AuthRequest, res) => {
       trackingLink: ordersTable.trackingLink,
       estimatedDelivery: ordersTable.estimatedDelivery,
       cancellationReason: ordersTable.cancellationReason,
+      utrNumber: ordersTable.utrNumber,
       createdAt: ordersTable.createdAt,
       updatedAt: ordersTable.updatedAt,
     })

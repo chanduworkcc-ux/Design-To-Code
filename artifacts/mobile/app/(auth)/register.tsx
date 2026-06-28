@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Dimensions,
   Image,
@@ -21,6 +21,7 @@ import Animated, {
   withTiming,
   Easing,
 } from "react-native-reanimated";
+import { useLocalSearchParams } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 
@@ -56,12 +57,21 @@ export default function RegisterScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { register } = useAuth();
+  const params = useLocalSearchParams<{ ref?: string }>();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
-  const [referralCode, setReferralCode] = useState("");
+  const [referralCode, setReferralCode] = useState(params.ref ?? "");
   const [showPassword, setShowPassword] = useState(false);
+  const [refAutoFilled, setRefAutoFilled] = useState(!!params.ref);
+
+  useEffect(() => {
+    if (params.ref && params.ref !== referralCode) {
+      setReferralCode(params.ref.toUpperCase());
+      setRefAutoFilled(true);
+    }
+  }, [params.ref]);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -235,18 +245,27 @@ export default function RegisterScreen() {
 
           {/* Referral Code */}
           <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.text }]}>Referral Code <Text style={[styles.optional, { color: colors.mutedForeground }]}>(Optional)</Text></Text>
-            <View style={[styles.inputRow, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-              <Feather name="gift" size={18} color={colors.mutedForeground} />
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <Text style={[styles.label, { color: colors.text }]}>Referral Code <Text style={[styles.optional, { color: colors.mutedForeground }]}>(Optional)</Text></Text>
+              {refAutoFilled && (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#ECFDF5", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                  <Feather name="check" size={10} color="#059669" />
+                  <Text style={{ fontSize: 10, fontFamily: "DMSans_600SemiBold", color: "#059669" }}>Auto-applied</Text>
+                </View>
+              )}
+            </View>
+            <View style={[styles.inputRow, { backgroundColor: refAutoFilled ? "#ECFDF5" : colors.secondary, borderColor: refAutoFilled ? "#A7F3D0" : colors.border }]}>
+              <Feather name="gift" size={18} color={refAutoFilled ? "#059669" : colors.mutedForeground} />
               <TextInput
-                style={[styles.input, { color: colors.text }]}
+                style={[styles.input, { color: refAutoFilled ? "#059669" : colors.text }]}
                 placeholder="Enter referral code"
                 placeholderTextColor={colors.mutedForeground}
                 value={referralCode}
-                onChangeText={setReferralCode}
+                onChangeText={(v) => { setReferralCode(v.toUpperCase()); setRefAutoFilled(false); }}
                 autoCapitalize="characters"
                 autoCorrect={false}
               />
+              {refAutoFilled && <Feather name="check-circle" size={16} color="#059669" />}
             </View>
           </View>
 

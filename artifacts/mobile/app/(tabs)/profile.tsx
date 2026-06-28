@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -62,6 +62,9 @@ export default function ProfileScreen() {
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [appVersion, setAppVersion] = useState<string>("1.0");
   const [rateAppUrl, setRateAppUrl] = useState<string>("");
+  const [referralBaseUrl, setReferralBaseUrl] = useState<string>("");
+  const [recentOrder, setRecentOrder] = useState<{ id: string; orderNumber: string | null; status: string; total: number; productName: string | null; createdAt: string } | null | "loading">("loading");
+  const [orderCount, setOrderCount] = useState<number>(0);
 
   useEffect(() => {
     AsyncStorage.getItem("@xc_avatar_uri").then((uri) => {
@@ -80,9 +83,32 @@ export default function ProfileScreen() {
       .then((d) => {
         if (d?.app_version) setAppVersion(d.app_version);
         if (d?.rate_app_url) setRateAppUrl(d.rate_app_url);
+        if (d?.referral_base_url) setReferralBaseUrl(d.referral_base_url);
       })
       .catch(() => {});
   }, []);
+
+  const fetchRecentOrder = useCallback(async () => {
+    if (!user) return;
+    try {
+      const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
+      const token = await AsyncStorage.getItem("@xc_token");
+      const res = await fetch(`${BASE_URL}/orders`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      if (res.ok) {
+        const d = await res.json();
+        const orders = d.orders ?? [];
+        const active = orders.filter((o: any) => o.status !== "cancelled");
+        setOrderCount(active.length);
+        setRecentOrder(active.length > 0 ? active[0] : null);
+      } else {
+        setRecentOrder(null);
+      }
+    } catch {
+      setRecentOrder(null);
+    }
+  }, [user]);
+
+  useEffect(() => { fetchRecentOrder(); }, [fetchRecentOrder]);
 
   if (loading || !user) {
     return (
@@ -104,11 +130,13 @@ export default function ProfileScreen() {
 
   async function handleInvite() {
     if (!user) return;
+    const code = user.referralCode ?? "";
+    const link = referralBaseUrl ? `${referralBaseUrl}?ref=${code}` : null;
+    const message = link
+      ? `Hey! Join XyloCart using my link and get exclusive rewards. Your code ${code} will be automatically applied: ${link}`
+      : `Join XyloCart with my referral code ${code} and earn bonus coins on your first order!`;
     try {
-      await Share.share({
-        message: `Join XyloCart with my referral code ${user.referralCode} and earn bonus coins on your first order!`,
-        title: "Invite to XyloCart",
-      });
+      await Share.share({ message, title: "Invite to XyloCart", url: link ?? undefined });
     } catch {}
   }
 
@@ -189,7 +217,7 @@ export default function ProfileScreen() {
         <View>
           <View style={[styles.statsRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Pressable style={styles.statItem} onPress={() => router.push("/orders" as any)}>
-              <Text style={[styles.statNum, { color: colors.text }]}>View</Text>
+              <Text style={[styles.statNum, { color: colors.text }]}>{orderCount}</Text>
               <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Orders</Text>
             </Pressable>
             <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
@@ -203,6 +231,50 @@ export default function ProfileScreen() {
               <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Cart</Text>
             </View>
           </View>
+        </View>
+
+        {/* Recent Order Mini Card */}
+        <View style={[styles.recentOrderCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.recentOrderHeader}>
+            <Text style={[styles.recentOrderTitle, { color: colors.mutedForeground }]}>RECENT ORDER</Text>
+            {recentOrder && recentOrder !== "loading" && (
+              <Pressable onPress={() => router.push("/orders" as any)}>
+                <Text style={[styles.recentOrderSeeAll, { color: colors.primary }]}>See all</Text>
+              </Pressable>
+            )}
+          </View>
+          {recentOrder === "loading" ? (
+            <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 8 }} />
+          ) : recentOrder === null ? (
+            <View style={styles.recentOrderEmpty}>
+              <Feather name="package" size={22} color={colors.mutedForeground} />
+              <Text style={[styles.recentOrderEmptyText, { color: colors.mutedForeground }]}>No orders placed yet</Text>
+            </View>
+          ) : (
+            <Pressable style={styles.recentOrderRow} onPress={() => router.push("/orders" as any)}>
+              <View style={[styles.recentOrderStatus, { backgroundColor: recentOrder.status === "delivered" ? "#ECFDF5" : recentOrder.status === "cancelled" ? "#FEF2F2" : recentOrder.status === "shipped" ? "#F5F3FF" : "#FFFBEB" }]}>
+                <Feather
+                  name={recentOrder.status === "delivered" ? "check-circle" : recentOrder.status === "cancelled" ? "x-circle" : recentOrder.status === "shipped" ? "truck" : "clock"}
+                  size={16}
+                  color={recentOrder.status === "delivered" ? "#10B981" : recentOrder.status === "cancelled" ? "#EF4444" : recentOrder.status === "shipped" ? "#8B5CF6" : "#F59E0B"}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.recentOrderNum, { color: colors.text }]} numberOfLines={1}>
+                  {recentOrder.orderNumber ?? `#${recentOrder.id.slice(0, 8).toUpperCase()}`}
+                </Text>
+                <Text style={[styles.recentOrderProduct, { color: colors.mutedForeground }]} numberOfLines={1}>
+                  {recentOrder.productName ?? "Product"}
+                </Text>
+              </View>
+              <View style={{ alignItems: "flex-end" }}>
+                <Text style={[styles.recentOrderTotal, { color: colors.text }]}>₹{Number(recentOrder.total).toLocaleString("en-IN")}</Text>
+                <Text style={[styles.recentOrderStatusText, { color: recentOrder.status === "delivered" ? "#10B981" : recentOrder.status === "cancelled" ? "#EF4444" : colors.mutedForeground }]}>
+                  {recentOrder.status.charAt(0).toUpperCase() + recentOrder.status.slice(1)}
+                </Text>
+              </View>
+            </Pressable>
+          )}
         </View>
 
         {/* Wallet — 3D shimmer tilt card */}
@@ -238,7 +310,7 @@ export default function ProfileScreen() {
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <MenuItem icon="package"    label={t("orderHistory")}    onPress={() => router.push("/orders" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <MenuItem icon="refresh-cw" label={t("returnsRefunds")}  onPress={() => router.push("/orders" as any)} />
+            <MenuItem icon="refresh-cw" label={t("returnsRefunds")}  onPress={() => router.push("/refunds" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <MenuItem icon="truck"      label={t("trackOrders")}     onPress={() => router.push("/track-order" as any)} />
           </View>
@@ -379,4 +451,16 @@ const styles = StyleSheet.create({
   adminBtnText: { color: "#fff", fontSize: 16, fontFamily: "DMSans_600SemiBold" },
   signOutBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, borderRadius: 14, paddingVertical: 16, borderWidth: 1, marginTop: 4 },
   signOutText: { fontSize: 16, fontFamily: "DMSans_600SemiBold" },
+  recentOrderCard: { borderRadius: 14, borderWidth: 1, marginBottom: 16, padding: 14 },
+  recentOrderHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
+  recentOrderTitle: { fontSize: 11, fontFamily: "DMSans_600SemiBold", letterSpacing: 1 },
+  recentOrderSeeAll: { fontSize: 12, fontFamily: "DMSans_600SemiBold" },
+  recentOrderEmpty: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 6 },
+  recentOrderEmptyText: { fontSize: 13, fontFamily: "DMSans_400Regular" },
+  recentOrderRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  recentOrderStatus: { width: 38, height: 38, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  recentOrderNum: { fontSize: 13, fontFamily: "DMSans_700Bold" },
+  recentOrderProduct: { fontSize: 12, fontFamily: "DMSans_400Regular", marginTop: 2 },
+  recentOrderTotal: { fontSize: 13, fontFamily: "DMSans_700Bold" },
+  recentOrderStatusText: { fontSize: 11, fontFamily: "DMSans_500Medium", marginTop: 2 },
 });

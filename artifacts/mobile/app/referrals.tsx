@@ -59,6 +59,8 @@ export default function ReferralsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [referralBaseUrl, setReferralBaseUrl] = useState("");
+  const [appName, setAppName] = useState("XyloCart");
 
   const fetchNetwork = useCallback(async () => {
     try {
@@ -70,18 +72,39 @@ export default function ReferralsScreen() {
 
   useEffect(() => { fetchNetwork(); }, [fetchNetwork]);
 
+  useEffect(() => {
+    const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
+    fetch(`${BASE_URL}/config/public`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.referral_base_url) setReferralBaseUrl(d.referral_base_url);
+      })
+      .catch(() => {});
+  }, []);
+
   async function onRefresh() {
     setRefreshing(true);
     await fetchNetwork();
     setRefreshing(false);
   }
 
+  function buildReferralLink(code: string) {
+    if (!referralBaseUrl) return null;
+    return `${referralBaseUrl}?ref=${code}`;
+  }
+
   async function handleShare() {
     if (!user?.referralCode) return;
+    const link = buildReferralLink(user.referralCode);
+    const code = user.referralCode;
+    const message = link
+      ? `Hey! Join ${appName} using my link and get exclusive rewards. Your code ${code} will be automatically applied: ${link}`
+      : `Join ${appName} with my referral code ${code} and earn bonus coins on your first order!`;
     try {
       await Share.share({
-        message: `Join XyloCart with my referral code **${user.referralCode}** and earn bonus coins on your first order! 🛒\n\nDownload XyloCart and use my code at signup.`,
-        title: "Join XyloCart — Earn Free Coins!",
+        message,
+        title: `Join ${appName} — Earn Exclusive Rewards!`,
+        url: link ?? undefined,
       });
     } catch {}
   }

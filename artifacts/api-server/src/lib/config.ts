@@ -39,6 +39,7 @@ const DEFAULTS: Record<string, string> = {
   twilio_account_sid: "",
   twilio_auth_token: "",
   twilio_phone_number: "",
+  referral_base_url: "",
 };
 
 export async function getConfig(key: string): Promise<string> {
