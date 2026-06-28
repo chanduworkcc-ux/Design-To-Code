@@ -40,10 +40,7 @@ export default function SearchScreen() {
         contentContainerStyle={[styles.scroll, { paddingTop: topPadding + 16, paddingBottom: 100 }]}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-          <Image source={require("@/assets/logo-nobg.png")} style={{ width: 36, height: 36 }} resizeMode="contain" />
-          <Text style={[styles.title, { color: colors.text }]}>Search</Text>
-        </View>
+        <Text style={[styles.title, { color: colors.text }]}>Search</Text>
 
         {/* Search Input */}
         <View style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}>

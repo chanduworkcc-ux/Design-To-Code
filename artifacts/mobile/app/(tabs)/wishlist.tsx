@@ -196,10 +196,7 @@ export default function WishlistScreen() {
     return (
       <View style={[styles.root, { backgroundColor: colors.background }]}>
         <View style={[styles.emptyContainer, { paddingTop: topPadding + 20 }]}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <Image source={require("@/assets/logo-nobg.png")} style={{ width: 36, height: 36 }} resizeMode="contain" />
-            <Text style={[styles.title, { color: colors.text }]}>Wishlist</Text>
-          </View>
+          <Text style={[styles.title, { color: colors.text }]}>Wishlist</Text>
           <View style={styles.emptyState}>
             <WishlistEmpty3D />
             <View style={{ display: "none" }}><Feather name="heart" size={52} color={colors.mutedForeground} /></View>
@@ -232,8 +229,7 @@ export default function WishlistScreen() {
         ]}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <Image source={require("@/assets/logo-nobg.png")} style={{ width: 36, height: 36 }} resizeMode="contain" />
+          <View>
             <Text style={[styles.title, { color: colors.text }]}>
               Wishlist{" "}
               <Text style={{ color: colors.mutedForeground, fontSize: 16, fontFamily: "DMSans_400Regular" }}>

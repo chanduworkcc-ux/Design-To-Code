@@ -149,10 +149,7 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scroll, { paddingTop: topPadding + 16, paddingBottom: 100 }]}
       >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-          <Image source={require("@/assets/logo-nobg.png")} style={{ width: 36, height: 36 }} resizeMode="contain" />
-          <Text style={[styles.title, { color: colors.text }]}>Profile</Text>
-        </View>
+        <Text style={[styles.title, { color: colors.text }]}>Profile</Text>
 
         {/* User Card — avatar has 3D glow pulse ring */}
         <View>
