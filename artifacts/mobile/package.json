@@ -56,11 +56,11 @@
     "zod-validation-error": "^3.4.0"
   },
   "dependencies": {
-    "expo-application": "^7.0.8",
-    "expo-file-system": "^56.0.8",
-    "expo-notifications": "^56.0.18",
-    "expo-print": "^56.0.4",
-    "expo-sharing": "^56.0.18",
+    "expo-application": "~7.0.8",
+    "expo-file-system": "~19.0.23",
+    "expo-notifications": "~0.32.17",
+    "expo-print": "~15.0.8",
+    "expo-sharing": "~14.0.8",
     "lottie-react-native": "^7.3.8",
     "socket.io-client": "^4.8.3"
   }
