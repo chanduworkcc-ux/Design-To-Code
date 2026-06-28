@@ -477,6 +477,8 @@ router.get("/config/public", async (_req, res) => {
     logo_url,
     cod_enabled, razorpay_enabled, phonepe_enabled,
     active_payment_gateway,
+    no_returns, no_refunds, no_exchanges,
+    delivery_info, product_disclaimer,
   ] = await Promise.all([
     getConfig("maintenance_mode"),
     getConfig("maintenance_message"),
@@ -489,6 +491,11 @@ router.get("/config/public", async (_req, res) => {
     getConfig("razorpay_enabled"),
     getConfig("phonepe_enabled"),
     getConfig("active_payment_gateway"),
+    getConfig("no_returns"),
+    getConfig("no_refunds"),
+    getConfig("no_exchanges"),
+    getConfig("delivery_info"),
+    getConfig("product_disclaimer"),
   ]);
   res.json({
     maintenance_mode,
@@ -502,6 +509,11 @@ router.get("/config/public", async (_req, res) => {
     razorpay_enabled,
     phonepe_enabled,
     active_payment_gateway: active_payment_gateway || "cod",
+    no_returns,
+    no_refunds,
+    no_exchanges,
+    delivery_info,
+    product_disclaimer,
   });
 });
 

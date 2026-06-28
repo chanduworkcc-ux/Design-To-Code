@@ -119,10 +119,10 @@ export default function ProductDetailScreen() {
 
   async function fetchConfig() {
     try {
-      const res = await apiRequest("/admin/config");
+      const res = await fetch(`https://${process.env.EXPO_PUBLIC_DOMAIN}/api/config/public`);
       if (res.ok) {
         const data = await res.json();
-        setConfig(data.config as Record<string, string>);
+        setConfig(data as Record<string, string>);
       }
     } catch {}
   }
