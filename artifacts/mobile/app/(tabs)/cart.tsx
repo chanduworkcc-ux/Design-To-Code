@@ -25,6 +25,7 @@ import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { useLanguage } from "@/context/LanguageContext";
+import { FloatIn, FloatingOrb, FloatingParticle, ShimmerWallet, PulsingRing } from "@/components/ThreeD";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
@@ -33,6 +34,7 @@ function Empty3DCart() {
   const router = useRouter();
   const bob = useSharedValue(0);
   const tilt = useSharedValue(0);
+  const glow = useSharedValue(1);
 
   React.useEffect(() => {
     bob.value = withRepeat(
@@ -47,32 +49,60 @@ function Empty3DCart() {
         withTiming(10,  { duration: 2100, easing: Easing.inOut(Easing.sin) }),
       ), -1, false
     );
+    glow.value = withRepeat(
+      withSequence(
+        withTiming(1.3, { duration: 1400, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0.9, { duration: 1400, easing: Easing.inOut(Easing.sin) }),
+      ), -1, false
+    );
   }, []);
 
   const iconStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: bob.value }, { rotateZ: `${tilt.value}deg` }, { perspective: 500 }],
+    transform: [
+      { translateY: bob.value },
+      { rotateZ: `${tilt.value}deg` },
+      { perspective: 600 },
+      { rotateX: "12deg" },
+    ],
+  }));
+
+  const glowStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: glow.value }],
+    opacity: 0.18,
   }));
 
   return (
     <View style={styles.emptyState}>
       <View style={styles.emptyScene}>
         <View style={styles.emptyIconBox}>
+          {/* Glow rings */}
+          <PulsingRing color={colors.primary} size={120} duration={2200} thickness={1.5} />
+          <PulsingRing color={colors.primary} size={90}  duration={2200} delay={600} thickness={1} />
+          <Animated2.View style={[{ position: "absolute", width: 110, height: 110, borderRadius: 55, backgroundColor: colors.primary }, glowStyle]} />
           <Animated2.View style={[styles.emptyIconCircle, { backgroundColor: colors.card }, iconStyle]}>
+            {/* Top shine */}
+            <View style={{ position: "absolute", top: 0, left: 0, right: 0, height: 40, borderTopLeftRadius: 40, borderTopRightRadius: 40, backgroundColor: "rgba(255,255,255,0.12)" }} />
             <Ionicons name="cart-outline" size={46} color={colors.primary} />
           </Animated2.View>
         </View>
       </View>
-      <Text style={[styles.emptyTitle, { color: colors.text }]}>Your cart is empty</Text>
-      <Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>
-        Browse the shop and add something you love
-      </Text>
-      <Pressable
-        style={[styles.startBtn, { backgroundColor: colors.primary }]}
-        onPress={() => router.push("/(tabs)")}
-      >
-        <Ionicons name="bag-check-outline" size={17} color="#fff" />
-        <Text style={styles.startBtnText}>Browse Products</Text>
-      </Pressable>
+      <FloatIn delay={200} distance={20}>
+        <Text style={[styles.emptyTitle, { color: colors.text }]}>Your cart is empty</Text>
+      </FloatIn>
+      <FloatIn delay={300} distance={16}>
+        <Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>
+          Browse the shop and add something you love
+        </Text>
+      </FloatIn>
+      <FloatIn delay={400} distance={16}>
+        <Pressable
+          style={[styles.startBtn, { backgroundColor: colors.primary }]}
+          onPress={() => router.push("/(tabs)")}
+        >
+          <Ionicons name="bag-check-outline" size={17} color="#fff" />
+          <Text style={styles.startBtnText}>Browse Products</Text>
+        </Pressable>
+      </FloatIn>
     </View>
   );
 }
@@ -113,8 +143,15 @@ export default function CartScreen() {
   if (cart.length === 0 && !cartRemovalNotice) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background }]}>
+        <FloatingOrb color={colors.primary} size={200} style={{ top: -60, right: -70, opacity: 0.07 } as any} delay={0} amplitude={12} />
+        <FloatingOrb color="#818CF8"       size={140} style={{ bottom: 100, left: -50, opacity: 0.06 } as any} delay={900} amplitude={9} />
+        <FloatingParticle x={30}  startY={130} color={colors.primary} delay={0}    size={5} duration={4200} />
+        <FloatingParticle x={270} startY={210} color="#818CF8"        delay={1000} size={4} duration={3700} />
+        <FloatingParticle x={150} startY={360} color={colors.primary} delay={600}  size={3} duration={5100} />
         <View style={[styles.emptyWrap, { paddingTop: topPadding + 24 }]}>
-          <Text style={[styles.title, { color: colors.text }]}>{t("yourCart")}</Text>
+          <FloatIn delay={0} distance={24}>
+            <Text style={[styles.title, { color: colors.text }]}>{t("yourCart")}</Text>
+          </FloatIn>
           <Empty3DCart />
         </View>
       </View>
@@ -123,11 +160,17 @@ export default function CartScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
+      {/* Subtle background */}
+      <FloatingOrb color={colors.primary} size={180} style={{ top: -50, right: -60, opacity: 0.05 } as any} delay={0} amplitude={10} />
+      <FloatingParticle x={20}  startY={80}  color={colors.primary} delay={0}    size={4} duration={4500} />
+      <FloatingParticle x={290} startY={160} color="#818CF8"        delay={1200} size={3} duration={3900} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scroll, { paddingTop: topPadding + 24, paddingBottom: 260 + bottomInset }]}
       >
-        <Text style={[styles.title, { color: colors.text }]}>{t("yourCart")}</Text>
+        <FloatIn delay={0} distance={24}>
+          <Text style={[styles.title, { color: colors.text }]}>{t("yourCart")}</Text>
+        </FloatIn>
 
         {/* Out-of-stock removal banner */}
         {cartRemovalNotice && (
@@ -175,7 +218,7 @@ export default function CartScreen() {
         )}
 
         {/* Cart Items */}
-        {cart.map((cartItem) => {
+        {cart.map((cartItem, idx) => {
           const src: any = (cartItem as any).image
             ? (cartItem as any).image
             : cartItem.imageUrl
@@ -195,8 +238,8 @@ export default function CartScreen() {
             : 0;
 
           return (
+            <FloatIn key={cartItem.id} delay={idx * 90} distance={28}>
             <View
-              key={cartItem.id}
               style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
             >
               {/* Image */}
@@ -249,35 +292,38 @@ export default function CartScreen() {
                 <Ionicons name="trash-outline" size={17} color="#EF4444" />
               </Pressable>
             </View>
+            </FloatIn>
           );
         })}
 
         {/* Order Summary Card */}
         {cart.length > 0 && (
-          <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.summaryTitle, { color: colors.text }]}>Order Summary</Text>
+          <FloatIn delay={120} distance={24}>
+            <ShimmerWallet style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
+              <Text style={[styles.summaryTitle, { color: colors.text }]}>Order Summary</Text>
 
-            <View style={styles.summaryRow}>
-              <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>Subtotal</Text>
-              <Text style={[styles.summaryValue, { color: colors.text }]}>
-                ₹{Number(cartTotal).toLocaleString("en-IN")}
-              </Text>
-            </View>
+              <View style={styles.summaryRow}>
+                <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>Subtotal</Text>
+                <Text style={[styles.summaryValue, { color: colors.text }]}>
+                  ₹{Number(cartTotal).toLocaleString("en-IN")}
+                </Text>
+              </View>
 
-            <View style={styles.summaryRow}>
-              <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>Delivery</Text>
-              <Text style={[styles.summaryValue, { color: "#16A34A" }]}>Free</Text>
-            </View>
+              <View style={styles.summaryRow}>
+                <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>Delivery</Text>
+                <Text style={[styles.summaryValue, { color: "#16A34A" }]}>Free</Text>
+              </View>
 
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-            <View style={styles.summaryRow}>
-              <Text style={[styles.totalLabel, { color: colors.text }]}>Total</Text>
-              <Text style={[styles.totalAmount, { color: colors.text }]}>
-                ₹{total.toLocaleString("en-IN")}
-              </Text>
-            </View>
-          </View>
+              <View style={styles.summaryRow}>
+                <Text style={[styles.totalLabel, { color: colors.text }]}>Total</Text>
+                <Text style={[styles.totalAmount, { color: colors.text }]}>
+                  ₹{total.toLocaleString("en-IN")}
+                </Text>
+              </View>
+            </ShimmerWallet>
+          </FloatIn>
         )}
 
         {/* Removed-item empty state with notice still showing */}

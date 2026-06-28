@@ -24,7 +24,7 @@ import { useNotifications } from "@/context/NotificationContext";
 import { Product } from "@/data/products";
 import LoadingScreen from "@/components/LoadingScreen";
 import { GlobalFooter } from "@/components/GlobalFooter";
-import { FloatingOrb, FloatIn, PulsingRing } from "@/components/ThreeD";
+import { FloatingOrb, FloatIn, PulsingRing, FloatingParticle, SpinBox3D } from "@/components/ThreeD";
 import { useSocket } from "@/context/SocketContext";
 import Animated, {
   useSharedValue,
@@ -454,6 +454,10 @@ export default function ShopScreen() {
         <FloatIn delay={200} distance={28}>
           {banners.length > 0 ? (
             <View style={[styles.bannerWrapper, { marginBottom: 24 }]}>
+              {/* 3D floating particles over banner */}
+              <FloatingParticle x={20}  startY={60}  color="#fff" delay={0}    size={4} duration={3800} />
+              <FloatingParticle x={260} startY={30}  color="#fff" delay={700}  size={3} duration={4200} />
+              <FloatingParticle x={140} startY={100} color="#fff" delay={1400} size={5} duration={3500} />
               <ScrollView
                 ref={bannerScrollRef}
                 horizontal
@@ -492,6 +496,10 @@ export default function ShopScreen() {
               {/* Decorative orbs */}
               <FloatingOrb color="#60A5FA" size={120} style={{ top: -20, right: -20 }} delay={0} amplitude={10} />
               <FloatingOrb color="#818CF8" size={80} style={{ bottom: -10, left: 20 }} delay={600} amplitude={8} />
+              {/* 3D particles */}
+              <FloatingParticle x={18}  startY={50}  color="#fff" delay={0}    size={4} duration={3600} />
+              <FloatingParticle x={200} startY={20}  color="#60A5FA" delay={800}  size={3} duration={4200} />
+              <FloatingParticle x={120} startY={100} color="#fff" delay={1600} size={5} duration={3900} />
 
               <View style={styles.heroBannerContent}>
                 <View style={[styles.heroBannerLeft, { backgroundColor: "#1E3A8A" }]}>
@@ -504,7 +512,11 @@ export default function ShopScreen() {
                     <Feather name="arrow-right" size={13} color="#1E3A8A" />
                   </Pressable>
                 </View>
-                <View style={[styles.heroBannerRight, { backgroundColor: colors.secondary }]}>
+                <View style={[styles.heroBannerRight, { backgroundColor: colors.secondary, overflow: "hidden" }]}>
+                  {/* Spinning 3D box decoration */}
+                  <View style={{ position: "absolute", top: -10, right: -10, opacity: 0.5 }}>
+                    <SpinBox3D size={44} color="#2563EB" topColor="#60A5FA" sideColor="#1D4ED8" />
+                  </View>
                   {[
                     { icon: "monitor", color: "#2563EB", bg: "#DBEAFE", label: "Electronics" },
                     { icon: "home",    color: "#7C3AED", bg: "#EDE9FE", label: "Home"        },

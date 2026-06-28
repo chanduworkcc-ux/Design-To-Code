@@ -22,6 +22,15 @@ import { useColors } from "@/hooks/useColors";
 import { useLanguage } from "@/context/LanguageContext";
 import { LANGUAGE_LABELS } from "@/lib/i18n";
 import { GlobalFooter } from "@/components/GlobalFooter";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+  Easing,
+} from "react-native-reanimated";
+import { FloatIn, FloatingOrb, FloatingParticle, ShimmerWallet, GlowPulse } from "@/components/ThreeD";
 
 interface MenuItemProps {
   icon: string;
@@ -176,16 +185,25 @@ export default function ProfileScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
+      {/* Decorative background */}
+      <FloatingOrb color={colors.primary} size={200} style={{ top: -70, right: -70, opacity: 0.07 } as any} delay={0} amplitude={14} />
+      <FloatingOrb color="#818CF8" size={140} style={{ top: 300, left: -60, opacity: 0.06 } as any} delay={1000} amplitude={10} />
+      <FloatingParticle x={30}  startY={120} color={colors.primary} delay={0}    size={5} duration={4500} />
+      <FloatingParticle x={290} startY={200} color="#818CF8"        delay={1300} size={4} duration={3900} />
+      <FloatingParticle x={160} startY={400} color={colors.primary} delay={700}  size={3} duration={5200} />
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scroll, { paddingTop: topPadding + 16, paddingBottom: 100 }]}
       >
-        <Text style={[styles.title, { color: colors.text }]}>{t("profile")}</Text>
+        <FloatIn delay={0} distance={24}>
+          <Text style={[styles.title, { color: colors.text }]}>{t("profile")}</Text>
+        </FloatIn>
 
-        {/* User Card — avatar has 3D glow pulse ring */}
-        <View>
+        {/* User Card — avatar wrapped in GlowPulse */}
+        <FloatIn delay={60} distance={28}>
           <View style={[styles.userCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View>
+            <GlowPulse color={colors.primary} size={54}>
               {avatarUri ? (
                 <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
               ) : (
@@ -193,7 +211,7 @@ export default function ProfileScreen() {
                   <Text style={styles.avatarText}>{avatarLetter}</Text>
                 </View>
               )}
-            </View>
+            </GlowPulse>
             <View style={styles.userInfo}>
               <Text style={[styles.userName, { color: colors.text }]}>{user.name}</Text>
               <Text style={[styles.userEmail, { color: colors.mutedForeground }]} numberOfLines={1}>{user.email}</Text>
@@ -211,10 +229,10 @@ export default function ProfileScreen() {
               <Feather name="edit-2" size={16} color={colors.mutedForeground} />
             </Pressable>
           </View>
-        </View>
+        </FloatIn>
 
         {/* Stats */}
-        <View>
+        <FloatIn delay={120} distance={22}>
           <View style={[styles.statsRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Pressable style={styles.statItem} onPress={() => router.push("/orders" as any)}>
               <Text style={[styles.statNum, { color: colors.text }]}>{orderCount}</Text>
@@ -231,9 +249,10 @@ export default function ProfileScreen() {
               <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Cart</Text>
             </View>
           </View>
-        </View>
+        </FloatIn>
 
         {/* Recent Order Mini Card */}
+        <FloatIn delay={180} distance={20}>
         <View style={[styles.recentOrderCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.recentOrderHeader}>
             <Text style={[styles.recentOrderTitle, { color: colors.mutedForeground }]}>RECENT ORDER</Text>
@@ -276,11 +295,12 @@ export default function ProfileScreen() {
             </Pressable>
           )}
         </View>
+        </FloatIn>
 
-        {/* Wallet — 3D shimmer tilt card */}
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("wallet")}</Text>
-        <View>
-          <View style={[styles.walletCard, { backgroundColor: colors.primary }]}>
+        {/* Wallet — ShimmerWallet 3D tilt card */}
+        <FloatIn delay={240} distance={22}>
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("wallet")}</Text>
+          <ShimmerWallet style={[styles.walletCard, { backgroundColor: colors.primary }]}>
             <View>
               <Text style={styles.walletLabel}>{t("coinBalance")}</Text>
               <Text style={styles.walletBalance}>{user.walletBalance} coins</Text>
@@ -289,12 +309,12 @@ export default function ProfileScreen() {
             <View style={[styles.walletBadge, { backgroundColor: "rgba(255,255,255,0.2)" }]}>
               <Ionicons name="trophy-outline" size={24} color="#fff" />
             </View>
-          </View>
-        </View>
+          </ShimmerWallet>
+        </FloatIn>
 
         {/* Account */}
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("account").toUpperCase()}</Text>
-        <View>
+        <FloatIn delay={300} distance={20}>
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("account").toUpperCase()}</Text>
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <MenuItem icon="user"        label={t("personalInfo")}    onPress={() => router.push("/personal-info" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -302,11 +322,11 @@ export default function ProfileScreen() {
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <MenuItem icon="credit-card" label={t("paymentMethods")}  onPress={() => router.push("/payment-methods" as any)} />
           </View>
-        </View>
+        </FloatIn>
 
         {/* Orders */}
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("orders").toUpperCase()}</Text>
-        <View>
+        <FloatIn delay={340} distance={18}>
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("orders").toUpperCase()}</Text>
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <MenuItem icon="package"    label={t("orderHistory")}    onPress={() => router.push("/orders" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -314,21 +334,21 @@ export default function ProfileScreen() {
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <MenuItem icon="truck"      label={t("trackOrders")}     onPress={() => router.push("/track-order" as any)} />
           </View>
-        </View>
+        </FloatIn>
 
         {/* Referrals */}
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("referrals").toUpperCase()}</Text>
-        <View>
+        <FloatIn delay={380} distance={18}>
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("referrals").toUpperCase()}</Text>
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <MenuItem icon="users" label={t("myReferralNetwork")} onPress={() => router.push("/referrals" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <MenuItem icon="gift"  label={t("inviteEarn")}        onPress={handleInvite} />
           </View>
-        </View>
+        </FloatIn>
 
         {/* Preferences */}
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("preferences").toUpperCase()}</Text>
-        <View>
+        <FloatIn delay={420} distance={16}>
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("preferences").toUpperCase()}</Text>
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <MenuItem icon="bell"  label={t("notifications")}  onPress={() => router.push("/notifications-user" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -341,11 +361,11 @@ export default function ProfileScreen() {
               onPress={() => router.push("/language" as any)}
             />
           </View>
-        </View>
+        </FloatIn>
 
         {/* Security */}
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("security").toUpperCase()}</Text>
-        <View>
+        <FloatIn delay={460} distance={16}>
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("security").toUpperCase()}</Text>
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <MenuItem icon="lock"       label={t("changePassword")}  onPress={() => router.push("/change-password" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -353,11 +373,11 @@ export default function ProfileScreen() {
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <MenuItem icon="shield"     label={t("accountSecurity")} onPress={() => router.push("/account-security" as any)} />
           </View>
-        </View>
+        </FloatIn>
 
         {/* App */}
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("app").toUpperCase()}</Text>
-        <View>
+        <FloatIn delay={500} distance={14}>
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("app").toUpperCase()}</Text>
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <MenuItem icon="download-cloud" label={t("checkForUpdates")} onPress={handleCheckUpdates} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -365,11 +385,11 @@ export default function ProfileScreen() {
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <MenuItem icon="share-2"        label={t("shareApp")}         onPress={handleInvite} />
           </View>
-        </View>
+        </FloatIn>
 
         {/* Support */}
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("support").toUpperCase()}</Text>
-        <View>
+        <FloatIn delay={540} distance={14}>
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("support").toUpperCase()}</Text>
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <MenuItem icon="help-circle"    label={t("helpCenter")}  onPress={() => router.push("/support-ticket" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -377,11 +397,11 @@ export default function ProfileScreen() {
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <MenuItem icon="star"           label={t("rateApp")}     onPress={handleRateApp} />
           </View>
-        </View>
+        </FloatIn>
 
         {/* Legal */}
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("legal").toUpperCase()}</Text>
-        <View>
+        <FloatIn delay={580} distance={14}>
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("legal").toUpperCase()}</Text>
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <MenuItem icon="file-text" label={t("termsConditions")} onPress={() => router.push("/policies" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -389,7 +409,7 @@ export default function ProfileScreen() {
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <MenuItem icon="info"      label={t("generalPolicies")} onPress={() => router.push("/policies" as any)} />
           </View>
-        </View>
+        </FloatIn>
 
         {user.role === "admin" && (
           <Pressable style={[styles.adminBtn, { backgroundColor: colors.primary }]} onPress={() => router.push("/admin/dashboard" as any)}>

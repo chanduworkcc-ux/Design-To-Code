@@ -28,6 +28,7 @@ import { useColors } from "@/hooks/useColors";
 import { useLanguage } from "@/context/LanguageContext";
 import BurstAnimation, { type BurstHandle } from "@/components/BurstAnimation";
 import { useSocket } from "@/context/SocketContext";
+import { FloatIn, FloatingOrb, FloatingParticle, TiltCard3D } from "@/components/ThreeD";
 
 function HeartBurst({ onDone }: { onDone?: () => void }) {
   return null;
@@ -218,23 +219,38 @@ export default function WishlistScreen() {
   if (wishlist.length === 0) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background }]}>
+        {/* Decorative background */}
+        <FloatingOrb color="#EF4444" size={180} style={{ top: -40, right: -50, opacity: 0.07 } as any} delay={0} amplitude={12} />
+        <FloatingOrb color="#F59E0B" size={120} style={{ bottom: 100, left: -40, opacity: 0.06 } as any} delay={700} amplitude={9} />
+        <FloatingParticle x={40}  startY={140} color="#EF4444" delay={0}    size={5} duration={4000} />
+        <FloatingParticle x={260} startY={220} color="#F59E0B" delay={900}  size={4} duration={3500} />
+        <FloatingParticle x={150} startY={320} color="#EF4444" delay={500}  size={3} duration={5200} />
         <View style={[styles.emptyContainer, { paddingTop: topPadding + 20 }]}>
-          <Text style={[styles.title, { color: colors.text }]}>{t("yourWishlist")}</Text>
+          <FloatIn delay={0} distance={24}>
+            <Text style={[styles.title, { color: colors.text }]}>{t("yourWishlist")}</Text>
+          </FloatIn>
           <View style={styles.emptyState}>
-            <WishlistEmpty3D />
-            <View style={{ display: "none" }}><Feather name="heart" size={52} color={colors.mutedForeground} /></View>
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>{t("wishlistEmpty")}</Text>
-            <Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>
-              {t("wishlistEmptySub")}
-            </Text>
-            <Pressable
-              style={[styles.shopBtn, { backgroundColor: colors.primary }]}
-              onPress={() => router.push("/(tabs)")}
-            >
-              <Text style={[styles.shopBtnText, { color: colors.primaryForeground }]}>
-                Browse Products
+            <FloatIn delay={100} distance={40}>
+              <WishlistEmpty3D />
+            </FloatIn>
+            <FloatIn delay={280} distance={20}>
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>{t("wishlistEmpty")}</Text>
+            </FloatIn>
+            <FloatIn delay={360} distance={16}>
+              <Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>
+                {t("wishlistEmptySub")}
               </Text>
-            </Pressable>
+            </FloatIn>
+            <FloatIn delay={440} distance={16}>
+              <Pressable
+                style={[styles.shopBtn, { backgroundColor: colors.primary }]}
+                onPress={() => router.push("/(tabs)")}
+              >
+                <Text style={[styles.shopBtnText, { color: colors.primaryForeground }]}>
+                  Browse Products
+                </Text>
+              </Pressable>
+            </FloatIn>
           </View>
         </View>
       </View>
@@ -243,6 +259,10 @@ export default function WishlistScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
+      {/* Subtle background orbs */}
+      <FloatingOrb color="#EF4444" size={160} style={{ top: -30, right: -50, opacity: 0.05 } as any} delay={0} amplitude={10} />
+      <FloatingParticle x={20}  startY={100} color="#EF4444" delay={0}    size={4} duration={4500} />
+      <FloatingParticle x={300} startY={180} color="#F59E0B" delay={1100} size={3} duration={3800} />
       <FlatList
         data={sortedWishlist}
         keyExtractor={(item) => item.id}
@@ -253,51 +273,57 @@ export default function WishlistScreen() {
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View>
-            <Text style={[styles.title, { color: colors.text }]}>
-              {t("yourWishlist")}{" "}
-              <Text style={{ color: colors.mutedForeground, fontSize: 16, fontFamily: "DMSans_400Regular" }}>
-                {wishlist.length} items
+            <FloatIn delay={0} distance={24}>
+              <Text style={[styles.title, { color: colors.text }]}>
+                {t("yourWishlist")}{" "}
+                <Text style={{ color: colors.mutedForeground, fontSize: 16, fontFamily: "DMSans_400Regular" }}>
+                  {wishlist.length} items
+                </Text>
               </Text>
-            </Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.filterRow}
-              style={{ marginBottom: 16 }}
-            >
-              {SORT_OPTIONS.map((opt) => {
-                const active = sortBy === opt.key;
-                return (
-                  <Pressable
-                    key={opt.key}
-                    style={[
-                      styles.filterChip,
-                      {
-                        backgroundColor: active ? colors.primary + "18" : "transparent",
-                        borderColor: active ? colors.primary : colors.border,
-                      },
-                    ]}
-                    onPress={() => {
-                      setSortBy(opt.key);
-                      if (Platform.OS !== "web") Haptics.selectionAsync();
-                    }}
-                  >
-                    <Text style={[styles.filterChipText, { color: active ? colors.primary : colors.mutedForeground }]}>
-                      {opt.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
+            </FloatIn>
+            <FloatIn delay={80} distance={18}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.filterRow}
+                style={{ marginBottom: 16 }}
+              >
+                {SORT_OPTIONS.map((opt) => {
+                  const active = sortBy === opt.key;
+                  return (
+                    <Pressable
+                      key={opt.key}
+                      style={[
+                        styles.filterChip,
+                        {
+                          backgroundColor: active ? colors.primary + "18" : "transparent",
+                          borderColor: active ? colors.primary : colors.border,
+                        },
+                      ]}
+                      onPress={() => {
+                        setSortBy(opt.key);
+                        if (Platform.OS !== "web") Haptics.selectionAsync();
+                      }}
+                    >
+                      <Text style={[styles.filterChipText, { color: active ? colors.primary : colors.mutedForeground }]}>
+                        {opt.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </FloatIn>
           </View>
         }
-        renderItem={({ item }) => (
-          <WishlistCard
-            item={item}
-            onAddToCart={handleAddToCart}
-            onRemove={removeFromWishlist}
-            isInCart={isInCart(item.id)}
-          />
+        renderItem={({ item, index }) => (
+          <TiltCard3D delay={index * 80}>
+            <WishlistCard
+              item={item}
+              onAddToCart={handleAddToCart}
+              onRemove={removeFromWishlist}
+              isInCart={isInCart(item.id)}
+            />
+          </TiltCard3D>
         )}
         ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
       />
