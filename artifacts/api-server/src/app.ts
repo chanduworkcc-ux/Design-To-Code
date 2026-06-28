@@ -1,8 +1,7 @@
-import * as express from "express";
-import type { Express, Request, Response, NextFunction } from "express";
-import * as cors from "cors";
-import * as pinoHttp from "pino-http";
-import * as rateLimit from "express-rate-limit";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
+import cors from "cors";
+import { pinoHttp } from "pino-http";
+import { rateLimit } from "express-rate-limit";
 import http from "http";
 import path from "path";
 import router from "./routes";
