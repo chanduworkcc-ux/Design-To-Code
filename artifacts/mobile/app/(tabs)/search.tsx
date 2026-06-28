@@ -109,7 +109,7 @@ export default function SearchScreen() {
           p.name.toLowerCase().includes(query.toLowerCase()) ||
           p.category.toLowerCase().includes(query.toLowerCase())
       )
-    : allProducts;
+    : [];
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
