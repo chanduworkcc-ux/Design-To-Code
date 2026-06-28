@@ -102,8 +102,8 @@ export default function ProfileScreen() {
     if (!user) return;
     try {
       await Share.share({
-        message: `Join FX PRIME 26 with my referral code ${user.referralCode} and earn bonus coins on your first order! 🎁`,
-        title: "Invite to FX PRIME 26",
+        message: `Join XyloCart with my referral code ${user.referralCode} and earn bonus coins on your first order!`,
+        title: "Invite to XyloCart",
       });
     } catch {}
   }
@@ -121,7 +121,7 @@ export default function ProfileScreen() {
           [{ text: "OK" }]
         );
       } else {
-        Alert.alert("You're up to date!", `FX PRIME 26 v${appVersion} is running the latest version.`, [{ text: "Great" }]);
+        Alert.alert("You're up to date!", `XyloCart v${appVersion} is running the latest version.`, [{ text: "Great" }]);
       }
     } catch {
       Alert.alert("Error", "Could not check for updates. Please check your connection.");
@@ -172,7 +172,7 @@ export default function ProfileScreen() {
                 <Text style={[styles.referralCode, { color: colors.primary }]}>Code: {user.referralCode}</Text>
               )}
               <View style={[styles.fxBadge, { backgroundColor: "#EFF6FF" }]}>
-                <Text style={[styles.fxBadgeText, { color: "#2563EB" }]}>⚡ FX Prime 26</Text>
+                <Text style={[styles.fxBadgeText, { color: "#2563EB" }]}>⚡ XyloCart</Text>
               </View>
             </View>
             <Pressable
@@ -257,11 +257,25 @@ export default function ProfileScreen() {
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>PREFERENCES</Text>
         <View>
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <MenuItem icon="bell"  label="Notifications"    onPress={() => router.push("/notifications-user" as any)} />
+            <MenuItem icon="bell"   label="Notifications"     onPress={() => router.push("/notifications-user" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <MenuItem icon="moon"  label="Appearance"       onPress={() => router.push("/appearance" as any)} />
+            <MenuItem icon="moon"   label="Appearance"        onPress={() => router.push("/appearance" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <MenuItem icon="globe" label="Language & Region" value="English (IN)" onPress={() => Alert.alert("Coming Soon", "Language settings will be available soon.")} />
+            <MenuItem icon="globe"  label="Language & Region"  value="English (IN)" onPress={() => Alert.alert("Coming Soon", "Language settings will be available soon.")} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <MenuItem icon="dollar-sign" label="Currency"     value="INR (₹)" onPress={() => Alert.alert("Coming Soon", "Currency settings coming soon.")} />
+          </View>
+        </View>
+
+        {/* Security */}
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>SECURITY</Text>
+        <View>
+          <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <MenuItem icon="lock"        label="Change Password"      onPress={() => router.push("/personal-info" as any)} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <MenuItem icon="smartphone"  label="Login Devices"         onPress={() => Alert.alert("Devices", "Device management coming soon.")} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <MenuItem icon="shield"      label="Account Security"      onPress={() => Alert.alert("Security", "Two-step verification coming soon.")} />
           </View>
         </View>
 
@@ -269,9 +283,11 @@ export default function ProfileScreen() {
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>APP</Text>
         <View>
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <MenuItem icon="download-cloud" label="Check for Updates" onPress={handleCheckUpdates} />
+            <MenuItem icon="download-cloud" label="Check for Updates"  onPress={handleCheckUpdates} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <MenuItem icon="info" label="App Version" value={`v${appVersion}`} />
+            <MenuItem icon="info"           label="App Version"        value={`v${appVersion}`} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <MenuItem icon="share-2"        label="Share App"          onPress={handleInvite} />
           </View>
         </View>
 

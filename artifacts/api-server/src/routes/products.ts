@@ -3,8 +3,13 @@ import { db } from "@workspace/db";
 import { productsTable, notificationsTable } from "@workspace/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../middleware/auth";
+import { getIO } from "../lib/socket";
 import { z } from "zod";
 import { v4 as uuidv4 } from "uuid";
+
+function broadcastProductsUpdated() {
+  try { getIO().emit("products:updated"); } catch {}
+}
 
 const router = Router();
 
@@ -44,6 +49,7 @@ router.post("/products", authMiddleware, adminMiddleware, async (req: AuthReques
   const parsed = productSchema.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: "Validation failed", details: parsed.error.issues }); return; }
   const [product] = await db.insert(productsTable).values({ id: uuidv4(), ...parsed.data }).returning();
+  broadcastProductsUpdated();
   res.status(201).json({ product });
 });
 
@@ -52,11 +58,13 @@ router.put("/products/:id", authMiddleware, adminMiddleware, async (req: AuthReq
   if (!parsed.success) { res.status(400).json({ error: "Validation failed" }); return; }
   const [updated] = await db.update(productsTable).set(parsed.data).where(eq(productsTable.id, req.params.id)).returning();
   if (!updated) { res.status(404).json({ error: "Product not found" }); return; }
+  broadcastProductsUpdated();
   res.json({ product: updated });
 });
 
 router.delete("/products/:id", authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
   await db.update(productsTable).set({ isActive: false }).where(eq(productsTable.id, req.params.id));
+  broadcastProductsUpdated();
   res.json({ success: true });
 });
 
