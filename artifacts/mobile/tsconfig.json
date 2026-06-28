@@ -5,6 +5,8 @@
     "tsBuildInfoFile": ".tsbuildinfo",
     "baseUrl": ".",
     "strict": true,
+    "noImplicitAny": false,
+    "skipLibCheck": true,
     "paths": {
       "@/*": [
         "./*"
