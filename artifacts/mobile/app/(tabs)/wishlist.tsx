@@ -24,6 +24,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
+import { useLanguage } from "@/context/LanguageContext";
 import BurstAnimation, { type BurstHandle } from "@/components/BurstAnimation";
 import { useSocket } from "@/context/SocketContext";
 
@@ -182,6 +183,7 @@ export default function WishlistScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { t } = useLanguage();
   const { wishlist, removeFromWishlist, addToCart, isInCart } = useApp();
   const { emit } = useSocket();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
@@ -196,13 +198,13 @@ export default function WishlistScreen() {
     return (
       <View style={[styles.root, { backgroundColor: colors.background }]}>
         <View style={[styles.emptyContainer, { paddingTop: topPadding + 20 }]}>
-          <Text style={[styles.title, { color: colors.text }]}>Wishlist</Text>
+          <Text style={[styles.title, { color: colors.text }]}>{t("yourWishlist")}</Text>
           <View style={styles.emptyState}>
             <WishlistEmpty3D />
             <View style={{ display: "none" }}><Feather name="heart" size={52} color={colors.mutedForeground} /></View>
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>Your wishlist is empty</Text>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>{t("wishlistEmpty")}</Text>
             <Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>
-              Save items you love and come back to them later
+              {t("wishlistEmptySub")}
             </Text>
             <Pressable
               style={[styles.shopBtn, { backgroundColor: colors.primary }]}
@@ -231,7 +233,7 @@ export default function WishlistScreen() {
         ListHeaderComponent={
           <View>
             <Text style={[styles.title, { color: colors.text }]}>
-              Wishlist{" "}
+              {t("yourWishlist")}{" "}
               <Text style={{ color: colors.mutedForeground, fontSize: 16, fontFamily: "DMSans_400Regular" }}>
                 {wishlist.length} items
               </Text>

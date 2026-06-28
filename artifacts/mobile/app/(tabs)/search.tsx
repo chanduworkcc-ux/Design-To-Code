@@ -16,12 +16,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ProductCard } from "@/components/ProductCard";
 import { products } from "@/data/products";
 import { useColors } from "@/hooks/useColors";
+import { useLanguage } from "@/context/LanguageContext";
 
 const TRENDING = ["Wireless Earbuds", "Linen Shirt", "Dark Chocolate", "Yoga Mat", "Smart Watch"];
 
 export default function SearchScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
   const [query, setQuery] = useState("");
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
 
@@ -40,14 +42,14 @@ export default function SearchScreen() {
         contentContainerStyle={[styles.scroll, { paddingTop: topPadding + 16, paddingBottom: 100 }]}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={[styles.title, { color: colors.text }]}>Search</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{t("search")}</Text>
 
         {/* Search Input */}
         <View style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Feather name="search" size={18} color={colors.mutedForeground} />
           <TextInput
             style={[styles.input, { color: colors.text }]}
-            placeholder="Search products, categories..."
+            placeholder={t("searchPlaceholder")}
             placeholderTextColor={colors.mutedForeground}
             value={query}
             onChangeText={setQuery}
@@ -64,7 +66,7 @@ export default function SearchScreen() {
         {/* Trending or Results */}
         {query.trim() === "" ? (
           <>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Trending</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("popularSearches")}</Text>
             <View style={styles.trendingList}>
               {TRENDING.map((term) => (
                 <Pressable
@@ -95,9 +97,9 @@ export default function SearchScreen() {
         ) : (
           <View style={styles.emptyState}>
             <Feather name="search" size={48} color={colors.mutedForeground} />
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>No results found</Text>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>{t("noResults")}</Text>
             <Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>
-              Try a different search term
+              {t("noResultsSub")}
             </Text>
           </View>
         )}

@@ -19,6 +19,7 @@ import { useApp } from "@/context/AppContext";
 import { products as staticProducts, isNewProduct } from "@/data/products";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { useNotifications } from "@/context/NotificationContext";
 import { Product } from "@/data/products";
 import LoadingScreen from "@/components/LoadingScreen";
@@ -234,6 +235,7 @@ export default function ShopScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { t } = useLanguage();
   const { cartCount } = useApp();
   const { token, user } = useAuth();
   const { unreadCount } = useNotifications();
@@ -397,7 +399,7 @@ export default function ShopScreen() {
               </View>
               <View>
                 <Text style={[styles.greetingText, { color: colors.mutedForeground }]}>
-                  {getISTGreeting()} 👋
+                  {(() => { const h = new Date(Date.now() + (5.5 * 3600 - new Date().getTimezoneOffset() * 60) * 1000).getUTCHours(); return h >= 5 && h < 12 ? t("goodMorning") : h < 17 ? t("goodAfternoon") : h < 21 ? t("goodEvening") : t("goodNight"); })()} 👋
                 </Text>
                 <Text style={[styles.brandName, { color: colors.text }]}>
                   {user?.name?.split(" ")[0] ?? "XyloCart"}
@@ -437,7 +439,7 @@ export default function ShopScreen() {
                 <Feather name="search" size={15} color={colors.primary} />
               </View>
               <Text style={[styles.searchPlaceholder, { color: colors.mutedForeground }]}>
-                Search products...
+                {t("searchPlaceholder")}
               </Text>
               <View style={[styles.searchBadge, { backgroundColor: colors.secondary }]}>
                 <Text style={[styles.searchBadgeText, { color: colors.mutedForeground }]}>
@@ -525,7 +527,7 @@ export default function ShopScreen() {
             <View style={{ marginBottom: 24 }}>
               <View style={[styles.sectionHeader, { marginBottom: 14 }]}>
                 <View>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>Trending Now</Text>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("trending")}</Text>
                   <View style={[styles.sectionUnderline, { backgroundColor: "#8B5CF6" }]} />
                 </View>
                 <View style={styles.trendingBadge}>
@@ -557,7 +559,7 @@ export default function ShopScreen() {
             <View style={{ marginBottom: 24 }}>
               <View style={[styles.sectionHeader, { marginBottom: 14 }]}>
                 <View>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>New Arrivals</Text>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("newArrivals")}</Text>
                   <View style={[styles.sectionUnderline, { backgroundColor: "#10B981" }]} />
                 </View>
                 <View style={styles.newArrivalsBadge}>
@@ -583,7 +585,7 @@ export default function ShopScreen() {
             <View style={{ marginBottom: 24 }}>
               <View style={[styles.sectionHeader, { marginBottom: 14 }]}>
                 <View>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>Featured</Text>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("shopNow")}</Text>
                   <View style={[styles.sectionUnderline, { backgroundColor: colors.primary }]} />
                 </View>
                 <HotLabel />
@@ -603,7 +605,7 @@ export default function ShopScreen() {
 
         {/* ── All Products ── */}
         <FloatIn delay={290} distance={20}>
-          <SectionHeader title="All Products" />
+          <SectionHeader title={t("allProducts")} />
 
           {/* Sort chips */}
           <ScrollView

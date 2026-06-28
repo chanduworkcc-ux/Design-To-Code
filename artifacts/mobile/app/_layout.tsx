@@ -21,6 +21,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AppProvider } from "@/context/AppContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { LanguageProvider } from "@/context/LanguageContext";
 import { NotificationProvider } from "@/context/NotificationContext";
 import { SocketProvider } from "@/context/SocketContext";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
@@ -89,6 +90,7 @@ function RootLayoutNav() {
       <Stack.Screen name="change-password" options={{ headerShown: false }} />
       <Stack.Screen name="login-devices" options={{ headerShown: false }} />
       <Stack.Screen name="account-security" options={{ headerShown: false }} />
+      <Stack.Screen name="language" options={{ headerShown: false }} />
     </Stack>
   );
 }
@@ -160,6 +162,7 @@ export default function RootLayout() {
             <LandingInitializer />
             <PushNotificationInit />
             <AppProvider>
+            <LanguageProvider>
               <SocketInit>
                 <GestureHandlerRootView style={{ flex: 1 }}>
                   {Platform.OS === "web" ? (
@@ -171,6 +174,7 @@ export default function RootLayout() {
                   )}
                 </GestureHandlerRootView>
               </SocketInit>
+            </LanguageProvider>
             </AppProvider>
           </AuthProvider>
         </QueryClientProvider>

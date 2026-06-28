@@ -19,6 +19,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { useLanguage } from "@/context/LanguageContext";
+import { LANGUAGE_LABELS } from "@/lib/i18n";
 import { GlobalFooter } from "@/components/GlobalFooter";
 
 interface MenuItemProps {
@@ -54,6 +56,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { cart, wishlist } = useApp();
   const { user, logout, loading } = useAuth();
+  const { t, language } = useLanguage();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
@@ -149,7 +152,7 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scroll, { paddingTop: topPadding + 16, paddingBottom: 100 }]}
       >
-        <Text style={[styles.title, { color: colors.text }]}>Profile</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{t("profile")}</Text>
 
         {/* User Card — avatar has 3D glow pulse ring */}
         <View>
@@ -203,11 +206,11 @@ export default function ProfileScreen() {
         </View>
 
         {/* Wallet — 3D shimmer tilt card */}
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>WALLET</Text>
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("wallet")}</Text>
         <View>
           <View style={[styles.walletCard, { backgroundColor: colors.primary }]}>
             <View>
-              <Text style={styles.walletLabel}>Coin Balance</Text>
+              <Text style={styles.walletLabel}>{t("coinBalance")}</Text>
               <Text style={styles.walletBalance}>{user.walletBalance} coins</Text>
               <Text style={styles.walletInr}>≈ ₹{(user.walletBalance / 100).toFixed(2)} INR</Text>
             </View>
@@ -218,105 +221,108 @@ export default function ProfileScreen() {
         </View>
 
         {/* Account */}
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>ACCOUNT</Text>
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("account").toUpperCase()}</Text>
         <View>
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <MenuItem icon="user"        label="Personal Information" onPress={() => router.push("/personal-info" as any)} />
+            <MenuItem icon="user"        label={t("personalInfo")}    onPress={() => router.push("/personal-info" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <MenuItem icon="map-pin"     label="Saved Addresses"      onPress={() => router.push("/addresses" as any)} />
+            <MenuItem icon="map-pin"     label={t("savedAddresses")}  onPress={() => router.push("/addresses" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <MenuItem icon="credit-card" label="Payment Methods"      onPress={() => router.push("/payment-methods" as any)} />
+            <MenuItem icon="credit-card" label={t("paymentMethods")}  onPress={() => router.push("/payment-methods" as any)} />
           </View>
         </View>
 
         {/* Orders */}
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>ORDERS</Text>
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("orders").toUpperCase()}</Text>
         <View>
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <MenuItem icon="package"    label="Order History"    onPress={() => router.push("/orders" as any)} />
+            <MenuItem icon="package"    label={t("orderHistory")}    onPress={() => router.push("/orders" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <MenuItem icon="refresh-cw" label="Returns & Refunds" onPress={() => router.push("/orders" as any)} />
+            <MenuItem icon="refresh-cw" label={t("returnsRefunds")}  onPress={() => router.push("/orders" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <MenuItem icon="truck"      label="Track Orders"     onPress={() => router.push("/track-order" as any)} />
+            <MenuItem icon="truck"      label={t("trackOrders")}     onPress={() => router.push("/track-order" as any)} />
           </View>
         </View>
 
         {/* Referrals */}
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>REFERRALS</Text>
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("referrals").toUpperCase()}</Text>
         <View>
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <MenuItem icon="users" label="My Referral Network" onPress={() => router.push("/referrals" as any)} />
+            <MenuItem icon="users" label={t("myReferralNetwork")} onPress={() => router.push("/referrals" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <MenuItem icon="gift"  label="Invite & Earn"       onPress={handleInvite} />
+            <MenuItem icon="gift"  label={t("inviteEarn")}        onPress={handleInvite} />
           </View>
         </View>
 
         {/* Preferences */}
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>PREFERENCES</Text>
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("preferences").toUpperCase()}</Text>
         <View>
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <MenuItem icon="bell"   label="Notifications"     onPress={() => router.push("/notifications-user" as any)} />
+            <MenuItem icon="bell"  label={t("notifications")}  onPress={() => router.push("/notifications-user" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <MenuItem icon="moon"   label="Appearance"        onPress={() => router.push("/appearance" as any)} />
+            <MenuItem icon="moon"  label={t("appearance")}     onPress={() => router.push("/appearance" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <MenuItem icon="globe"  label="Language & Region"  value="English (IN)" onPress={() => Alert.alert("Coming Soon", "Language settings will be available soon.")} />
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <MenuItem icon="dollar-sign" label="Currency"     value="INR (₹)" onPress={() => Alert.alert("Coming Soon", "Currency settings coming soon.")} />
+            <MenuItem
+              icon="globe"
+              label={t("languageRegion")}
+              value={LANGUAGE_LABELS[language].native}
+              onPress={() => router.push("/language" as any)}
+            />
           </View>
         </View>
 
         {/* Security */}
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>SECURITY</Text>
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("security").toUpperCase()}</Text>
         <View>
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <MenuItem icon="lock"        label="Change Password"      onPress={() => router.push("/change-password" as any)} />
+            <MenuItem icon="lock"       label={t("changePassword")}  onPress={() => router.push("/change-password" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <MenuItem icon="smartphone"  label="Login Devices"         onPress={() => router.push("/login-devices" as any)} />
+            <MenuItem icon="smartphone" label={t("loginDevices")}    onPress={() => router.push("/login-devices" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <MenuItem icon="shield"      label="Account Security"      onPress={() => router.push("/account-security" as any)} />
+            <MenuItem icon="shield"     label={t("accountSecurity")} onPress={() => router.push("/account-security" as any)} />
           </View>
         </View>
 
         {/* App */}
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>APP</Text>
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("app").toUpperCase()}</Text>
         <View>
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <MenuItem icon="download-cloud" label="Check for Updates"  onPress={handleCheckUpdates} />
+            <MenuItem icon="download-cloud" label={t("checkForUpdates")} onPress={handleCheckUpdates} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <MenuItem icon="info"           label="App Version"        value={`v${appVersion}`} onPress={() => Alert.alert("App Version", `XyloCart v${appVersion}\n\nBuilt with React Native & Expo.\n© 2025 XyloCart. All rights reserved.`)} />
+            <MenuItem icon="info"           label={t("appVersion")}       value={`v${appVersion}`} onPress={() => Alert.alert(t("appVersion"), `XyloCart v${appVersion}\n\nBuilt with React Native & Expo.\n© 2025 XyloCart. All rights reserved.`)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <MenuItem icon="share-2"        label="Share App"          onPress={handleInvite} />
+            <MenuItem icon="share-2"        label={t("shareApp")}         onPress={handleInvite} />
           </View>
         </View>
 
         {/* Support */}
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>SUPPORT</Text>
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("support").toUpperCase()}</Text>
         <View>
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <MenuItem icon="help-circle"    label="Help Center"  onPress={() => router.push("/support-ticket" as any)} />
+            <MenuItem icon="help-circle"    label={t("helpCenter")}  onPress={() => router.push("/support-ticket" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <MenuItem icon="message-circle" label="Contact Us"   onPress={() => router.push("/support-ticket" as any)} />
+            <MenuItem icon="message-circle" label={t("contactUs")}   onPress={() => router.push("/support-ticket" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <MenuItem icon="star"           label="Rate the App" onPress={handleRateApp} />
+            <MenuItem icon="star"           label={t("rateApp")}     onPress={handleRateApp} />
           </View>
         </View>
 
         {/* Legal */}
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>LEGAL</Text>
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("legal").toUpperCase()}</Text>
         <View>
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <MenuItem icon="file-text" label="Terms & Conditions" onPress={() => router.push("/policies" as any)} />
+            <MenuItem icon="file-text" label={t("termsConditions")} onPress={() => router.push("/policies" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <MenuItem icon="shield"    label="Privacy Policy"     onPress={() => router.push("/policies" as any)} />
+            <MenuItem icon="shield"    label={t("privacyPolicy")}   onPress={() => router.push("/policies" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <MenuItem icon="info"      label="General Policies"   onPress={() => router.push("/policies" as any)} />
+            <MenuItem icon="info"      label={t("generalPolicies")} onPress={() => router.push("/policies" as any)} />
           </View>
         </View>
 
         {user.role === "admin" && (
           <Pressable style={[styles.adminBtn, { backgroundColor: colors.primary }]} onPress={() => router.push("/admin/dashboard" as any)}>
             <Ionicons name="shield-checkmark-outline" size={18} color="#fff" />
-            <Text style={styles.adminBtnText}>Admin Panel</Text>
+            <Text style={styles.adminBtnText}>{t("adminPanel")}</Text>
           </Pressable>
         )}
 
@@ -325,7 +331,7 @@ export default function ProfileScreen() {
           onPress={handleSignOut}
         >
           <Ionicons name="log-out-outline" size={18} color={colors.destructive} />
-          <Text style={[styles.signOutText, { color: colors.destructive }]}>Sign Out</Text>
+          <Text style={[styles.signOutText, { color: colors.destructive }]}>{t("signOut")}</Text>
         </Pressable>
 
         <GlobalFooter />

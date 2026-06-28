@@ -24,6 +24,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { useLanguage } from "@/context/LanguageContext";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
@@ -80,6 +81,7 @@ export default function CartScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { t } = useLanguage();
   const { cart, removeFromCart, cartTotal, cartRemovalNotice, dismissCartRemovalNotice, checkCartStock } = useApp();
   const { apiRequest } = useAuth();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
@@ -112,7 +114,7 @@ export default function CartScreen() {
     return (
       <View style={[styles.root, { backgroundColor: colors.background }]}>
         <View style={[styles.emptyWrap, { paddingTop: topPadding + 24 }]}>
-          <Text style={[styles.title, { color: colors.text }]}>Cart</Text>
+          <Text style={[styles.title, { color: colors.text }]}>{t("yourCart")}</Text>
           <Empty3DCart />
         </View>
       </View>
@@ -125,7 +127,7 @@ export default function CartScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scroll, { paddingTop: topPadding + 24, paddingBottom: 260 + bottomInset }]}
       >
-        <Text style={[styles.title, { color: colors.text }]}>Cart</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{t("yourCart")}</Text>
 
         {/* Out-of-stock removal banner */}
         {cartRemovalNotice && (

@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useNotifications } from "@/context/NotificationContext";
 import { useColors } from "@/hooks/useColors";
+import { useLanguage } from "@/context/LanguageContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -36,8 +37,13 @@ interface TabItemProps {
   badge?: number;
 }
 
+const TAB_KEY_MAP: Record<string, "home" | "search" | "wishlist" | "cart" | "profile"> = {
+  index: "home", search: "search", wishlist: "wishlist", cart: "cart", profile: "profile",
+};
+
 function TabItem({ tab, isActive, onPress, badge }: TabItemProps) {
   const colors = useColors();
+  const { t } = useLanguage();
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const translateYAnim = useRef(new Animated.Value(0)).current;
   const activeAnim = useRef(new Animated.Value(isActive ? 1 : 0)).current;
@@ -114,7 +120,7 @@ function TabItem({ tab, isActive, onPress, badge }: TabItemProps) {
         </View>
 
         <Text style={[styles.tabLabel, { color: labelColor }]}>
-          {tab.label}
+          {t(TAB_KEY_MAP[tab.name] ?? "home")}
         </Text>
       </Animated.View>
     </Pressable>
