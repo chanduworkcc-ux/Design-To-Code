@@ -44,9 +44,10 @@ function getISTGreeting(): string {
   const istOffset = 5.5 * 60 * 60 * 1000;
   const istTime = new Date(now.getTime() + istOffset - now.getTimezoneOffset() * 60 * 1000);
   const hour = istTime.getUTCHours();
+  const min = istTime.getUTCMinutes();
   if (hour >= 5 && hour < 12) return "Good Morning";
   if (hour >= 12 && hour < 17) return "Good Afternoon";
-  if (hour >= 17 && hour < 21) return "Good Evening";
+  if (hour >= 17 && (hour < 19 || (hour === 19 && min < 50))) return "Good Evening";
   return "Good Night";
 }
 
@@ -401,7 +402,7 @@ export default function ShopScreen() {
               </View>
               <View>
                 <Text style={[styles.greetingText, { color: colors.mutedForeground }]}>
-                  {(() => { const h = new Date(Date.now() + (5.5 * 3600 - new Date().getTimezoneOffset() * 60) * 1000).getUTCHours(); return h >= 5 && h < 12 ? t("goodMorning") : h < 17 ? t("goodAfternoon") : h < 21 ? t("goodEvening") : t("goodNight"); })()} 👋
+                  {(() => { const ist = new Date(Date.now() + (5.5 * 3600 - new Date().getTimezoneOffset() * 60) * 1000); const h = ist.getUTCHours(); const m = ist.getUTCMinutes(); return h >= 5 && h < 12 ? t("goodMorning") : h >= 12 && h < 17 ? t("goodAfternoon") : h >= 17 && (h < 19 || (h === 19 && m < 50)) ? t("goodEvening") : t("goodNight"); })()} 👋
                 </Text>
                 <Text style={[styles.brandName, { color: colors.text }]}>
                   {user?.name?.split(" ")[0] ?? "XyloCart"}
@@ -722,7 +723,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   headerLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
-  logoWrapper: { width: 52, height: 52, alignItems: "center", justifyContent: "center", borderRadius: 14, overflow: "hidden", backgroundColor: "#EFF6FF", borderWidth: 1.5, borderColor: "#BFDBFE" },
+  logoWrapper: { width: 52, height: 52, alignItems: "center", justifyContent: "center", borderRadius: 14, overflow: "hidden" },
   logoGlow: { top: 0, left: 0 },
   headerLogo: { width: 52, height: 52 },
   greetingText: { fontSize: 12, fontFamily: "DMSans_400Regular", marginBottom: 1 },
