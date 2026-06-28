@@ -31,6 +31,9 @@ const BOOLEAN_CONFIGS: Record<string, { label: string; description: string }> = 
   maintenance_mode: { label: "Maintenance Mode", description: "Take the app offline for maintenance" },
   cod_enabled: { label: "Cash on Delivery", description: "Allow COD payment method" },
   announcement_enabled: { label: "Announcement Bar", description: "Show announcement banner on home screen" },
+  no_returns: { label: "No Returns", description: "Show 'No Returns' policy badge on product pages" },
+  no_refunds: { label: "No Refunds", description: "Show 'No Refunds' policy badge on product pages" },
+  no_exchanges: { label: "No Exchanges", description: "Show 'No Exchanges' policy badge on product pages" },
 };
 
 const NUMERIC_CONFIGS: Record<string, { label: string; description: string }> = {
@@ -42,10 +45,12 @@ const NUMERIC_CONFIGS: Record<string, { label: string; description: string }> = 
   service_charge_rate: { label: "Service Charge (%)", description: "Platform service fee" },
 };
 
-const TEXT_CONFIGS: Record<string, { label: string; description: string; placeholder?: string }> = {
+const TEXT_CONFIGS: Record<string, { label: string; description: string; placeholder?: string; multiline?: boolean }> = {
   approval_mode: { label: "Approval Mode", description: "automatic = instant access, manual = admin approves each signup", placeholder: "automatic" },
   announcement_text: { label: "Announcement Text", description: "Text shown in the home announcement bar", placeholder: "🎉 Welcome to XyloCart! Free delivery on all orders today." },
   announcement_color: { label: "Announcement Color", description: "Hex color for the announcement bar (e.g. #2563EB)", placeholder: "#2563EB" },
+  delivery_info: { label: "Delivery Info", description: "Short delivery estimate shown on product pages", placeholder: "Delivered in 5–10 business days" },
+  product_disclaimer: { label: "Product Disclaimer", description: "Disclaimer text shown at the bottom of every product page", placeholder: "This product will be delivered in 5–10 days.", multiline: true },
 };
 
 interface GatewayFieldMeta { label: string; description: string; secure?: boolean; required?: boolean; placeholder?: string }
@@ -429,11 +434,13 @@ export default function SettingsScreen() {
                     <Text style={styles.configLabel}>{meta.label}</Text>
                     <Text style={styles.configDesc}>{meta.description}</Text>
                     <TextInput
-                      style={styles.textInput}
+                      style={[styles.textInput, meta.multiline && { minHeight: 72, textAlignVertical: "top" }]}
                       value={edited[key] ?? ""}
                       onChangeText={(v) => setEdited((prev) => ({ ...prev, [key]: v }))}
                       placeholder={meta.placeholder ?? ""}
                       placeholderTextColor="#9CA3AF"
+                      multiline={!!meta.multiline}
+                      numberOfLines={meta.multiline ? 3 : 1}
                     />
                   </View>
                   {i < arr.length - 1 && <View style={styles.divider} />}

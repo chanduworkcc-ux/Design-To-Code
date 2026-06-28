@@ -119,12 +119,10 @@ export default function ProductDetailScreen() {
 
   async function fetchConfig() {
     try {
-      const res = await apiRequest("/api/config");
+      const res = await apiRequest("/admin/config");
       if (res.ok) {
         const data = await res.json();
-        const map: Record<string, any> = {};
-        for (const item of data.config ?? []) map[item.key] = item.value;
-        setConfig(map);
+        setConfig(data.config as Record<string, string>);
       }
     } catch {}
   }
@@ -328,6 +326,51 @@ export default function ProductDetailScreen() {
             </View>
           )}
 
+          {/* Policy badges */}
+          {(config["no_returns"] === "true" || config["no_refunds"] === "true" || config["no_exchanges"] === "true") && (
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Policy</Text>
+              <View style={styles.policyRow}>
+                {config["no_returns"] === "true" && (
+                  <View style={[styles.policyBadge, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}>
+                    <Feather name="x-circle" size={13} color="#EF4444" />
+                    <Text style={[styles.policyText, { color: "#EF4444" }]}>No Returns</Text>
+                  </View>
+                )}
+                {config["no_refunds"] === "true" && (
+                  <View style={[styles.policyBadge, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}>
+                    <Feather name="x-circle" size={13} color="#EF4444" />
+                    <Text style={[styles.policyText, { color: "#EF4444" }]}>No Refunds</Text>
+                  </View>
+                )}
+                {config["no_exchanges"] === "true" && (
+                  <View style={[styles.policyBadge, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}>
+                    <Feather name="x-circle" size={13} color="#EF4444" />
+                    <Text style={[styles.policyText, { color: "#EF4444" }]}>No Exchanges</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
+
+          {/* Delivery info */}
+          {!!config["delivery_info"] && (
+            <View style={[styles.deliveryBox, { backgroundColor: "#EFF6FF", borderColor: "#BFDBFE" }]}>
+              <Feather name="truck" size={15} color="#2563EB" />
+              <Text style={[styles.deliveryText, { color: "#1D4ED8" }]}>{config["delivery_info"]}</Text>
+            </View>
+          )}
+
+          {/* Disclaimer */}
+          {!!config["product_disclaimer"] && (
+            <View style={[styles.disclaimerBox, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+              <Feather name="info" size={13} color={colors.mutedForeground} />
+              <Text style={[styles.disclaimerText, { color: colors.mutedForeground }]}>
+                {config["product_disclaimer"]}
+              </Text>
+            </View>
+          )}
+
           {/* Related products */}
           {related.length > 0 && (
             <View style={styles.section}>
@@ -490,6 +533,13 @@ const styles = StyleSheet.create({
   section: { gap: 10 },
   sectionTitle: { fontSize: 16, fontFamily: "Inter_700Bold" },
   description: { fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 22 },
+  policyRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  policyBadge: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, borderWidth: 1 },
+  policyText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  deliveryBox: { flexDirection: "row", alignItems: "center", gap: 9, padding: 12, borderRadius: 12, borderWidth: 1 },
+  deliveryText: { flex: 1, fontSize: 13, fontFamily: "Inter_500Medium", lineHeight: 18 },
+  disclaimerBox: { flexDirection: "row", alignItems: "flex-start", gap: 8, padding: 12, borderRadius: 12, borderWidth: 1 },
+  disclaimerText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 18 },
   relatedCard: { width: 130, borderRadius: 12, borderWidth: 1, overflow: "hidden" },
   relatedImage: { width: 130, height: 100 },
   relatedImagePlaceholder: { width: 130, height: 100, alignItems: "center", justifyContent: "center" },
