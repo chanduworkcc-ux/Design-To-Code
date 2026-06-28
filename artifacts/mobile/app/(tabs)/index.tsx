@@ -306,6 +306,29 @@ export default function ShopScreen() {
   const featured = products.filter((p) => (p as any).featured ?? false).slice(0, 6);
   const newArrivals = products.filter((p) => isNewProduct(p));
 
+  const [trendingProducts, setTrendingProducts] = useState<(Product & { orderCount: number })[]>([]);
+
+  useEffect(() => {
+    fetchTrending();
+  }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+    const onUpdated = () => { fetchTrending(); };
+    socket.on("products:updated", onUpdated);
+    return () => { socket.off("products:updated", onUpdated); };
+  }, [socket]);
+
+  async function fetchTrending() {
+    try {
+      const res = await fetch(`${BASE_URL}/products/trending`);
+      if (res.ok) {
+        const d = await res.json();
+        setTrendingProducts(d.products ?? []);
+      }
+    } catch {}
+  }
+
   const SORT_OPTIONS = [
     { key: "default",    label: "Default"  },
     { key: "price_asc",  label: "Price ↑"  },
@@ -495,6 +518,38 @@ export default function ShopScreen() {
             </View>
           )}
         </FloatIn>
+
+        {/* ── Trending ── */}
+        {trendingProducts.length > 0 && (
+          <FloatIn delay={235} distance={24}>
+            <View style={{ marginBottom: 24 }}>
+              <View style={[styles.sectionHeader, { marginBottom: 14 }]}>
+                <View>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>Trending Now</Text>
+                  <View style={[styles.sectionUnderline, { backgroundColor: "#8B5CF6" }]} />
+                </View>
+                <View style={styles.trendingBadge}>
+                  <Text style={styles.trendingBadgeText}>📈 By orders</Text>
+                </View>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 12, paddingRight: 16 }}
+              >
+                {trendingProducts.map((product, i) => (
+                  <View key={product.id}>
+                    <ProductCard product={product} index={i} />
+                    <View style={styles.trendingRankBadge}>
+                      <Text style={styles.trendingRankText}>#{i + 1}</Text>
+                      <Text style={styles.trendingOrderText}>{product.orderCount} orders</Text>
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          </FloatIn>
+        )}
 
         {/* ── New Arrivals ── */}
         {newArrivals.length > 0 && (
@@ -766,6 +821,24 @@ const styles = StyleSheet.create({
   },
   seeAllText: { fontSize: 12, fontFamily: "DMSans_600SemiBold" },
 
+  trendingBadge: {
+    backgroundColor: "#EDE9FE",
+    paddingHorizontal: 10, paddingVertical: 5,
+    borderRadius: 20,
+  },
+  trendingBadgeText: {
+    fontSize: 11, fontFamily: "DMSans_600SemiBold", color: "#7C3AED",
+  },
+  trendingRankBadge: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    marginTop: 6, paddingHorizontal: 4,
+  },
+  trendingRankText: {
+    fontSize: 12, fontFamily: "DMSans_700Bold", color: "#8B5CF6",
+  },
+  trendingOrderText: {
+    fontSize: 10, fontFamily: "DMSans_500Medium", color: "#9CA3AF",
+  },
   newArrivalsBadge: {
     backgroundColor: "#D1FAE5",
     paddingHorizontal: 10, paddingVertical: 5,

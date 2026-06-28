@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { productsTable, notificationsTable } from "@workspace/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { productsTable, notificationsTable, ordersTable } from "@workspace/db/schema";
+import { eq, sql, ne, count, desc } from "drizzle-orm";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../middleware/auth";
 import { getIO } from "../lib/socket";
 import { z } from "zod";
@@ -19,6 +19,50 @@ router.get("/products", async (_req, res) => {
     .from(productsTable)
     .where(eq(productsTable.isActive, true));
   res.json({ products });
+});
+
+// Trending: products ranked by number of non-cancelled orders in the last 30 days
+router.get("/products/trending", async (_req, res) => {
+  const limit = 10;
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  // Count orders per product (excluding cancelled), last 30 days
+  const orderCounts = await db
+    .select({
+      productId: ordersTable.productId,
+      orderCount: count(ordersTable.id).as("order_count"),
+      totalQty: sql<number>`coalesce(sum(${ordersTable.quantity}), 0)`.as("total_qty"),
+    })
+    .from(ordersTable)
+    .where(
+      sql`${ordersTable.status} != 'cancelled' AND ${ordersTable.createdAt} >= ${thirtyDaysAgo}`
+    )
+    .groupBy(ordersTable.productId)
+    .orderBy(desc(sql`order_count`))
+    .limit(limit);
+
+  if (orderCounts.length === 0) {
+    res.json({ products: [] });
+    return;
+  }
+
+  const productIds = orderCounts.map((r) => r.productId);
+  const allProducts = await db
+    .select()
+    .from(productsTable)
+    .where(eq(productsTable.isActive, true));
+
+  const activeMap = new Map(allProducts.map((p) => [p.id, p]));
+
+  const trending = orderCounts
+    .filter((r) => activeMap.has(r.productId))
+    .map((r) => ({
+      ...activeMap.get(r.productId)!,
+      orderCount: Number(r.orderCount),
+      totalQty: Number(r.totalQty),
+    }));
+
+  res.json({ products: trending });
 });
 
 router.get("/admin/products", authMiddleware, adminMiddleware, async (_req, res) => {
