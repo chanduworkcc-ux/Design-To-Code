@@ -87,6 +87,7 @@ export default function ProfileScreen() {
   }
 
   async function handleInvite() {
+    if (!user) return;
     try {
       await Share.share({
         message: `Join FX PRIME 26 with my referral code ${user.referralCode} and earn bonus coins on your first order! 🎁`,

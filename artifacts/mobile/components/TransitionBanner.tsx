@@ -76,7 +76,7 @@ export function TransitionBanner({ visible, onDone, logoUrl }: Props) {
         <Animated.View
           style={[
             styles.logoWrap,
-            { transform: [{ translateX: logoX }, { scale: logoScale }, { perspective: 800 }, { rotateY: "8deg" }] },
+            { transform: [{ translateX: logoX }, { scale: logoScale }] },
           ]}
         >
           <View style={styles.logoCard}>
