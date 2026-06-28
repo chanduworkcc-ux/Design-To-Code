@@ -57,7 +57,7 @@ router.post("/storage/uploads/image", authMiddleware, adminMiddleware, upload.si
   }
 });
 
-router.post("/storage/uploads/request-url", authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
+router.post("/storage/uploads/request-url", authMiddleware, async (req: Request, res: Response) => {
   const parsed = RequestUploadUrlBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Missing or invalid required fields" });

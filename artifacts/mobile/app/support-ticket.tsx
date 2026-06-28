@@ -159,9 +159,7 @@ function TicketChat({
       });
       if (!uploadRes.ok) throw new Error("Upload failed");
 
-      const getRes = await apiRequest(`/storage/objects/${encodeURIComponent(objectPath)}`);
-      if (!getRes.ok) throw new Error("Could not get URL");
-      const { url: imageUrl } = await getRes.json();
+      const imageUrl = `${BASE_URL}/storage/objects/${encodeURIComponent(objectPath)}`;
       await sendReply(undefined, imageUrl);
     } catch (e: any) {
       Alert.alert("Upload Failed", e.message ?? "Could not upload image.");
@@ -382,9 +380,7 @@ export default function SupportTicketScreen() {
         headers: { "Content-Type": asset.mimeType ?? "image/jpeg" },
       });
       if (!uploadRes.ok) throw new Error("Upload failed");
-      const getRes = await apiRequest(`/storage/objects/${encodeURIComponent(objectPath)}`);
-      if (!getRes.ok) throw new Error("Could not get URL");
-      const { url } = await getRes.json();
+      const url = `${BASE_URL}/storage/objects/${encodeURIComponent(objectPath)}`;
       setFormImageUrl(url);
     } catch (e: any) {
       Alert.alert("Upload Failed", e.message ?? "Could not upload image.");

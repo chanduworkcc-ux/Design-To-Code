@@ -74,10 +74,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function apiRequest(path: string, options: RequestInit = {}): Promise<Response> {
     const t = token ?? (await AsyncStorage.getItem("auth_token"));
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      ...(options.headers as Record<string, string>),
-    };
+    const headers: Record<string, string> = options.body instanceof FormData
+      ? {}
+      : { "Content-Type": "application/json" };
+    Object.assign(headers, options.headers as Record<string, string>);
     if (t) headers["Authorization"] = `Bearer ${t}`;
     return fetch(`${BASE_URL}${path}`, { ...options, headers });
   }
