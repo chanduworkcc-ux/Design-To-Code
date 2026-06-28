@@ -768,7 +768,7 @@ export default function UsersScreen() {
         return;
       }
 
-      const fileUri = `${FileSystem.cacheDirectory}xyloscart-users.csv`;
+      const fileUri = `${(FileSystem as any).cacheDirectory ?? ""}xyloscart-users.csv`;
       await FileSystem.writeAsStringAsync(fileUri, csv, { encoding: "utf8" });
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
