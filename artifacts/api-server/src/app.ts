@@ -46,6 +46,10 @@ const registerLimiter = rateLimit({
   skip: () => process.env.NODE_ENV === "development",
 });
 
+app.get("/", (_req, res) => {
+  res.redirect(301, "/mobile/");
+});
+
 app.use("/api/auth/login", authLimiter);
 app.use("/api/auth/forgot-password", authLimiter);
 app.use("/api/auth/register", registerLimiter);

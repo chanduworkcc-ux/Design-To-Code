@@ -8,22 +8,16 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  Animated,
-  Dimensions,
-  Image,
   Platform,
   StyleSheet,
-  Text,
-  View,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { TransitionBanner } from "@/components/TransitionBanner";
 import { AppProvider } from "@/context/AppContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { NotificationProvider } from "@/context/NotificationContext";
@@ -32,7 +26,7 @@ import { usePushNotifications } from "@/hooks/usePushNotifications";
 import MaintenanceScreen from "./maintenance";
 import ForceUpdateScreen from "./force-update";
 
-const LOCAL_LOGO = require("@/assets/logo-transparent.png");
+const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
 function PushNotificationInit() {
   const { token } = useAuth();
@@ -54,71 +48,6 @@ function SocketInit({ children }: { children: React.ReactNode }) {
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
-const { width, height } = Dimensions.get("window");
-const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
-
-const MAX_SPLASH_MS = 15000;
-
-function PulseDot({ delay }: { delay: number }) {
-  const opacity = useRef(new Animated.Value(0.3)).current;
-  const scale = useRef(new Animated.Value(0.8)).current;
-
-  useEffect(() => {
-    const anim = Animated.loop(
-      Animated.sequence([
-        Animated.delay(delay),
-        Animated.parallel([
-          Animated.timing(opacity, { toValue: 1, duration: 380, useNativeDriver: true }),
-          Animated.timing(scale, { toValue: 1.25, duration: 380, useNativeDriver: true }),
-        ]),
-        Animated.parallel([
-          Animated.timing(opacity, { toValue: 0.3, duration: 380, useNativeDriver: true }),
-          Animated.timing(scale, { toValue: 0.8, duration: 380, useNativeDriver: true }),
-        ]),
-      ])
-    );
-    anim.start();
-    return () => anim.stop();
-  }, []);
-
-  return <Animated.View style={[styles.dot, { opacity, transform: [{ scale }] }]} />;
-}
-
-function AppSplash({ onDone, logoUrl }: { onDone: () => void; logoUrl: string | null }) {
-  const screenOpacity = useRef(new Animated.Value(1)).current;
-  const contentOpacity = useRef(new Animated.Value(0)).current;
-  const doneRef = useRef(false);
-
-  useEffect(() => {
-    Animated.timing(contentOpacity, { toValue: 1, duration: 500, useNativeDriver: true }).start();
-    const maxTimer = setTimeout(dismiss, MAX_SPLASH_MS);
-    return () => clearTimeout(maxTimer);
-  }, []);
-
-  function dismiss() {
-    if (doneRef.current) return;
-    doneRef.current = true;
-    Animated.timing(screenOpacity, { toValue: 0, duration: 350, useNativeDriver: true }).start(() => onDone());
-  }
-
-  const logoSource = logoUrl ? { uri: logoUrl } : LOCAL_LOGO;
-
-  return (
-    <Animated.View style={[styles.splashRoot, { opacity: screenOpacity }]}>
-      <Animated.View style={[styles.centerContent, { opacity: contentOpacity }]}>
-        <Image source={logoSource} style={styles.logoImg} resizeMode="contain" />
-        <View style={styles.dotsRow}>
-          {[0, 1, 2].map((i) => <PulseDot key={i} delay={i * 180} />)}
-        </View>
-      </Animated.View>
-
-      <Animated.View style={[styles.brandWrap, { opacity: contentOpacity }]}>
-        <Text style={styles.brandBy}>by</Text>
-        <Text style={styles.brandName}>FX PRIME 26</Text>
-      </Animated.View>
-    </Animated.View>
-  );
-}
 
 function RootLayoutNav() {
   return (
@@ -147,11 +76,8 @@ export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold,
   });
-  const [showSplash, setShowSplash] = useState(true);
-  const [showTransition, setShowTransition] = useState(false);
   const [maintenance, setMaintenance] = useState<{ active: boolean; message?: string }>({ active: false });
   const [forceUpdate, setForceUpdate] = useState<{ active: boolean; url: string; version: string; notes: string }>({ active: false, url: "", version: "", notes: "" });
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (fontsLoaded || fontError) SplashScreen.hideAsync();
@@ -167,12 +93,6 @@ export default function RootLayout() {
         }
         if (d?.force_update === "true" && d?.update_url) {
           setForceUpdate({ active: true, url: d.update_url, version: d.update_version ?? "latest", notes: d.update_notes ?? "" });
-        }
-        // Prefer transparent variant (no background) for display on coloured surfaces
-        if (d?.logo_url_without_bg) {
-          setLogoUrl(d.logo_url_without_bg);
-        } else if (d?.logo_url) {
-          setLogoUrl(d.logo_url);
         }
       })
       .catch(() => {});
@@ -203,7 +123,6 @@ export default function RootLayout() {
               .then((d) => {
                 if (d?.maintenance_mode !== "true") setMaintenance({ active: false });
                 if (d?.force_update === "true" && d?.update_url) setForceUpdate({ active: true, url: d.update_url, version: d.update_version ?? "latest", notes: d.update_notes ?? "" });
-                if (d?.logo_url) setLogoUrl(d.logo_url);
               })
               .catch(() => {});
           }}
@@ -222,34 +141,10 @@ export default function RootLayout() {
               <SocketInit>
                 <GestureHandlerRootView style={{ flex: 1 }}>
                   {Platform.OS === "web" ? (
-                    <>
-                      <RootLayoutNav />
-                      {showSplash && (
-                        <AppSplash
-                          logoUrl={logoUrl}
-                          onDone={() => { setShowSplash(false); setShowTransition(true); }}
-                        />
-                      )}
-                      <TransitionBanner
-                        visible={showTransition}
-                        logoUrl={logoUrl}
-                        onDone={() => setShowTransition(false)}
-                      />
-                    </>
+                    <RootLayoutNav />
                   ) : (
                     <KeyboardProvider>
                       <RootLayoutNav />
-                      {showSplash && (
-                        <AppSplash
-                          logoUrl={logoUrl}
-                          onDone={() => { setShowSplash(false); setShowTransition(true); }}
-                        />
-                      )}
-                      <TransitionBanner
-                        visible={showTransition}
-                        logoUrl={logoUrl}
-                        onDone={() => setShowTransition(false)}
-                      />
                     </KeyboardProvider>
                   )}
                 </GestureHandlerRootView>
@@ -262,49 +157,4 @@ export default function RootLayout() {
   );
 }
 
-const styles = StyleSheet.create({
-  splashRoot: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 9999,
-    backgroundColor: "#EEF2FF",
-  },
-  centerContent: {
-    alignItems: "center",
-    gap: 28,
-  },
-  logoImg: {
-    width: width * 0.42,
-    height: width * 0.42 * 0.72,
-  },
-  dotsRow: {
-    flexDirection: "row",
-    gap: 10,
-    alignItems: "center",
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#2563EB",
-  },
-  brandWrap: {
-    position: "absolute",
-    bottom: height * 0.08,
-    alignItems: "center",
-    gap: 4,
-  },
-  brandBy: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-    color: "#94A3B8",
-    letterSpacing: 1,
-  },
-  brandName: {
-    fontSize: 15,
-    fontFamily: "Inter_700Bold",
-    color: "#1E3A8A",
-    letterSpacing: 6,
-  },
-});
+const styles = StyleSheet.create({});
