@@ -21,7 +21,7 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import { useApp } from "@/context/AppContext";
-import { Product, isNewProduct } from "@/data/products";
+import { Product, isNewProduct, PRODUCT_TAGS } from "@/data/products";
 import { useColors } from "@/hooks/useColors";
 
 interface ProductCardProps {
@@ -224,6 +224,19 @@ export function ProductCard({ product, style, index = 0 }: ProductCardProps) {
               {" "}{Number(product.rating).toFixed(1)}
             </Text>
           </View>
+          {product.tags && product.tags.length > 0 && (
+            <View style={styles.tagRow}>
+              {product.tags.slice(0, 2).map((tag) => {
+                const meta = PRODUCT_TAGS.find((t) => t.key === tag);
+                if (!meta) return null;
+                return (
+                  <View key={tag} style={[styles.tagPill, { backgroundColor: meta.bg }]}>
+                    <Text style={[styles.tagText, { color: meta.color }]}>{meta.label}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          )}
           <View style={styles.priceRow}>
             <View>
               <Text
@@ -441,5 +454,21 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 4,
+  },
+  tagRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 4,
+    marginTop: 4,
+  },
+  tagPill: {
+    borderRadius: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+  },
+  tagText: {
+    fontSize: 9,
+    fontFamily: "DMSans_700Bold",
+    letterSpacing: 0.2,
   },
 });

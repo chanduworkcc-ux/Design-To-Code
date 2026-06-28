@@ -15,7 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ProductCard } from "@/components/ProductCard";
 import { useApp } from "@/context/AppContext";
-import { products as staticProducts } from "@/data/products";
+import { products as staticProducts, isNewProduct } from "@/data/products";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
 import { useNotifications } from "@/context/NotificationContext";
@@ -304,6 +304,7 @@ export default function ShopScreen() {
   }, [banners.length]);
 
   const featured = products.filter((p) => (p as any).featured ?? false).slice(0, 6);
+  const newArrivals = products.filter((p) => isNewProduct(p));
 
   const SORT_OPTIONS = [
     { key: "default",    label: "Default"  },
@@ -494,6 +495,32 @@ export default function ShopScreen() {
             </View>
           )}
         </FloatIn>
+
+        {/* ── New Arrivals ── */}
+        {newArrivals.length > 0 && (
+          <FloatIn delay={240} distance={24}>
+            <View style={{ marginBottom: 24 }}>
+              <View style={[styles.sectionHeader, { marginBottom: 14 }]}>
+                <View>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>New Arrivals</Text>
+                  <View style={[styles.sectionUnderline, { backgroundColor: "#10B981" }]} />
+                </View>
+                <View style={styles.newArrivalsBadge}>
+                  <Text style={styles.newArrivalsBadgeText}>✨ Last 7 days</Text>
+                </View>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 12, paddingRight: 16 }}
+              >
+                {newArrivals.map((product, i) => (
+                  <ProductCard key={product.id} product={product} index={i} />
+                ))}
+              </ScrollView>
+            </View>
+          </FloatIn>
+        )}
 
         {/* ── Featured ── */}
         {featured.length > 0 && (
@@ -738,6 +765,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, borderWidth: 1,
   },
   seeAllText: { fontSize: 12, fontFamily: "DMSans_600SemiBold" },
+
+  newArrivalsBadge: {
+    backgroundColor: "#D1FAE5",
+    paddingHorizontal: 10, paddingVertical: 5,
+    borderRadius: 20,
+    flexDirection: "row", alignItems: "center",
+  },
+  newArrivalsBadgeText: {
+    fontSize: 11, fontFamily: "DMSans_600SemiBold", color: "#059669",
+  },
 
   hotLabel: {
     paddingHorizontal: 10, paddingVertical: 5,

@@ -43,6 +43,7 @@ const productSchema = z.object({
   imageUrl: z.string().optional(),
   stock: z.number().int().min(0).optional(),
   isActive: z.boolean().optional(),
+  tags: z.array(z.string()).optional(),
 });
 
 router.post("/products", authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {

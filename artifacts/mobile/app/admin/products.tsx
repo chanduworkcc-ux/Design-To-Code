@@ -2,6 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useState } from "react";
+import { PRODUCT_TAGS } from "@/data/products";
 import {
   ActivityIndicator,
   Alert,
@@ -32,6 +33,7 @@ interface Product {
   imageUrl: string | null;
   stock: number;
   isActive: boolean;
+  tags: string[];
   createdAt: string;
 }
 
@@ -39,7 +41,8 @@ const CATEGORIES = ["Clothing", "Electronics", "Books", "Home", "Beauty", "Sport
 
 const emptyForm = {
   name: "", category: "Electronics", price: "", originalPrice: "",
-  discount: "", rating: "4.5", description: "", imageUrl: "", stock: "100", isActive: true,
+  discount: "", rating: "4.5", description: "", imageUrl: "", stock: "100",
+  isActive: true, tags: [] as string[],
 };
 
 export default function ProductsScreen() {
@@ -96,8 +99,16 @@ export default function ProductsScreen() {
       imageUrl: p.imageUrl ?? "",
       stock: String(p.stock),
       isActive: p.isActive,
+      tags: p.tags ?? [],
     });
     setShowModal(true);
+  }
+
+  function toggleTag(key: string) {
+    setForm((f) => ({
+      ...f,
+      tags: f.tags.includes(key) ? f.tags.filter((t) => t !== key) : [...f.tags, key],
+    }));
   }
 
   async function handleSave() {
@@ -117,6 +128,7 @@ export default function ProductsScreen() {
       imageUrl: form.imageUrl || undefined,
       stock: parseInt(form.stock) || 100,
       isActive: form.isActive,
+      tags: form.tags,
     };
     try {
       let res: Response;
@@ -460,6 +472,36 @@ export default function ProductsScreen() {
               />
             </View>
             <FormField label="Description" value={form.description} onChangeText={(v) => setForm({ ...form, description: v })} placeholder="Product description..." multiline />
+            {/* Tags */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Product Tags</Text>
+              <View style={styles.tagsGrid}>
+                {PRODUCT_TAGS.map((tag) => {
+                  const active = form.tags.includes(tag.key);
+                  return (
+                    <Pressable
+                      key={tag.key}
+                      style={[
+                        styles.tagChip,
+                        {
+                          backgroundColor: active ? tag.bg : "#F3F4F6",
+                          borderColor: active ? tag.color : "#E5E7EB",
+                        },
+                      ]}
+                      onPress={() => toggleTag(tag.key)}
+                    >
+                      <Text style={[styles.tagChipText, { color: active ? tag.color : "#6B7280" }]}>
+                        {tag.label}
+                      </Text>
+                      {active && (
+                        <Feather name="check" size={11} color={tag.color} />
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+
             <View style={styles.toggleRow}>
               <Text style={styles.fieldLabel}>Active</Text>
               <Pressable
@@ -561,4 +603,11 @@ const styles = StyleSheet.create({
   changeImageBtn: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8 },
   changeImageText: { fontSize: 13, fontFamily: "DMSans_600SemiBold", color: "#2563EB" },
   imageUrlHint: { fontSize: 11, fontFamily: "DMSans_500Medium", color: "#9CA3AF", marginTop: 10, marginBottom: 4 },
+  tagsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  tagChip: {
+    flexDirection: "row", alignItems: "center", gap: 5,
+    paddingHorizontal: 12, paddingVertical: 7,
+    borderRadius: 20, borderWidth: 1.5,
+  },
+  tagChipText: { fontSize: 12, fontFamily: "DMSans_600SemiBold" },
 });

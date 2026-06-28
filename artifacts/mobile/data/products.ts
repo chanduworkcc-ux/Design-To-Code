@@ -18,7 +18,18 @@ export interface Product {
   featured?: boolean;
   /** ISO timestamp from the DB — used to show a "New" badge for recent products */
   createdAt?: string | null;
+  /** Admin-applied labels: "hot" | "trending" | "sale" | "premium" | "bestseller" | "limited" */
+  tags?: string[];
 }
+
+export const PRODUCT_TAGS: { key: string; label: string; color: string; bg: string }[] = [
+  { key: "hot",        label: "🔥 Hot",        color: "#EF4444", bg: "#FEF2F2" },
+  { key: "trending",   label: "📈 Trending",   color: "#8B5CF6", bg: "#EDE9FE" },
+  { key: "sale",       label: "💥 Sale",        color: "#F59E0B", bg: "#FFFBEB" },
+  { key: "premium",    label: "💎 Premium",    color: "#2563EB", bg: "#EFF6FF" },
+  { key: "bestseller", label: "⭐ Best Seller", color: "#D97706", bg: "#FEF3C7" },
+  { key: "limited",    label: "⚡ Limited",    color: "#EC4899", bg: "#FDF2F8" },
+];
 
 /** Returns true if the product was added within the last 7 days */
 export function isNewProduct(product: Product): boolean {
