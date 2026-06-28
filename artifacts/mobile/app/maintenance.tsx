@@ -114,19 +114,19 @@ const styles = StyleSheet.create({
   },
   mainTitle: {
     fontSize: 26,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "DMSans_700Bold",
     color: "#F1F5F9",
     textAlign: "center",
   },
   dot: {
     fontSize: 30,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "DMSans_700Bold",
     color: "#60A5FA",
     lineHeight: 32,
   },
   subtitle: {
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
     color: "#94A3B8",
     textAlign: "center",
     lineHeight: 22,
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   retryText: {
     color: "#fff",
     fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "DMSans_600SemiBold",
   },
   statusRow: {
     flexDirection: "row",
@@ -166,12 +166,12 @@ const styles = StyleSheet.create({
   },
   statusLabel: {
     fontSize: 12,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
     color: "#94A3B8",
   },
   bottomTag: {
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
     color: "#475569",
   },
 });

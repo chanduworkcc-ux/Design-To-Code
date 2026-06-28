@@ -141,14 +141,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 36,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "DMSans_700Bold",
     color: "#fff",
     letterSpacing: -1,
     textAlign: "center",
   },
   orderNum: {
     fontSize: 15,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
     color: "rgba(255,255,255,0.75)",
     marginTop: 6,
     letterSpacing: 0.5,
@@ -164,14 +164,14 @@ const styles = StyleSheet.create({
   },
   totalText: {
     fontSize: 26,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "DMSans_700Bold",
     color: "#fff",
     letterSpacing: -0.5,
   },
   redirectMsg: {
     marginTop: 28,
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
     color: "rgba(255,255,255,0.6)",
     letterSpacing: 0.3,
   },

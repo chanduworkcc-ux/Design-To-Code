@@ -127,7 +127,7 @@ export default function VerifyEmailScreen() {
                   Your email has been verified. Your account is now pending admin review — you'll be notified once access is granted.
                 </Text>
                 <View style={{ backgroundColor: "#FFFBEB", borderRadius: 12, padding: 14, borderWidth: 1, borderColor: "#FCD34D", width: "100%" }}>
-                  <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: "#92400E", textAlign: "center", lineHeight: 18 }}>
+                  <Text style={{ fontSize: 12, fontFamily: "DMSans_400Regular", color: "#92400E", textAlign: "center", lineHeight: 18 }}>
                     This usually takes 24–48 hours. Contact support if you need faster access.
                   </Text>
                 </View>
@@ -157,7 +157,7 @@ export default function VerifyEmailScreen() {
           <Text style={[s.heading, { color: colors.text }]}>Verify your email</Text>
           <Text style={[s.subheading, { color: colors.mutedForeground, paddingHorizontal: 16 }]}>
             We sent a 6-digit code to{"\n"}
-            <Text style={{ fontFamily: "Inter_600SemiBold", color: colors.text }}>{email}</Text>
+            <Text style={{ fontFamily: "DMSans_600SemiBold", color: colors.text }}>{email}</Text>
           </Text>
         </View>
 
@@ -172,7 +172,7 @@ export default function VerifyEmailScreen() {
           {resent && (
             <View style={{ backgroundColor: "#ECFDF5", borderRadius: 10, borderWidth: 1, borderColor: "#6EE7B7", padding: 12, flexDirection: "row", alignItems: "center", gap: 8 }}>
               <Feather name="check-circle" size={14} color="#10B981" />
-              <Text style={{ color: "#065F46", fontSize: 13, fontFamily: "Inter_400Regular" }}>New code sent! Check your inbox.</Text>
+              <Text style={{ color: "#065F46", fontSize: 13, fontFamily: "DMSans_400Regular" }}>New code sent! Check your inbox.</Text>
             </View>
           )}
 
@@ -220,18 +220,18 @@ export default function VerifyEmailScreen() {
 const s = StyleSheet.create({
   root: { flex: 1 },
   scroll: { paddingHorizontal: 20, flexGrow: 1, justifyContent: "center" },
-  heading: { fontSize: 24, fontFamily: "Inter_700Bold", textAlign: "center" },
-  subheading: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 22 },
+  heading: { fontSize: 24, fontFamily: "DMSans_700Bold", textAlign: "center" },
+  subheading: { fontSize: 14, fontFamily: "DMSans_400Regular", textAlign: "center", lineHeight: 22 },
   card: { borderRadius: 20, borderWidth: 1, padding: 24, gap: 16 },
-  cardTitle: { fontSize: 22, fontFamily: "Inter_700Bold" },
-  cardSub: { fontSize: 14, fontFamily: "Inter_400Regular", marginTop: -4 },
+  cardTitle: { fontSize: 22, fontFamily: "DMSans_700Bold" },
+  cardSub: { fontSize: 14, fontFamily: "DMSans_400Regular", marginTop: -4 },
   errorBox: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 10, borderWidth: 1, padding: 12 },
-  errorText: { color: "#EF4444", fontSize: 13, fontFamily: "Inter_400Regular", flex: 1 },
-  label: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
-  digitBox: { width: 44, height: 54, borderRadius: 10, borderWidth: 1.5, fontSize: 22, fontFamily: "Inter_700Bold", textAlign: "center" },
+  errorText: { color: "#EF4444", fontSize: 13, fontFamily: "DMSans_400Regular", flex: 1 },
+  label: { fontSize: 14, fontFamily: "DMSans_600SemiBold" },
+  digitBox: { width: 44, height: 54, borderRadius: 10, borderWidth: 1.5, fontSize: 22, fontFamily: "DMSans_700Bold", textAlign: "center" },
   btn: { borderRadius: 14, paddingVertical: 16, alignItems: "center", marginTop: 4 },
-  btnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_600SemiBold" },
-  switchText: { fontSize: 14, fontFamily: "Inter_400Regular" },
-  switchLink: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  btnText: { color: "#fff", fontSize: 16, fontFamily: "DMSans_600SemiBold" },
+  switchText: { fontSize: 14, fontFamily: "DMSans_400Regular" },
+  switchLink: { fontSize: 14, fontFamily: "DMSans_600SemiBold" },
   backRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: -4 },
 });

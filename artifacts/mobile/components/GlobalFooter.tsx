@@ -22,7 +22,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 11,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
     letterSpacing: 0.4,
   },
 });

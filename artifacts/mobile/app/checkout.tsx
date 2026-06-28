@@ -100,8 +100,8 @@ function FormField({
 
 const fieldStyles = StyleSheet.create({
   group: { marginBottom: 12 },
-  label: { fontSize: 11, fontFamily: "Inter_600SemiBold", letterSpacing: 0.4, marginBottom: 5 },
-  input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 13, paddingVertical: 11, fontSize: 14, fontFamily: "Inter_400Regular" },
+  label: { fontSize: 11, fontFamily: "DMSans_600SemiBold", letterSpacing: 0.4, marginBottom: 5 },
+  input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 13, paddingVertical: 11, fontSize: 14, fontFamily: "DMSans_400Regular" },
 });
 
 function BillingRow({ label, value, valueColor, bold, dividerAbove, secondary }: {
@@ -121,10 +121,10 @@ function BillingRow({ label, value, valueColor, bold, dividerAbove, secondary }:
 const billingStyles = StyleSheet.create({
   row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 5 },
   boldRow: { paddingVertical: 7 },
-  rowLabel: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#374151" },
-  boldLabel: { fontFamily: "Inter_700Bold", fontSize: 15, color: "#111827" },
-  rowValue: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#374151" },
-  boldValue: { fontFamily: "Inter_700Bold", fontSize: 15, color: "#1D4ED8" },
+  rowLabel: { fontSize: 13, fontFamily: "DMSans_400Regular", color: "#374151" },
+  boldLabel: { fontFamily: "DMSans_700Bold", fontSize: 15, color: "#111827" },
+  rowValue: { fontSize: 13, fontFamily: "DMSans_500Medium", color: "#374151" },
+  boldValue: { fontFamily: "DMSans_700Bold", fontSize: 15, color: "#1D4ED8" },
 });
 
 export default function CheckoutScreen() {
@@ -603,7 +603,7 @@ export default function CheckoutScreen() {
             <View style={[styles.policyBox, { backgroundColor: "#FEF3C7", borderColor: "#F59E0B", marginTop: 12 }]}>
               <Text style={styles.policyBoxTitle}>⚠️ One-Time Purchase Only</Text>
               <Text style={styles.policyBoxText}>
-                Each product can only be purchased <Text style={{ fontFamily: "Inter_700Bold" }}>once per account</Text>. This policy ensures fair access for all customers.
+                Each product can only be purchased <Text style={{ fontFamily: "DMSans_700Bold" }}>once per account</Text>. This policy ensures fair access for all customers.
               </Text>
             </View>
           </ScrollView>
@@ -657,7 +657,7 @@ export default function CheckoutScreen() {
                 <Text style={[styles.limitTitle, { color: colors.text }]}>Already Purchased</Text>
                 <Text style={[styles.limitBody, { color: colors.mutedForeground }]}>
                   You have already purchased{"\n"}
-                  <Text style={{ fontFamily: "Inter_600SemiBold", color: colors.text }}>{product.name}</Text>.{"\n\n"}
+                  <Text style={{ fontFamily: "DMSans_600SemiBold", color: colors.text }}>{product.name}</Text>.{"\n\n"}
                   Our one-time purchase policy ensures every customer gets fair access. Each product can only be ordered once per account, regardless of order status.
                 </Text>
                 <Pressable
@@ -725,65 +725,65 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1, gap: 12 },
   backBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, alignItems: "center", justifyContent: "center" },
-  headerTitle: { fontSize: 18, fontFamily: "Inter_700Bold" },
+  headerTitle: { fontSize: 18, fontFamily: "DMSans_700Bold" },
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 16 },
-  emptyText: { fontSize: 16, fontFamily: "Inter_500Medium" },
+  emptyText: { fontSize: 16, fontFamily: "DMSans_500Medium" },
   backToShopBtn: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 },
-  backToShopText: { color: "#fff", fontSize: 15, fontFamily: "Inter_600SemiBold" },
+  backToShopText: { color: "#fff", fontSize: 15, fontFamily: "DMSans_600SemiBold" },
   scroll: { padding: 16 },
-  sectionLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", letterSpacing: 1, marginBottom: 8, marginTop: 14 },
+  sectionLabel: { fontSize: 11, fontFamily: "DMSans_600SemiBold", letterSpacing: 1, marginBottom: 8, marginTop: 14 },
   sectionHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 14, marginBottom: 8 },
   useSavedBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
-  useSavedText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  useSavedText: { fontSize: 12, fontFamily: "DMSans_600SemiBold" },
   card: { borderRadius: 14, borderWidth: 1, padding: 14, gap: 4 },
   row2: { flexDirection: "row", gap: 10 },
   row3: { flexDirection: "row", gap: 8 },
-  productName: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
-  productCat: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  productName: { fontSize: 15, fontFamily: "DMSans_600SemiBold" },
+  productCat: { fontSize: 12, fontFamily: "DMSans_400Regular" },
   paymentGroup: { borderRadius: 14, borderWidth: 1, overflow: "hidden" },
   paymentOption: { flexDirection: "row", alignItems: "center", padding: 14, gap: 12 },
   paymentIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  paymentLabel: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
-  paymentDesc: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 1 },
+  paymentLabel: { fontSize: 14, fontFamily: "DMSans_600SemiBold" },
+  paymentDesc: { fontSize: 12, fontFamily: "DMSans_400Regular", marginTop: 1 },
   radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, alignItems: "center", justifyContent: "center" },
   radioFill: { width: 10, height: 10, borderRadius: 5 },
   couponRow: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10 },
-  couponInput: { flex: 1, fontSize: 14, fontFamily: "Inter_500Medium", padding: 0 },
+  couponInput: { flex: 1, fontSize: 14, fontFamily: "DMSans_500Medium", padding: 0 },
   verifyBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
-  verifyBtnText: { color: "#fff", fontSize: 12, fontFamily: "Inter_600SemiBold" },
-  couponSavings: { fontSize: 13, fontFamily: "Inter_500Medium", marginTop: 6, marginLeft: 4 },
+  verifyBtnText: { color: "#fff", fontSize: 12, fontFamily: "DMSans_600SemiBold" },
+  couponSavings: { fontSize: 13, fontFamily: "DMSans_500Medium", marginTop: 6, marginLeft: 4 },
   policyBox: { marginTop: 16, borderRadius: 10, borderWidth: 1, padding: 12 },
-  policyBoxTitle: { fontSize: 13, fontFamily: "Inter_700Bold", color: "#92400E", marginBottom: 5 },
-  policyBoxText: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#92400E", lineHeight: 18 },
+  policyBoxTitle: { fontSize: 13, fontFamily: "DMSans_700Bold", color: "#92400E", marginBottom: 5 },
+  policyBoxText: { fontSize: 12, fontFamily: "DMSans_400Regular", color: "#92400E", lineHeight: 18 },
   pickerOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
   pickerSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: "70%", paddingTop: 8 },
   pickerHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 14 },
-  pickerTitle: { fontSize: 17, fontFamily: "Inter_700Bold" },
+  pickerTitle: { fontSize: 17, fontFamily: "DMSans_700Bold" },
   addrOption: { borderWidth: 1, borderRadius: 12, padding: 12, gap: 4 },
   addrLabelBadge: { flexDirection: "row", alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, marginBottom: 2 },
-  addrLabelText: { fontSize: 11, fontFamily: "Inter_700Bold" },
-  addrDefault: { fontSize: 11, fontFamily: "Inter_500Medium" },
-  addrName: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
-  addrLine: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  addrLabelText: { fontSize: 11, fontFamily: "DMSans_700Bold" },
+  addrDefault: { fontSize: 11, fontFamily: "DMSans_500Medium" },
+  addrName: { fontSize: 13, fontFamily: "DMSans_600SemiBold" },
+  addrLine: { fontSize: 12, fontFamily: "DMSans_400Regular" },
   addNewAddrBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderWidth: 1.5, borderStyle: "dashed", borderRadius: 12, paddingVertical: 14 },
-  addNewAddrText: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  addNewAddrText: { fontSize: 14, fontFamily: "DMSans_600SemiBold" },
   // Already purchased banner
   alreadyBanner: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#EF4444", borderRadius: 12, padding: 12, marginBottom: 4 },
-  alreadyBannerText: { flex: 1, color: "#fff", fontSize: 13, fontFamily: "Inter_500Medium" },
+  alreadyBannerText: { flex: 1, color: "#fff", fontSize: 13, fontFamily: "DMSans_500Medium" },
   // Purchase limit modal
   limitModal: { margin: 32, borderRadius: 20, padding: 28, alignItems: "center", gap: 12 },
   limitIconWrap: { width: 72, height: 72, borderRadius: 36, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center", marginBottom: 4 },
-  limitTitle: { fontSize: 20, fontFamily: "Inter_700Bold", textAlign: "center" },
-  limitBody: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 22 },
+  limitTitle: { fontSize: 20, fontFamily: "DMSans_700Bold", textAlign: "center" },
+  limitBody: { fontSize: 14, fontFamily: "DMSans_400Regular", textAlign: "center", lineHeight: 22 },
   limitBtn: { paddingHorizontal: 24, paddingVertical: 13, borderRadius: 12, width: "100%", alignItems: "center" },
-  limitBtnText: { color: "#fff", fontSize: 15, fontFamily: "Inter_600SemiBold" },
+  limitBtnText: { color: "#fff", fontSize: 15, fontFamily: "DMSans_600SemiBold" },
   limitDismiss: { paddingVertical: 6 },
-  limitDismissText: { fontSize: 13, fontFamily: "Inter_400Regular" },
+  limitDismissText: { fontSize: 13, fontFamily: "DMSans_400Regular" },
   // Footer
   footer: { position: "absolute", bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1, gap: 10 },
   totalRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  totalLabel: { fontSize: 13, fontFamily: "Inter_500Medium" },
-  totalAmount: { fontSize: 20, fontFamily: "Inter_700Bold" },
+  totalLabel: { fontSize: 13, fontFamily: "DMSans_500Medium" },
+  totalAmount: { fontSize: 20, fontFamily: "DMSans_700Bold" },
   placeOrderBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", borderRadius: 14, paddingVertical: 14, gap: 10 },
-  placeOrderText: { color: "#fff", fontSize: 16, fontFamily: "Inter_700Bold" },
+  placeOrderText: { color: "#fff", fontSize: 16, fontFamily: "DMSans_700Bold" },
 });

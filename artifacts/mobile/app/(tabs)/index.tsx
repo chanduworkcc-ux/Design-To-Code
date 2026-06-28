@@ -662,7 +662,7 @@ const styles = StyleSheet.create({
   announcementText: {
     color: "#fff",
     fontSize: 12,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "DMSans_600SemiBold",
     letterSpacing: 0.3,
   },
 
@@ -678,8 +678,8 @@ const styles = StyleSheet.create({
   logoWrapper: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
   logoGlow: { top: 0, left: 0 },
   headerLogo: { width: 42, height: 42, zIndex: 1 },
-  greetingText: { fontSize: 12, fontFamily: "Inter_400Regular", marginBottom: 1 },
-  brandName: { fontSize: 24, fontFamily: "Inter_700Bold", letterSpacing: -0.5 },
+  greetingText: { fontSize: 12, fontFamily: "DMSans_400Regular", marginBottom: 1 },
+  brandName: { fontSize: 24, fontFamily: "DMSans_700Bold", letterSpacing: -0.5 },
   headerActions: { flexDirection: "row", gap: 8 },
   iconBtn: {
     width: 44, height: 44, borderRadius: 14,
@@ -696,7 +696,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#EF4444", paddingHorizontal: 3,
     borderWidth: 2, borderColor: "#fff",
   },
-  badgeText: { color: "#fff", fontSize: 9, fontFamily: "Inter_700Bold" },
+  badgeText: { color: "#fff", fontSize: 9, fontFamily: "DMSans_700Bold" },
 
   searchBar: {
     flexDirection: "row", alignItems: "center", gap: 10,
@@ -710,12 +710,12 @@ const styles = StyleSheet.create({
     width: 30, height: 30, borderRadius: 10,
     alignItems: "center", justifyContent: "center",
   },
-  searchPlaceholder: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular" },
+  searchPlaceholder: { flex: 1, fontSize: 14, fontFamily: "DMSans_400Regular" },
   searchBadge: {
     paddingHorizontal: 8, paddingVertical: 3,
     borderRadius: 8,
   },
-  searchBadgeText: { fontSize: 11, fontFamily: "Inter_500Medium" },
+  searchBadgeText: { fontSize: 11, fontFamily: "DMSans_500Medium" },
 
   filterRow: { gap: 8, paddingRight: 4 },
   filterChip: {
@@ -727,7 +727,7 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "center", gap: 5,
     paddingHorizontal: 12, paddingVertical: 7,
   },
-  filterChipText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  filterChipText: { fontSize: 12, fontFamily: "DMSans_600SemiBold" },
 
   bannerWrapper: { borderRadius: 20, overflow: "hidden" },
   apiBanner: {
@@ -738,15 +738,15 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 3,
     borderRadius: 6, marginBottom: 8,
   },
-  bannerTagText: { fontSize: 9, fontFamily: "Inter_700Bold", letterSpacing: 1 },
-  bannerTitle: { fontSize: 19, fontFamily: "Inter_700Bold", marginBottom: 4, lineHeight: 24 },
-  bannerSubtitle: { fontSize: 12, fontFamily: "Inter_400Regular", marginBottom: 12 },
+  bannerTagText: { fontSize: 9, fontFamily: "DMSans_700Bold", letterSpacing: 1 },
+  bannerTitle: { fontSize: 19, fontFamily: "DMSans_700Bold", marginBottom: 4, lineHeight: 24 },
+  bannerSubtitle: { fontSize: 12, fontFamily: "DMSans_400Regular", marginBottom: 12 },
   bannerCta: {
     flexDirection: "row", alignItems: "center", gap: 4,
     alignSelf: "flex-start", paddingHorizontal: 12, paddingVertical: 6,
     borderWidth: 1, borderRadius: 20,
   },
-  bannerCtaText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  bannerCtaText: { fontSize: 12, fontFamily: "DMSans_600SemiBold" },
   bannerIconArea: { width: 80, height: 80, alignItems: "center", justifyContent: "center" },
   bannerIconBox: {
     width: 62, height: 62, borderRadius: 16,
@@ -768,9 +768,9 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start", backgroundColor: "rgba(255,255,255,0.2)",
     paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, marginBottom: 8,
   },
-  newBadgeText: { color: "#fff", fontSize: 9, fontFamily: "Inter_700Bold", letterSpacing: 1 },
+  newBadgeText: { color: "#fff", fontSize: 9, fontFamily: "DMSans_700Bold", letterSpacing: 1 },
   heroBannerTitle: {
-    color: "#fff", fontSize: 22, fontFamily: "Inter_700Bold", lineHeight: 28,
+    color: "#fff", fontSize: 22, fontFamily: "DMSans_700Bold", lineHeight: 28,
   },
   heroShopBtn: {
     flexDirection: "row", alignItems: "center", gap: 5,
@@ -778,7 +778,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 7,
     alignSelf: "flex-start",
   },
-  heroShopBtnText: { color: "#1E3A8A", fontSize: 12, fontFamily: "Inter_700Bold" },
+  heroShopBtnText: { color: "#1E3A8A", fontSize: 12, fontFamily: "DMSans_700Bold" },
   heroBannerRight: {
     flex: 0.7, padding: 10, gap: 8, justifyContent: "center",
   },
@@ -786,13 +786,13 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "center", gap: 6,
     paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10,
   },
-  categoryChipLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
+  categoryChipLabel: { fontSize: 11, fontFamily: "DMSans_600SemiBold" },
 
   sectionHeader: {
     flexDirection: "row", justifyContent: "space-between",
     alignItems: "center", marginBottom: 14,
   },
-  sectionTitle: { fontSize: 20, fontFamily: "Inter_700Bold", letterSpacing: -0.3 },
+  sectionTitle: { fontSize: 20, fontFamily: "DMSans_700Bold", letterSpacing: -0.3 },
   sectionUnderline: {
     height: 3, width: 32, borderRadius: 2, marginTop: 4,
   },
@@ -800,7 +800,7 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "center", gap: 3,
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, borderWidth: 1,
   },
-  seeAllText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  seeAllText: { fontSize: 12, fontFamily: "DMSans_600SemiBold" },
 
   hotLabel: {
     paddingHorizontal: 10, paddingVertical: 5,
@@ -808,7 +808,7 @@ const styles = StyleSheet.create({
     shadowColor: "#EF4444", shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35, shadowRadius: 6, elevation: 4,
   },
-  hotLabelText: { color: "#fff", fontSize: 11, fontFamily: "Inter_700Bold", letterSpacing: 0.3 },
+  hotLabelText: { color: "#fff", fontSize: 11, fontFamily: "DMSans_700Bold", letterSpacing: 0.3 },
 
   grid: {
     flexDirection: "row", flexWrap: "wrap",
@@ -823,6 +823,6 @@ const styles = StyleSheet.create({
     shadowColor: "#000", shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.1, shadowRadius: 12, elevation: 4,
   },
-  emptyTitle: { fontSize: 18, fontFamily: "Inter_700Bold", marginBottom: 8 },
-  emptySub: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center", paddingHorizontal: 24 },
+  emptyTitle: { fontSize: 18, fontFamily: "DMSans_700Bold", marginBottom: 8 },
+  emptySub: { fontSize: 13, fontFamily: "DMSans_400Regular", textAlign: "center", paddingHorizontal: 24 },
 });

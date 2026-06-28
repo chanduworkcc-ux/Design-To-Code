@@ -50,6 +50,11 @@ app.get("/", (_req, res) => {
   res.redirect(301, "/mobile/");
 });
 
+app.get(/^\/(?!api\/|mobile|assets\/)(.+)$/, (req: Request, res: Response) => {
+  const path = (req.params as any)[0] ?? "";
+  res.redirect(302, `/mobile/${path}`);
+});
+
 app.use("/api/auth/login", authLimiter);
 app.use("/api/auth/forgot-password", authLimiter);
 app.use("/api/auth/register", registerLimiter);

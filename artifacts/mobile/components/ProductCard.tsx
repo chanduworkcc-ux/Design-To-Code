@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
   outOfStockText: {
     color: "#fff",
     fontSize: 11,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "DMSans_700Bold",
     letterSpacing: 0.3,
   },
   discountBadge: {
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
   discountText: {
     color: "#fff",
     fontSize: 10,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "DMSans_700Bold",
     letterSpacing: 0.3,
   },
   wishlistWrapper: {
@@ -370,12 +370,12 @@ const styles = StyleSheet.create({
   },
   category: {
     fontSize: 9,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "DMSans_700Bold",
     letterSpacing: 1,
   },
   name: {
     fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "DMSans_600SemiBold",
     lineHeight: 18,
   },
   ratingRow: {
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
   },
   rating: {
     fontSize: 11,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
   },
   priceRow: {
     flexDirection: "row",
@@ -395,11 +395,11 @@ const styles = StyleSheet.create({
   },
   price: {
     fontSize: 15,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "DMSans_700Bold",
   },
   originalPrice: {
     fontSize: 10,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
     textDecorationLine: "line-through",
     marginTop: 1,
   },

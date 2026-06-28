@@ -51,7 +51,7 @@ function StarRow({ rating }: { rating: number }) {
           color={i <= Math.round(rating) ? "#F59E0B" : colors.border}
         />
       ))}
-      <Text style={{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: colors.mutedForeground, marginLeft: 4 }}>
+      <Text style={{ fontSize: 13, fontFamily: "DMSans_600SemiBold", color: colors.mutedForeground, marginLeft: 4 }}>
         {Number(rating).toFixed(1)}
       </Text>
     </View>
@@ -169,11 +169,11 @@ export default function ProductDetailScreen() {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
         <Feather name="alert-circle" size={40} color={colors.mutedForeground} />
-        <Text style={{ color: colors.mutedForeground, fontFamily: "Inter_500Medium", marginTop: 12 }}>
+        <Text style={{ color: colors.mutedForeground, fontFamily: "DMSans_500Medium", marginTop: 12 }}>
           Product not found
         </Text>
         <Pressable onPress={() => router.back()} style={{ marginTop: 16 }}>
-          <Text style={{ color: colors.primary, fontFamily: "Inter_600SemiBold" }}>Go back</Text>
+          <Text style={{ color: colors.primary, fontFamily: "DMSans_600SemiBold" }}>Go back</Text>
         </Pressable>
       </View>
     );
@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 70,
     alignItems: "center",
   },
-  floatingTitle: { fontSize: 15, fontFamily: "Inter_600SemiBold", textAlign: "center" },
+  floatingTitle: { fontSize: 15, fontFamily: "DMSans_600SemiBold", textAlign: "center" },
   topButtons: {
     position: "absolute",
     top: 0,
@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  outOfStockText: { color: "#fff", fontSize: 18, fontFamily: "Inter_700Bold" },
+  outOfStockText: { color: "#fff", fontSize: 18, fontFamily: "DMSans_700Bold" },
   discountBadge: {
     position: "absolute",
     bottom: 16,
@@ -486,48 +486,48 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
-  discountText: { color: "#fff", fontSize: 13, fontFamily: "Inter_700Bold" },
+  discountText: { color: "#fff", fontSize: 13, fontFamily: "DMSans_700Bold" },
   content: { borderTopLeftRadius: 24, borderTopRightRadius: 24, marginTop: -24, padding: 20, gap: 18 },
   categoryRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   categoryBadge: { borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4 },
-  categoryText: { fontSize: 11, fontFamily: "Inter_700Bold", letterSpacing: 0.6 },
+  categoryText: { fontSize: 11, fontFamily: "DMSans_700Bold", letterSpacing: 0.6 },
   stockBadge: { flexDirection: "row", alignItems: "center", gap: 5, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4 },
   stockDot: { width: 7, height: 7, borderRadius: 4 },
-  stockText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
-  productName: { fontSize: 22, fontFamily: "Inter_700Bold", lineHeight: 30 },
+  stockText: { fontSize: 11, fontFamily: "DMSans_600SemiBold" },
+  productName: { fontSize: 22, fontFamily: "DMSans_700Bold", lineHeight: 30 },
   ratingRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  ratingCount: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  ratingCount: { fontSize: 12, fontFamily: "DMSans_400Regular" },
   priceCard: { borderRadius: 14, borderWidth: 1, padding: 16, gap: 8 },
   priceRow: { flexDirection: "row", alignItems: "baseline", gap: 10 },
-  price: { fontSize: 26, fontFamily: "Inter_700Bold" },
-  originalPrice: { fontSize: 15, fontFamily: "Inter_400Regular", textDecorationLine: "line-through" },
+  price: { fontSize: 26, fontFamily: "DMSans_700Bold" },
+  originalPrice: { fontSize: 15, fontFamily: "DMSans_400Regular", textDecorationLine: "line-through" },
   savingsRow: { flexDirection: "row", alignItems: "center", gap: 5 },
-  savingsText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#10B981" },
+  savingsText: { fontSize: 12, fontFamily: "DMSans_600SemiBold", color: "#10B981" },
   breakdownToggle: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
-  breakdownLabel: { fontSize: 13, fontFamily: "Inter_500Medium" },
+  breakdownLabel: { fontSize: 13, fontFamily: "DMSans_500Medium" },
   breakdown: { borderTopWidth: 1, marginTop: 10, paddingTop: 10, gap: 8 },
   breakdownRow: { flexDirection: "row", justifyContent: "space-between" },
-  breakdownRowLabel: { fontSize: 13, fontFamily: "Inter_400Regular" },
-  breakdownRowValue: { fontSize: 13, fontFamily: "Inter_500Medium" },
+  breakdownRowLabel: { fontSize: 13, fontFamily: "DMSans_400Regular" },
+  breakdownRowValue: { fontSize: 13, fontFamily: "DMSans_500Medium" },
   breakdownTotal: { flexDirection: "row", justifyContent: "space-between", borderTopWidth: 1, paddingTop: 8, marginTop: 4 },
-  breakdownTotalLabel: { fontSize: 14, fontFamily: "Inter_700Bold" },
-  breakdownTotalValue: { fontSize: 14, fontFamily: "Inter_700Bold" },
+  breakdownTotalLabel: { fontSize: 14, fontFamily: "DMSans_700Bold" },
+  breakdownTotalValue: { fontSize: 14, fontFamily: "DMSans_700Bold" },
   section: { gap: 10 },
-  sectionTitle: { fontSize: 16, fontFamily: "Inter_700Bold" },
-  description: { fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 22 },
+  sectionTitle: { fontSize: 16, fontFamily: "DMSans_700Bold" },
+  description: { fontSize: 14, fontFamily: "DMSans_400Regular", lineHeight: 22 },
   policyRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   policyBadge: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, borderWidth: 1 },
-  policyText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  policyText: { fontSize: 13, fontFamily: "DMSans_600SemiBold" },
   deliveryBox: { flexDirection: "row", alignItems: "center", gap: 9, padding: 12, borderRadius: 12, borderWidth: 1 },
-  deliveryText: { flex: 1, fontSize: 13, fontFamily: "Inter_500Medium", lineHeight: 18 },
+  deliveryText: { flex: 1, fontSize: 13, fontFamily: "DMSans_500Medium", lineHeight: 18 },
   disclaimerBox: { flexDirection: "row", alignItems: "flex-start", gap: 8, padding: 12, borderRadius: 12, borderWidth: 1 },
-  disclaimerText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 18 },
+  disclaimerText: { flex: 1, fontSize: 12, fontFamily: "DMSans_400Regular", lineHeight: 18 },
   relatedCard: { width: 130, borderRadius: 12, borderWidth: 1, overflow: "hidden" },
   relatedImage: { width: 130, height: 100 },
   relatedImagePlaceholder: { width: 130, height: 100, alignItems: "center", justifyContent: "center" },
   relatedInfo: { padding: 8, gap: 4 },
-  relatedName: { fontSize: 12, fontFamily: "Inter_500Medium", lineHeight: 16 },
-  relatedPrice: { fontSize: 13, fontFamily: "Inter_700Bold" },
+  relatedName: { fontSize: 12, fontFamily: "DMSans_500Medium", lineHeight: 16 },
+  relatedPrice: { fontSize: 13, fontFamily: "DMSans_700Bold" },
   bottomBar: {
     position: "absolute",
     bottom: 0,
@@ -541,8 +541,8 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
   },
   bottomPrice: { gap: 2 },
-  bottomPriceLabel: { fontSize: 11, fontFamily: "Inter_400Regular" },
-  bottomPriceValue: { fontSize: 18, fontFamily: "Inter_700Bold" },
+  bottomPriceLabel: { fontSize: 11, fontFamily: "DMSans_400Regular" },
+  bottomPriceValue: { fontSize: 18, fontFamily: "DMSans_700Bold" },
   addToCartBtn: {
     flex: 1,
     flexDirection: "row",
@@ -552,5 +552,5 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 14,
   },
-  addToCartText: { fontSize: 15, fontFamily: "Inter_700Bold" },
+  addToCartText: { fontSize: 15, fontFamily: "DMSans_700Bold" },
 });

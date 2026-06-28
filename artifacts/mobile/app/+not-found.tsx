@@ -33,6 +33,6 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
   },
 });

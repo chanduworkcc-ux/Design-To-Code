@@ -92,13 +92,13 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 26,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "DMSans_700Bold",
     color: "#0F1740",
     textAlign: "center",
   },
   subtitle: {
     fontSize: 15,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
     color: "#4B5563",
     textAlign: "center",
     lineHeight: 22,
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
   },
   versionText: {
     fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "DMSans_600SemiBold",
     color: "#2563EB",
   },
   notesCard: {
@@ -128,14 +128,14 @@ const styles = StyleSheet.create({
   },
   notesTitle: {
     fontSize: 13,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "DMSans_700Bold",
     color: "#374151",
     marginBottom: 8,
     letterSpacing: 0.5,
   },
   notesText: {
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
     color: "#4B5563",
     lineHeight: 22,
   },
@@ -154,11 +154,11 @@ const styles = StyleSheet.create({
   updateBtnText: {
     color: "#fff",
     fontSize: 16,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "DMSans_700Bold",
   },
   footerNote: {
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
     color: "#9CA3AF",
     textAlign: "center",
     marginTop: 4,

@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
   },
   labelText: {
     fontSize: 15,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
     letterSpacing: 0.4,
   },
   dotsRow: {
@@ -228,12 +228,12 @@ const styles = StyleSheet.create({
   },
   brandBy: {
     fontSize: 11,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
     letterSpacing: 1,
   },
   brandName: {
     fontSize: 16,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "DMSans_700Bold",
     letterSpacing: 4,
   },
 });

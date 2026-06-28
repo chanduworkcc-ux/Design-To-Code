@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
   label: {
     marginTop: 8,
     fontSize: 11,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "DMSans_700Bold",
     color: "#374151",
     textAlign: "center",
     letterSpacing: 0.2,

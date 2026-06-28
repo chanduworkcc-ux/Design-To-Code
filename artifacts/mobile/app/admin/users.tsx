@@ -287,7 +287,7 @@ function LogsModal({
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
             <View style={[{ width: 7, height: 7, borderRadius: 4, backgroundColor: user.online ? "#10B981" : "#D1D5DB" }]} />
-            <Text style={{ fontSize: 12, fontFamily: "Inter_500Medium", color: user.online ? "#10B981" : "#9CA3AF" }}>
+            <Text style={{ fontSize: 12, fontFamily: "DMSans_500Medium", color: user.online ? "#10B981" : "#9CA3AF" }}>
               {user.online ? "Online now" : user.liveIp ? `Last seen ${new Date(user.liveIp.seenAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}` : "Offline"}
             </Text>
           </View>
@@ -391,7 +391,7 @@ function BanModal({
         </View>
         <View style={{ padding: 20, gap: 14 }}>
           <View style={[{ padding: 12, backgroundColor: "#FEF2F2", borderRadius: 10, borderWidth: 1, borderColor: "#FECACA" }]}>
-            <Text style={{ fontSize: 13, fontFamily: "Inter_500Medium", color: "#DC2626" }}>
+            <Text style={{ fontSize: 13, fontFamily: "DMSans_500Medium", color: "#DC2626" }}>
               ⚠️ This will permanently ban the user. They will not be able to log in or register again with this account.
             </Text>
           </View>
@@ -409,7 +409,7 @@ function BanModal({
           {!!error && (
             <View style={[styles.walletError, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}>
               <Feather name="alert-circle" size={13} color="#EF4444" />
-              <Text style={{ color: "#EF4444", fontSize: 13, fontFamily: "Inter_400Regular", flex: 1 }}>{error}</Text>
+              <Text style={{ color: "#EF4444", fontSize: 13, fontFamily: "DMSans_400Regular", flex: 1 }}>{error}</Text>
             </View>
           )}
           <Pressable
@@ -529,7 +529,7 @@ function SuspendModal({
           {!!error && (
             <View style={[styles.walletError, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}>
               <Feather name="alert-circle" size={13} color="#EF4444" />
-              <Text style={{ color: "#EF4444", fontSize: 13, fontFamily: "Inter_400Regular", flex: 1 }}>{error}</Text>
+              <Text style={{ color: "#EF4444", fontSize: 13, fontFamily: "DMSans_400Regular", flex: 1 }}>{error}</Text>
             </View>
           )}
 
@@ -647,7 +647,7 @@ function WalletModal({
           {!!error && (
             <View style={[styles.walletError, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}>
               <Feather name="alert-circle" size={13} color="#EF4444" />
-              <Text style={{ color: "#EF4444", fontSize: 13, fontFamily: "Inter_400Regular", flex: 1 }}>{error}</Text>
+              <Text style={{ color: "#EF4444", fontSize: 13, fontFamily: "DMSans_400Regular", flex: 1 }}>{error}</Text>
             </View>
           )}
 
@@ -931,61 +931,61 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#E5EAF8", gap: 12 },
   backBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, borderColor: "#E5EAF8", alignItems: "center", justifyContent: "center" },
-  headerTitle: { flex: 1, fontSize: 18, fontFamily: "Inter_700Bold", color: "#0F1740" },
+  headerTitle: { flex: 1, fontSize: 18, fontFamily: "DMSans_700Bold", color: "#0F1740" },
   searchRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: "#fff" },
   searchBox: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#F3F4F6", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
   exportBtn: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#2563EB", paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12 },
-  exportBtnText: { color: "#fff", fontSize: 12, fontFamily: "Inter_600SemiBold" },
-  searchInput: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", color: "#0F1740", padding: 0 },
+  exportBtnText: { color: "#fff", fontSize: 12, fontFamily: "DMSans_600SemiBold" },
+  searchInput: { flex: 1, fontSize: 14, fontFamily: "DMSans_400Regular", color: "#0F1740", padding: 0 },
   filterScroll: { maxHeight: 48, backgroundColor: "#fff" },
   filterRow: { paddingHorizontal: 16, paddingBottom: 10, gap: 8 },
   filterTab: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: "#F3F4F6" },
-  filterTabText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#374151" },
+  filterTabText: { fontSize: 12, fontFamily: "DMSans_600SemiBold", color: "#374151" },
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, paddingVertical: 60 },
-  loadingText: { color: "#6B7280", fontFamily: "Inter_500Medium", fontSize: 14 },
-  emptyText: { color: "#9CA3AF", fontSize: 14, fontFamily: "Inter_400Regular" },
+  loadingText: { color: "#6B7280", fontFamily: "DMSans_500Medium", fontSize: 14 },
+  emptyText: { color: "#9CA3AF", fontSize: 14, fontFamily: "DMSans_400Regular" },
   content: { padding: 16, gap: 12 },
   userCard: { borderRadius: 16, borderWidth: 1, overflow: "hidden" },
   userCardHeader: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14 },
   avatar: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
-  avatarText: { color: "#fff", fontSize: 18, fontFamily: "Inter_700Bold" },
+  avatarText: { color: "#fff", fontSize: 18, fontFamily: "DMSans_700Bold" },
   nameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  userName: { fontSize: 14, fontFamily: "Inter_700Bold", color: "#0F1740", flex: 1 },
+  userName: { fontSize: 14, fontFamily: "DMSans_700Bold", color: "#0F1740", flex: 1 },
   onlineDot: { width: 7, height: 7, borderRadius: 4 },
-  onlineLabel: { fontSize: 11, fontFamily: "Inter_500Medium" },
-  userEmail: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#6B7280", marginTop: 2 },
+  onlineLabel: { fontSize: 11, fontFamily: "DMSans_500Medium" },
+  userEmail: { fontSize: 12, fontFamily: "DMSans_400Regular", color: "#6B7280", marginTop: 2 },
   badgeRow: { flexDirection: "row", gap: 6, marginTop: 5 },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-  statusText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
+  statusText: { fontSize: 11, fontFamily: "DMSans_600SemiBold" },
   expandedSection: { borderTopWidth: 1, padding: 14 },
   ipBanner: { flexDirection: "row", alignItems: "center", backgroundColor: "#EFF6FF", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7, marginBottom: 12, gap: 6 },
-  ipAddress: { fontSize: 13, fontFamily: "Inter_700Bold", color: "#1D4ED8", letterSpacing: 0.3 },
-  ipSeen: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#6B7280" },
+  ipAddress: { fontSize: 13, fontFamily: "DMSans_700Bold", color: "#1D4ED8", letterSpacing: 0.3 },
+  ipSeen: { fontSize: 11, fontFamily: "DMSans_400Regular", color: "#6B7280" },
   infoGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 14 },
   infoItem: { gap: 2 },
-  infoLabel: { fontSize: 11, fontFamily: "Inter_500Medium", color: "#9CA3AF" },
-  infoValue: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#0F1740" },
+  infoLabel: { fontSize: 11, fontFamily: "DMSans_500Medium", color: "#9CA3AF" },
+  infoValue: { fontSize: 13, fontFamily: "DMSans_600SemiBold", color: "#0F1740" },
   actionCol: { gap: 8 },
   actionRow: { flexDirection: "row", gap: 10 },
   actionBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 10, borderWidth: 1, paddingVertical: 10 },
-  actionText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  actionText: { fontSize: 13, fontFamily: "DMSans_600SemiBold" },
   modalOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.5)", zIndex: 100, justifyContent: "flex-end" },
   modal: { backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, height: "70%", padding: 0 },
   modalHeader: { padding: 20, borderBottomWidth: 1, borderBottomColor: "#F3F4F6", gap: 2 },
-  modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#0F1740" },
-  modalSub: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#6B7280" },
+  modalTitle: { fontSize: 18, fontFamily: "DMSans_700Bold", color: "#0F1740" },
+  modalSub: { fontSize: 13, fontFamily: "DMSans_400Regular", color: "#6B7280" },
   modalClose: { position: "absolute", right: 20, top: 20, width: 32, height: 32, borderRadius: 10, borderWidth: 1, borderColor: "#E5E7EB", alignItems: "center", justifyContent: "center" },
   logRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#F9FAFB" },
   methodBadge: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6 },
-  methodText: { fontSize: 11, fontFamily: "Inter_700Bold" },
-  logPath: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#374151" },
-  logTime: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#9CA3AF", marginTop: 2 },
+  methodText: { fontSize: 11, fontFamily: "DMSans_700Bold" },
+  logPath: { fontSize: 13, fontFamily: "DMSans_500Medium", color: "#374151" },
+  logTime: { fontSize: 11, fontFamily: "DMSans_400Regular", color: "#9CA3AF", marginTop: 2 },
   modeBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 10, borderWidth: 1.5, borderColor: "#E5E7EB", paddingVertical: 12 },
-  modeBtnText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  modeBtnText: { fontSize: 13, fontFamily: "DMSans_600SemiBold" },
   walletField: { gap: 6 },
-  walletLabel: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#374151" },
-  walletInput: { borderRadius: 10, borderWidth: 1, borderColor: "#E5EAF8", backgroundColor: "#F9FAFB", paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, fontFamily: "Inter_400Regular", color: "#0F1740" },
+  walletLabel: { fontSize: 13, fontFamily: "DMSans_600SemiBold", color: "#374151" },
+  walletInput: { borderRadius: 10, borderWidth: 1, borderColor: "#E5EAF8", backgroundColor: "#F9FAFB", paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, fontFamily: "DMSans_400Regular", color: "#0F1740" },
   walletError: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 10, borderWidth: 1, padding: 10 },
   walletSubmitBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 12, paddingVertical: 14 },
-  walletSubmitText: { color: "#fff", fontSize: 15, fontFamily: "Inter_600SemiBold" },
+  walletSubmitText: { color: "#fff", fontSize: 15, fontFamily: "DMSans_600SemiBold" },
 });

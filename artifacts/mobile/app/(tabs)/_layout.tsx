@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontSize: 10,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "DMSans_600SemiBold",
     letterSpacing: 0.2,
   },
   badgeDot: {
@@ -295,6 +295,6 @@ const styles = StyleSheet.create({
   badgeDotText: {
     color: "#fff",
     fontSize: 8,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "DMSans_700Bold",
   },
 });

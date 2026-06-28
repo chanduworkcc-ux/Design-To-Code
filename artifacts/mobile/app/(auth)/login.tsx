@@ -119,15 +119,15 @@ export default function LoginScreen() {
             <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "#FEE2E2", alignItems: "center", justifyContent: "center" }}>
               <Feather name="lock" size={36} color="#EF4444" />
             </View>
-            <Text style={{ fontSize: 22, fontFamily: "Inter_700Bold", color: colors.text, textAlign: "center" }}>
+            <Text style={{ fontSize: 22, fontFamily: "DMSans_700Bold", color: colors.text, textAlign: "center" }}>
               Login Unavailable
             </Text>
             <View style={{ backgroundColor: "#FEF2F2", borderRadius: 14, padding: 18, borderWidth: 1, borderColor: "#FECACA" }}>
-              <Text style={{ fontSize: 14, fontFamily: "Inter_400Regular", color: "#7F1D1D", textAlign: "center", lineHeight: 22 }}>
+              <Text style={{ fontSize: 14, fontFamily: "DMSans_400Regular", color: "#7F1D1D", textAlign: "center", lineHeight: 22 }}>
                 {portalClosed.message}
               </Text>
             </View>
-            <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: colors.mutedForeground, textAlign: "center" }}>
+            <Text style={{ fontSize: 12, fontFamily: "DMSans_400Regular", color: colors.mutedForeground, textAlign: "center" }}>
               Contact support if you need immediate assistance.
             </Text>
           </View>
@@ -145,12 +145,12 @@ export default function LoginScreen() {
             <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "#FFFBEB", alignItems: "center", justifyContent: "center" }}>
               <Feather name="slash" size={36} color="#F59E0B" />
             </View>
-            <Text style={{ fontSize: 22, fontFamily: "Inter_700Bold", color: colors.text, textAlign: "center" }}>Account Suspended</Text>
+            <Text style={{ fontSize: 22, fontFamily: "DMSans_700Bold", color: colors.text, textAlign: "center" }}>Account Suspended</Text>
             <View style={{ backgroundColor: "#FFFBEB", borderRadius: 14, padding: 16, borderWidth: 1, borderColor: "#FDE68A", width: "100%" }}>
-              <Text style={{ fontSize: 13, fontFamily: "Inter_700Bold", color: "#B45309", marginBottom: 6 }}>Reason</Text>
-              <Text style={{ fontSize: 14, fontFamily: "Inter_400Regular", color: "#78350F", lineHeight: 20 }}>{suspended.reason}</Text>
+              <Text style={{ fontSize: 13, fontFamily: "DMSans_700Bold", color: "#B45309", marginBottom: 6 }}>Reason</Text>
+              <Text style={{ fontSize: 14, fontFamily: "DMSans_400Regular", color: "#78350F", lineHeight: 20 }}>{suspended.reason}</Text>
               {until && (
-                <Text style={{ fontSize: 12, fontFamily: "Inter_500Medium", color: "#92400E", marginTop: 8 }}>
+                <Text style={{ fontSize: 12, fontFamily: "DMSans_500Medium", color: "#92400E", marginTop: 8 }}>
                   Until: {until.toLocaleString("en-IN", { dateStyle: "long", timeStyle: "short" })}
                 </Text>
               )}
@@ -159,7 +159,7 @@ export default function LoginScreen() {
               style={{ borderRadius: 14, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 24, paddingVertical: 12 }}
               onPress={() => setSuspended(null)}
             >
-              <Text style={{ fontSize: 14, fontFamily: "Inter_600SemiBold", color: colors.text }}>Go Back</Text>
+              <Text style={{ fontSize: 14, fontFamily: "DMSans_600SemiBold", color: colors.text }}>Go Back</Text>
             </Pressable>
           </View>
         </View>
@@ -175,8 +175,8 @@ export default function LoginScreen() {
             <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "#ECFDF5", alignItems: "center", justifyContent: "center" }}>
               <Feather name="mail" size={36} color="#10B981" />
             </View>
-            <Text style={{ fontSize: 22, fontFamily: "Inter_700Bold", color: colors.text, textAlign: "center" }}>Verify Your Email</Text>
-            <Text style={{ fontSize: 14, fontFamily: "Inter_400Regular", color: colors.mutedForeground, textAlign: "center", lineHeight: 22 }}>
+            <Text style={{ fontSize: 22, fontFamily: "DMSans_700Bold", color: colors.text, textAlign: "center" }}>Verify Your Email</Text>
+            <Text style={{ fontSize: 14, fontFamily: "DMSans_400Regular", color: colors.mutedForeground, textAlign: "center", lineHeight: 22 }}>
               Please verify your email address before signing in. Check your inbox for the verification code we sent.
             </Text>
             <Pressable
@@ -189,7 +189,7 @@ export default function LoginScreen() {
               style={{ borderRadius: 14, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 24, paddingVertical: 12, width: "100%", alignItems: "center" }}
               onPress={() => setUnverifiedEmail(null)}
             >
-              <Text style={{ fontSize: 14, fontFamily: "Inter_600SemiBold", color: colors.text }}>Back</Text>
+              <Text style={{ fontSize: 14, fontFamily: "DMSans_600SemiBold", color: colors.text }}>Back</Text>
             </Pressable>
           </View>
         </View>
@@ -205,9 +205,9 @@ export default function LoginScreen() {
             <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "#FEF2F2", alignItems: "center", justifyContent: "center" }}>
               <Feather name="x-circle" size={36} color="#EF4444" />
             </View>
-            <Text style={{ fontSize: 22, fontFamily: "Inter_700Bold", color: colors.text, textAlign: "center" }}>Application Not Approved</Text>
+            <Text style={{ fontSize: 22, fontFamily: "DMSans_700Bold", color: colors.text, textAlign: "center" }}>Application Not Approved</Text>
             <View style={{ backgroundColor: "#FEF2F2", borderRadius: 14, padding: 18, borderWidth: 1, borderColor: "#FECACA", width: "100%" }}>
-              <Text style={{ fontSize: 14, fontFamily: "Inter_400Regular", color: "#7F1D1D", textAlign: "center", lineHeight: 22 }}>
+              <Text style={{ fontSize: 14, fontFamily: "DMSans_400Regular", color: "#7F1D1D", textAlign: "center", lineHeight: 22 }}>
                 Your account registration was not approved. Please contact support if you believe this is a mistake.
               </Text>
             </View>
@@ -215,7 +215,7 @@ export default function LoginScreen() {
               style={{ borderRadius: 14, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 24, paddingVertical: 12 }}
               onPress={() => setRejected(false)}
             >
-              <Text style={{ fontSize: 14, fontFamily: "Inter_600SemiBold", color: colors.text }}>Go Back</Text>
+              <Text style={{ fontSize: 14, fontFamily: "DMSans_600SemiBold", color: colors.text }}>Go Back</Text>
             </Pressable>
           </View>
         </View>
@@ -232,14 +232,14 @@ export default function LoginScreen() {
           <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "#F5F3FF", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
             <Feather name="clock" size={36} color="#8B5CF6" />
           </View>
-          <Text style={{ fontSize: 22, fontFamily: "Inter_700Bold", color: colors.text, textAlign: "center", marginBottom: 10 }}>
+          <Text style={{ fontSize: 22, fontFamily: "DMSans_700Bold", color: colors.text, textAlign: "center", marginBottom: 10 }}>
             Account Pending
           </Text>
-          <Text style={{ fontSize: 14, fontFamily: "Inter_400Regular", color: colors.mutedForeground, textAlign: "center", lineHeight: 22, marginBottom: 28 }}>
+          <Text style={{ fontSize: 14, fontFamily: "DMSans_400Regular", color: colors.mutedForeground, textAlign: "center", lineHeight: 22, marginBottom: 28 }}>
             Your account is pending admin review.{"\n"}Please wait until an administrator approves your access.
           </Text>
           <View style={{ backgroundColor: "#FFFBEB", borderRadius: 12, padding: 14, borderWidth: 1, borderColor: "#FCD34D", marginBottom: 24 }}>
-            <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: "#92400E", textAlign: "center", lineHeight: 18 }}>
+            <Text style={{ fontSize: 12, fontFamily: "DMSans_400Regular", color: "#92400E", textAlign: "center", lineHeight: 18 }}>
               This usually takes 24–48 hours. Contact support if you need faster access.
             </Text>
           </View>
@@ -247,7 +247,7 @@ export default function LoginScreen() {
             style={{ borderRadius: 14, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 24, paddingVertical: 12 }}
             onPress={() => setPendingApproval(false)}
           >
-            <Text style={{ fontSize: 14, fontFamily: "Inter_600SemiBold", color: colors.text }}>Go Back</Text>
+            <Text style={{ fontSize: 14, fontFamily: "DMSans_600SemiBold", color: colors.text }}>Go Back</Text>
           </Pressable>
         </View>
       </View>
@@ -341,19 +341,19 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 20, flexGrow: 1, justifyContent: "center" },
   logoArea: { alignItems: "center", marginBottom: 32, gap: 8 },
   logoImg: { width: 180, height: 100 },
-  tagline: { fontSize: 14, fontFamily: "Inter_400Regular" },
+  tagline: { fontSize: 14, fontFamily: "DMSans_400Regular" },
   card: { borderRadius: 20, borderWidth: 1, padding: 24, gap: 16 },
-  cardTitle: { fontSize: 22, fontFamily: "Inter_700Bold" },
-  cardSub: { fontSize: 14, fontFamily: "Inter_400Regular", marginTop: -8 },
+  cardTitle: { fontSize: 22, fontFamily: "DMSans_700Bold" },
+  cardSub: { fontSize: 14, fontFamily: "DMSans_400Regular", marginTop: -8 },
   errorBox: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 10, borderWidth: 1, padding: 12 },
-  errorText: { color: "#EF4444", fontSize: 13, fontFamily: "Inter_400Regular", flex: 1 },
+  errorText: { color: "#EF4444", fontSize: 13, fontFamily: "DMSans_400Regular", flex: 1 },
   field: { gap: 6 },
-  label: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  label: { fontSize: 14, fontFamily: "DMSans_600SemiBold" },
   inputRow: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13 },
-  input: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", padding: 0 },
+  input: { flex: 1, fontSize: 14, fontFamily: "DMSans_400Regular", padding: 0 },
   btn: { borderRadius: 14, paddingVertical: 16, alignItems: "center", marginTop: 4 },
-  btnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_600SemiBold" },
+  btnText: { color: "#fff", fontSize: 16, fontFamily: "DMSans_600SemiBold" },
   switchRow: { flexDirection: "row", justifyContent: "center", marginTop: -4 },
-  switchText: { fontSize: 14, fontFamily: "Inter_400Regular" },
-  switchLink: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  switchText: { fontSize: 14, fontFamily: "DMSans_400Regular" },
+  switchLink: { fontSize: 14, fontFamily: "DMSans_600SemiBold" },
 });

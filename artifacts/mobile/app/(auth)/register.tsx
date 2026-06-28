@@ -112,8 +112,8 @@ export default function RegisterScreen() {
           <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "#ECFDF5", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
             <Feather name="check-circle" size={36} color="#10B981" />
           </View>
-          <Text style={{ fontSize: 22, fontFamily: "Inter_700Bold", color: colors.text, textAlign: "center", marginBottom: 10 }}>Registration Submitted!</Text>
-          <Text style={{ fontSize: 14, fontFamily: "Inter_400Regular", color: colors.mutedForeground, textAlign: "center", lineHeight: 22, marginBottom: 28 }}>
+          <Text style={{ fontSize: 22, fontFamily: "DMSans_700Bold", color: colors.text, textAlign: "center", marginBottom: 10 }}>Registration Submitted!</Text>
+          <Text style={{ fontSize: 14, fontFamily: "DMSans_400Regular", color: colors.mutedForeground, textAlign: "center", lineHeight: 22, marginBottom: 28 }}>
             Your account is pending admin approval.{"\n"}You'll be notified once access is granted.
           </Text>
           <Pressable
@@ -205,7 +205,7 @@ export default function RegisterScreen() {
                 autoCorrect={false}
               />
               {mobile.length > 0 && (
-                <Text style={{ fontSize: 11, fontFamily: "Inter_500Medium", color: mobile.length === 10 ? "#10B981" : colors.mutedForeground }}>
+                <Text style={{ fontSize: 11, fontFamily: "DMSans_500Medium", color: mobile.length === 10 ? "#10B981" : colors.mutedForeground }}>
                   {mobile.length}/10
                 </Text>
               )}
@@ -284,24 +284,24 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 20, flexGrow: 1, justifyContent: "center" },
   logoArea: { alignItems: "center", marginBottom: 28, gap: 8 },
   logoImg: { width: 160, height: 90 },
-  tagline: { fontSize: 14, fontFamily: "Inter_400Regular" },
+  tagline: { fontSize: 14, fontFamily: "DMSans_400Regular" },
   card: { borderRadius: 20, borderWidth: 1, padding: 24, gap: 14 },
-  cardTitle: { fontSize: 22, fontFamily: "Inter_700Bold" },
-  cardSub: { fontSize: 14, fontFamily: "Inter_400Regular", marginTop: -6 },
+  cardTitle: { fontSize: 22, fontFamily: "DMSans_700Bold" },
+  cardSub: { fontSize: 14, fontFamily: "DMSans_400Regular", marginTop: -6 },
   errorBox: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 10, borderWidth: 1, padding: 12 },
-  errorText: { color: "#EF4444", fontSize: 13, fontFamily: "Inter_400Regular", flex: 1 },
+  errorText: { color: "#EF4444", fontSize: 13, fontFamily: "DMSans_400Regular", flex: 1 },
   field: { gap: 6 },
-  label: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
-  optional: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  label: { fontSize: 14, fontFamily: "DMSans_600SemiBold" },
+  optional: { fontSize: 12, fontFamily: "DMSans_400Regular" },
   inputRow: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 13 },
-  input: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", padding: 0 },
+  input: { flex: 1, fontSize: 14, fontFamily: "DMSans_400Regular", padding: 0 },
   termsRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginTop: -2 },
   checkbox: { width: 20, height: 20, borderRadius: 6, borderWidth: 1.5, alignItems: "center", justifyContent: "center", marginTop: 1, flexShrink: 0 },
-  termsText: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 20 },
-  termsLink: { fontFamily: "Inter_600SemiBold" },
+  termsText: { flex: 1, fontSize: 13, fontFamily: "DMSans_400Regular", lineHeight: 20 },
+  termsLink: { fontFamily: "DMSans_600SemiBold" },
   btn: { borderRadius: 14, paddingVertical: 16, alignItems: "center", marginTop: 4 },
-  btnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_600SemiBold" },
+  btnText: { color: "#fff", fontSize: 16, fontFamily: "DMSans_600SemiBold" },
   switchRow: { flexDirection: "row", justifyContent: "center", marginTop: -2 },
-  switchText: { fontSize: 14, fontFamily: "Inter_400Regular" },
-  switchLink: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  switchText: { fontSize: 14, fontFamily: "DMSans_400Regular" },
+  switchLink: { fontSize: 14, fontFamily: "DMSans_600SemiBold" },
 });

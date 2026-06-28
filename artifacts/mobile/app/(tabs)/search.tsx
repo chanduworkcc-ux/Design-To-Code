@@ -112,7 +112,7 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { paddingHorizontal: 16 },
-  title: { fontSize: 28, fontFamily: "Inter_700Bold", marginBottom: 16 },
+  title: { fontSize: 28, fontFamily: "DMSans_700Bold", marginBottom: 16 },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -126,10 +126,10 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
     padding: 0,
   },
-  sectionTitle: { fontSize: 18, fontFamily: "Inter_700Bold", marginBottom: 14 },
+  sectionTitle: { fontSize: 18, fontFamily: "DMSans_700Bold", marginBottom: 14 },
   trendingList: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   trendingChip: {
     flexDirection: "row",
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 9,
   },
-  trendingText: { fontSize: 13, fontFamily: "Inter_500Medium" },
+  trendingText: { fontSize: 13, fontFamily: "DMSans_500Medium" },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -152,6 +152,6 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     gap: 10,
   },
-  emptyTitle: { fontSize: 18, fontFamily: "Inter_600SemiBold", marginTop: 8 },
-  emptySubtitle: { fontSize: 14, fontFamily: "Inter_400Regular" },
+  emptyTitle: { fontSize: 18, fontFamily: "DMSans_600SemiBold", marginTop: 8 },
+  emptySubtitle: { fontSize: 14, fontFamily: "DMSans_400Regular" },
 });

@@ -44,7 +44,7 @@ function StatusTracker({ status }: { status: string }) {
     return (
       <View style={[styles.cancelBanner, { backgroundColor: "#FEF2F2" }]}>
         <Feather name="x-circle" size={14} color="#EF4444" />
-        <Text style={{ color: "#EF4444", fontSize: 13, fontFamily: "Inter_600SemiBold", marginLeft: 6 }}>
+        <Text style={{ color: "#EF4444", fontSize: 13, fontFamily: "DMSans_600SemiBold", marginLeft: 6 }}>
           Order Cancelled
         </Text>
       </View>
@@ -74,7 +74,7 @@ function StatusTracker({ status }: { status: string }) {
             <View style={styles.vtContent}>
               <Text style={[
                 styles.vtLabel,
-                { color: done ? cfg.color : "#9CA3AF", fontFamily: isActive ? "Inter_700Bold" : done ? "Inter_600SemiBold" : "Inter_400Regular" },
+                { color: done ? cfg.color : "#9CA3AF", fontFamily: isActive ? "DMSans_700Bold" : done ? "DMSans_600SemiBold" : "DMSans_400Regular" },
               ]}>
                 {cfg.label}
               </Text>
@@ -287,33 +287,33 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1, gap: 12 },
   backBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, alignItems: "center", justifyContent: "center" },
-  headerTitle: { flex: 1, fontSize: 18, fontFamily: "Inter_700Bold" },
+  headerTitle: { flex: 1, fontSize: 18, fontFamily: "DMSans_700Bold" },
   content: { padding: 16, gap: 16 },
 
   heroSection: { alignItems: "center", paddingVertical: 28, gap: 10, overflow: "visible" },
   heroIcon: { width: 90, height: 90, alignItems: "center", justifyContent: "center", marginBottom: 8 },
   heroIconCircle: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 8, elevation: 3 },
-  heroTitle: { fontSize: 22, fontFamily: "Inter_700Bold", textAlign: "center" },
-  heroSubtitle: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 20, paddingHorizontal: 20 },
+  heroTitle: { fontSize: 22, fontFamily: "DMSans_700Bold", textAlign: "center" },
+  heroSubtitle: { fontSize: 13, fontFamily: "DMSans_400Regular", textAlign: "center", lineHeight: 20, paddingHorizontal: 20 },
 
   searchCard: { borderRadius: 16, borderWidth: 1, padding: 16, gap: 12 },
-  searchLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", letterSpacing: 0.8 },
+  searchLabel: { fontSize: 11, fontFamily: "DMSans_600SemiBold", letterSpacing: 0.8 },
   searchRow: { flexDirection: "row", gap: 10 },
   inputWrap: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12 },
-  input: { flex: 1, fontSize: 16, fontFamily: "Inter_600SemiBold", letterSpacing: 1, padding: 0 },
+  input: { flex: 1, fontSize: 16, fontFamily: "DMSans_600SemiBold", letterSpacing: 1, padding: 0 },
   trackBtn: { width: 52, height: 52, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  searchHint: { fontSize: 11, fontFamily: "Inter_400Regular", lineHeight: 16 },
+  searchHint: { fontSize: 11, fontFamily: "DMSans_400Regular", lineHeight: 16 },
 
   errorBox: { flexDirection: "row", alignItems: "flex-start", gap: 10, padding: 14, borderRadius: 12, borderWidth: 1 },
-  errorText: { flex: 1, color: "#EF4444", fontSize: 13, fontFamily: "Inter_500Medium", lineHeight: 18 },
+  errorText: { flex: 1, color: "#EF4444", fontSize: 13, fontFamily: "DMSans_500Medium", lineHeight: 18 },
 
   resultCard: { borderRadius: 16, borderWidth: 2, overflow: "hidden" },
   resultHeader: { flexDirection: "row", alignItems: "center", gap: 12, padding: 16 },
   resultIconBox: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  resultOrderId: { fontSize: 16, fontFamily: "Inter_700Bold" },
-  resultDate: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
+  resultOrderId: { fontSize: 16, fontFamily: "DMSans_700Bold" },
+  resultDate: { fontSize: 12, fontFamily: "DMSans_400Regular", marginTop: 2 },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 },
-  statusText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
+  statusText: { fontSize: 11, fontFamily: "DMSans_600SemiBold" },
 
   trackerSection: { padding: 16 },
   cancelBanner: { flexDirection: "row", alignItems: "center", padding: 12, borderRadius: 10, margin: 4 },
@@ -327,17 +327,17 @@ const styles = StyleSheet.create({
   vtLabel: { fontSize: 14 },
   vtActiveBadge: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, alignSelf: "flex-start" },
   vtActiveDot: { width: 6, height: 6, borderRadius: 3 },
-  vtActiveText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
-  vtDoneText: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#9CA3AF" },
+  vtActiveText: { fontSize: 11, fontFamily: "DMSans_600SemiBold" },
+  vtDoneText: { fontSize: 11, fontFamily: "DMSans_400Regular", color: "#9CA3AF" },
 
   metaGrid: { flexDirection: "row", borderTopWidth: 1, padding: 14 },
   metaItem: { flex: 1, alignItems: "center", gap: 4 },
-  metaKey: { fontSize: 11, fontFamily: "Inter_400Regular" },
-  metaVal: { fontSize: 13, fontFamily: "Inter_700Bold" },
+  metaKey: { fontSize: 11, fontFamily: "DMSans_400Regular" },
+  metaVal: { fontSize: 13, fontFamily: "DMSans_700Bold" },
   metaDivider: { width: 1, marginVertical: 4 },
   lastUpdatedRow: { flexDirection: "row", alignItems: "center", gap: 6, padding: 12, borderTopWidth: 1 },
-  lastUpdatedText: { fontSize: 11, fontFamily: "Inter_400Regular" },
+  lastUpdatedText: { fontSize: 11, fontFamily: "DMSans_400Regular" },
 
   infoBox: { flexDirection: "row", alignItems: "flex-start", gap: 10, padding: 14, borderRadius: 12, borderWidth: 1 },
-  infoText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 18 },
+  infoText: { flex: 1, fontSize: 12, fontFamily: "DMSans_400Regular", lineHeight: 18 },
 });

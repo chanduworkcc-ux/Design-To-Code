@@ -141,14 +141,14 @@ const styles = StyleSheet.create({
   },
   brandBy: {
     fontSize: 11,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
     color: "#94A3B8",
     letterSpacing: 2,
     textTransform: "uppercase",
   },
   brandName: {
     fontSize: 22,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "DMSans_700Bold",
     color: "#fff",
     letterSpacing: 8,
   },
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   },
   skipText: {
     fontSize: 13,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
     color: "#94A3B8",
   },
 });

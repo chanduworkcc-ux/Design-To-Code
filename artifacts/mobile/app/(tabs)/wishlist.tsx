@@ -235,7 +235,7 @@ export default function WishlistScreen() {
             <Image source={require("@/assets/logo-transparent.png")} style={{ width: 36, height: 36 }} resizeMode="contain" />
             <Text style={[styles.title, { color: colors.text }]}>
               Wishlist{" "}
-              <Text style={{ color: colors.mutedForeground, fontSize: 16, fontFamily: "Inter_400Regular" }}>
+              <Text style={{ color: colors.mutedForeground, fontSize: 16, fontFamily: "DMSans_400Regular" }}>
                 {wishlist.length} items
               </Text>
             </Text>
@@ -265,16 +265,16 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingBottom: 100,
   },
-  emptyTitle: { fontSize: 20, fontFamily: "Inter_600SemiBold", marginTop: 8 },
+  emptyTitle: { fontSize: 20, fontFamily: "DMSans_600SemiBold", marginTop: 8 },
   emptySubtitle: {
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
     textAlign: "center",
     paddingHorizontal: 32,
   },
   shopBtn: { marginTop: 12, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 14 },
-  shopBtnText: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
-  title: { fontSize: 28, fontFamily: "Inter_700Bold", marginBottom: 16 },
+  shopBtnText: { fontSize: 15, fontFamily: "DMSans_600SemiBold" },
+  title: { fontSize: 28, fontFamily: "DMSans_700Bold", marginBottom: 16 },
   list: { paddingHorizontal: 16 },
   card: {
     flexDirection: "row",
@@ -285,12 +285,12 @@ const styles = StyleSheet.create({
   },
   image: { width: 100, height: 110, backgroundColor: "#F5F7FF" },
   info: { flex: 1, padding: 12, gap: 4 },
-  category: { fontSize: 10, fontFamily: "Inter_600SemiBold", letterSpacing: 0.5 },
-  name: { fontSize: 14, fontFamily: "Inter_600SemiBold", lineHeight: 20 },
+  category: { fontSize: 10, fontFamily: "DMSans_600SemiBold", letterSpacing: 0.5 },
+  name: { fontSize: 14, fontFamily: "DMSans_600SemiBold", lineHeight: 20 },
   priceRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2 },
-  price: { fontSize: 16, fontFamily: "Inter_700Bold" },
+  price: { fontSize: 16, fontFamily: "DMSans_700Bold" },
   discountBadge: { borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  discountText: { color: "#fff", fontSize: 11, fontFamily: "Inter_700Bold" },
+  discountText: { color: "#fff", fontSize: 11, fontFamily: "DMSans_700Bold" },
   addToCartBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     marginTop: 6,
   },
-  addToCartText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  addToCartText: { fontSize: 13, fontFamily: "DMSans_600SemiBold" },
   deleteBtn: {
     width: 40,
     alignItems: "center",

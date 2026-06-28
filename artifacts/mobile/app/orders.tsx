@@ -158,7 +158,7 @@ function StatusTracker({ status }: { status: string }) {
 
             {/* Right: label + timestamp */}
             <View style={styles.vtContent}>
-              <Text style={[styles.vtLabel, { color: done ? cfg.color : "#9CA3AF", fontFamily: isActive ? "Inter_700Bold" : done ? "Inter_600SemiBold" : "Inter_400Regular" }]}>
+              <Text style={[styles.vtLabel, { color: done ? cfg.color : "#9CA3AF", fontFamily: isActive ? "DMSans_700Bold" : done ? "DMSans_600SemiBold" : "DMSans_400Regular" }]}>
                 {cfg.label}
               </Text>
               {isActive && (
@@ -523,7 +523,7 @@ export default function OrdersScreen() {
                             <View style={[styles.addressBox, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
                               <Feather name="map-pin" size={14} color={colors.mutedForeground} />
                               <View style={{ flex: 1 }}>
-                                {a.fullName ? <Text style={[styles.addressText, { color: colors.text, fontFamily: "Inter_600SemiBold" }]}>{a.fullName} · {a.mobile}</Text> : null}
+                                {a.fullName ? <Text style={[styles.addressText, { color: colors.text, fontFamily: "DMSans_600SemiBold" }]}>{a.fullName} · {a.mobile}</Text> : null}
                                 <Text style={[styles.addressText, { color: colors.mutedForeground }]}>{parts.join(", ")}</Text>
                               </View>
                             </View>
@@ -566,7 +566,7 @@ export default function OrdersScreen() {
                             <Text style={[styles.shippingCardTitle, { color: "#16A34A" }]}>Shipping Info</Text>
                           </View>
                           {order.courierPartner && (
-                            <Text style={[styles.addressText, { color: colors.text, fontFamily: "Inter_600SemiBold" }]}>{order.courierPartner}</Text>
+                            <Text style={[styles.addressText, { color: colors.text, fontFamily: "DMSans_600SemiBold" }]}>{order.courierPartner}</Text>
                           )}
                           {order.trackingNumber && (
                             <Text style={[styles.addressText, { color: colors.mutedForeground }]}>Tracking No.: {order.trackingNumber}</Text>
@@ -574,7 +574,7 @@ export default function OrdersScreen() {
                           {order.estimatedDelivery && (
                             <View style={styles.estDeliveryRow}>
                               <Feather name="calendar" size={13} color="#16A34A" />
-                              <Text style={[styles.addressText, { color: "#16A34A", fontFamily: "Inter_600SemiBold" }]}>
+                              <Text style={[styles.addressText, { color: "#16A34A", fontFamily: "DMSans_600SemiBold" }]}>
                                 Est. Delivery: {order.estimatedDelivery}
                               </Text>
                             </View>
@@ -645,12 +645,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   backBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, alignItems: "center", justifyContent: "center" },
-  headerTitle: { flex: 1, fontSize: 18, fontFamily: "Inter_700Bold" },
+  headerTitle: { flex: 1, fontSize: 18, fontFamily: "DMSans_700Bold" },
   liveBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#ECFDF5", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10 },
   liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#10B981" },
-  liveText: { fontSize: 10, fontFamily: "Inter_700Bold", color: "#10B981", letterSpacing: 0.5 },
+  liveText: { fontSize: 10, fontFamily: "DMSans_700Bold", color: "#10B981", letterSpacing: 0.5 },
   pollBar: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 16, paddingVertical: 6 },
-  pollText: { fontSize: 11, fontFamily: "Inter_400Regular" },
+  pollText: { fontSize: 11, fontFamily: "DMSans_400Regular" },
   updateBanner: {
     flexDirection: "row",
     alignItems: "center",
@@ -659,33 +659,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
-  updateBannerText: { flex: 1, color: "#fff", fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  updateBannerText: { flex: 1, color: "#fff", fontSize: 12, fontFamily: "DMSans_600SemiBold" },
   filterRow: { paddingHorizontal: 16, paddingVertical: 10, gap: 8, alignItems: "center" },
   filterTab: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: "rgba(0,0,0,0.06)" },
-  filterTabText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#374151" },
+  filterTabText: { fontSize: 12, fontFamily: "DMSans_600SemiBold", color: "#374151" },
   center: { alignItems: "center", justifyContent: "center", gap: 12, paddingVertical: 80, paddingHorizontal: 32 },
-  emptyTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold", textAlign: "center" },
-  emptySubtext: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center" },
+  emptyTitle: { fontSize: 16, fontFamily: "DMSans_600SemiBold", textAlign: "center" },
+  emptySubtext: { fontSize: 13, fontFamily: "DMSans_400Regular", textAlign: "center" },
   actionBtn: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, marginTop: 4 },
-  actionBtnText: { color: "#fff", fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  actionBtnText: { color: "#fff", fontSize: 14, fontFamily: "DMSans_600SemiBold" },
   content: { padding: 16, gap: 12 },
   orderCard: { borderRadius: 16, borderWidth: 1.5, overflow: "hidden" },
   cardTop: { flexDirection: "row", alignItems: "center", gap: 10, padding: 14 },
   orderIcon: { width: 42, height: 42, borderRadius: 12, alignItems: "center", justifyContent: "center", flexShrink: 0 },
   orderIdRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2, flexWrap: "wrap" },
-  orderId: { fontSize: 14, fontFamily: "Inter_700Bold" },
+  orderId: { fontSize: 14, fontFamily: "DMSans_700Bold" },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-  statusText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
+  statusText: { fontSize: 11, fontFamily: "DMSans_600SemiBold" },
   updatedPill: { backgroundColor: "#2563EB", paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8 },
-  updatedPillText: { color: "#fff", fontSize: 10, fontFamily: "Inter_700Bold" },
-  productName: { fontSize: 12, fontFamily: "Inter_500Medium", marginTop: 2 },
-  orderDate: { fontSize: 11, fontFamily: "Inter_400Regular" },
-  lastUpdated: { fontSize: 10, fontFamily: "Inter_400Regular", marginTop: 1 },
-  orderTotal: { fontSize: 16, fontFamily: "Inter_700Bold" },
-  paymentTag: { fontSize: 10, fontFamily: "Inter_600SemiBold" },
+  updatedPillText: { color: "#fff", fontSize: 10, fontFamily: "DMSans_700Bold" },
+  productName: { fontSize: 12, fontFamily: "DMSans_500Medium", marginTop: 2 },
+  orderDate: { fontSize: 11, fontFamily: "DMSans_400Regular" },
+  lastUpdated: { fontSize: 10, fontFamily: "DMSans_400Regular", marginTop: 1 },
+  orderTotal: { fontSize: 16, fontFamily: "DMSans_700Bold" },
+  paymentTag: { fontSize: 10, fontFamily: "DMSans_600SemiBold" },
   expandedSection: { borderTopWidth: 1, padding: 14, gap: 12 },
   cancelBanner: { flexDirection: "row", alignItems: "center", gap: 8, padding: 10, borderRadius: 10 },
-  cancelText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  cancelText: { fontSize: 13, fontFamily: "DMSans_600SemiBold" },
   verticalTracker: { paddingVertical: 8, paddingHorizontal: 4, gap: 0 },
   vtStep: { flexDirection: "row", gap: 14, alignItems: "flex-start", minHeight: 52 },
   vtLeft: { alignItems: "center", width: 32 },
@@ -696,35 +696,35 @@ const styles = StyleSheet.create({
   vtLabel: { fontSize: 14 },
   vtActiveBadge: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, alignSelf: "flex-start" },
   vtActiveDot: { width: 6, height: 6, borderRadius: 3 },
-  vtActiveText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
-  vtDoneText: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#9CA3AF" },
+  vtActiveText: { fontSize: 11, fontFamily: "DMSans_600SemiBold" },
+  vtDoneText: { fontSize: 11, fontFamily: "DMSans_400Regular", color: "#9CA3AF" },
   priceBreakdown: { borderRadius: 12, borderWidth: 1, padding: 12, gap: 7 },
-  breakdownTitle: { fontSize: 10, fontFamily: "Inter_600SemiBold", letterSpacing: 0.8, marginBottom: 2 },
+  breakdownTitle: { fontSize: 10, fontFamily: "DMSans_600SemiBold", letterSpacing: 0.8, marginBottom: 2 },
   priceRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  priceLabel: { fontSize: 13, fontFamily: "Inter_400Regular" },
-  priceValue: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  priceLabel: { fontSize: 13, fontFamily: "DMSans_400Regular" },
+  priceValue: { fontSize: 13, fontFamily: "DMSans_600SemiBold" },
   totalRow: { paddingTop: 8, borderTopWidth: 1, marginTop: 4 },
-  totalLabel: { fontSize: 14, fontFamily: "Inter_700Bold" },
-  totalValue: { fontSize: 16, fontFamily: "Inter_700Bold" },
+  totalLabel: { fontSize: 14, fontFamily: "DMSans_700Bold" },
+  totalValue: { fontSize: 16, fontFamily: "DMSans_700Bold" },
   addressBox: { flexDirection: "row", gap: 8, padding: 10, borderRadius: 10, borderWidth: 1, alignItems: "flex-start" },
-  addressText: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 20 },
+  addressText: { flex: 1, fontSize: 13, fontFamily: "DMSans_400Regular", lineHeight: 20 },
   shippingCard: { borderRadius: 12, borderWidth: 1, padding: 12, gap: 6 },
   shippingCardHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 },
-  shippingCardTitle: { fontSize: 13, fontFamily: "Inter_700Bold" },
+  shippingCardTitle: { fontSize: 13, fontFamily: "DMSans_700Bold" },
   estDeliveryRow: { flexDirection: "row", alignItems: "center", gap: 5 },
   trackingLinkBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#16A34A", paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, alignSelf: "flex-start", marginTop: 4 },
-  trackingLinkText: { color: "#fff", fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  trackingLinkText: { color: "#fff", fontSize: 13, fontFamily: "DMSans_600SemiBold" },
   metaRow: { flexDirection: "row", borderRadius: 12, borderWidth: 1, overflow: "hidden" },
   metaItem: { flex: 1, alignItems: "center", padding: 10, gap: 3 },
-  metaKey: { fontSize: 10, fontFamily: "Inter_400Regular" },
-  metaVal: { fontSize: 13, fontFamily: "Inter_700Bold" },
+  metaKey: { fontSize: 10, fontFamily: "DMSans_400Regular" },
+  metaVal: { fontSize: 13, fontFamily: "DMSans_700Bold" },
   metaDivider: { width: 1 },
   invoiceBtn: {
     flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 10,
     paddingHorizontal: 14, borderRadius: 10, borderWidth: 1, borderColor: "#E5E7EB",
     borderStyle: "dashed", justifyContent: "center", marginTop: 4,
   },
-  invoiceBtnText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#6B7280" },
+  invoiceBtnText: { fontSize: 13, fontFamily: "DMSans_500Medium", color: "#6B7280" },
   contactSupportBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -737,5 +737,5 @@ const styles = StyleSheet.create({
     backgroundColor: "#EFF6FF",
     marginTop: 4,
   },
-  contactSupportText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#2563EB" },
+  contactSupportText: { fontSize: 14, fontFamily: "DMSans_600SemiBold", color: "#2563EB" },
 });
