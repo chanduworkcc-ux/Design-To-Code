@@ -40,9 +40,7 @@ import Animated, {
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
 function getISTGreeting(): string {
-  const now = new Date();
-  const istOffset = 5.5 * 60 * 60 * 1000;
-  const istTime = new Date(now.getTime() + istOffset - now.getTimezoneOffset() * 60 * 1000);
+  const istTime = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
   const hour = istTime.getUTCHours();
   const min = istTime.getUTCMinutes();
   if (hour >= 5 && hour < 12) return "Good Morning";
@@ -402,7 +400,7 @@ export default function ShopScreen() {
               </View>
               <View>
                 <Text style={[styles.greetingText, { color: colors.mutedForeground }]}>
-                  {(() => { const ist = new Date(Date.now() + (5.5 * 3600 - new Date().getTimezoneOffset() * 60) * 1000); const h = ist.getUTCHours(); const m = ist.getUTCMinutes(); return h >= 5 && h < 12 ? t("goodMorning") : h >= 12 && h < 17 ? t("goodAfternoon") : h >= 17 && (h < 19 || (h === 19 && m < 50)) ? t("goodEvening") : t("goodNight"); })()} 👋
+                  {(() => { const ist = new Date(Date.now() + 5.5 * 60 * 60 * 1000); const h = ist.getUTCHours(); const m = ist.getUTCMinutes(); return h >= 5 && h < 12 ? t("goodMorning") : h >= 12 && h < 17 ? t("goodAfternoon") : h >= 17 && (h < 19 || (h === 19 && m < 50)) ? t("goodEvening") : t("goodNight"); })()} 👋
                 </Text>
                 <Text style={[styles.brandName, { color: colors.text }]}>
                   {user?.name?.split(" ")[0] ?? "XyloCart"}
