@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { paddingHorizontal: 20, flexGrow: 1, justifyContent: "center" },
   logoArea: { alignItems: "center", marginBottom: 28, gap: 8 },
-  logoImg: { width: 160, height: 90 },
+  logoImg: { width: 120, height: 120 },
   tagline: { fontSize: 14, fontFamily: "DMSans_400Regular" },
   card: { borderRadius: 20, borderWidth: 1, padding: 24, gap: 14 },
   cardTitle: { fontSize: 22, fontFamily: "DMSans_700Bold" },

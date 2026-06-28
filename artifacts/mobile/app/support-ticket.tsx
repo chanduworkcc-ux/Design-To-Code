@@ -272,7 +272,7 @@ export default function SupportTicketScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { apiRequest, user } = useAuth();
+  const { apiRequest, user, loading: authLoading } = useAuth();
   const topPadding = Platform.OS === "web" ? 0 : insets.top;
 
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -357,6 +357,22 @@ export default function SupportTicketScreen() {
       Alert.alert("Error", "Network error.");
     }
     setSubmitting(false);
+  }
+
+  if (authLoading) {
+    return (
+      <View style={[styles.root, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { paddingTop: topPadding + 12, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+          <Pressable style={[styles.backBtn, { borderColor: colors.border }]} onPress={() => router.back()}>
+            <Feather name="arrow-left" size={20} color={colors.text} />
+          </Pressable>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Help Center</Text>
+        </View>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </View>
+    );
   }
 
   if (!user) {
