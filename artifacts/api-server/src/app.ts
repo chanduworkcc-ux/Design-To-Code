@@ -6,7 +6,7 @@ import http from "http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { activityLogger } from "./middleware/auth";
-import { seedDefaultConfig, seedAdminUser } from "./lib/config";
+import { seedDefaultConfig, seedAdminUser, seedDemoData } from "./lib/config";
 
 const app: Express = express();
 

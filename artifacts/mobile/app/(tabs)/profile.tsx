@@ -317,7 +317,7 @@ export default function ProfileScreen() {
         </View>
 
         {user.role === "admin" && (
-          <Pressable style={[styles.adminBtn, { backgroundColor: colors.primary }]} onPress={() => router.push("/admin" as any)}>
+          <Pressable style={[styles.adminBtn, { backgroundColor: colors.primary }]} onPress={() => router.push("/admin/dashboard" as any)}>
             <Ionicons name="shield-checkmark-outline" size={18} color="#fff" />
             <Text style={styles.adminBtnText}>Admin Panel</Text>
           </Pressable>
