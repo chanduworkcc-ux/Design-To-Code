@@ -5,8 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "bash ../../scripts/db-restore.sh && (bash ../../scripts/db-watch.sh &) && export NODE_ENV=development && pnpm run build && pnpm run start",
-    "prebuild": "tsc --build ../../tsconfig.json",
-    "build": "node ./build.mjs",
+    "build": "tsc --build ../../tsconfig.json && node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc --build ../../tsconfig.json && tsc -p tsconfig.json --noEmit"
   },
