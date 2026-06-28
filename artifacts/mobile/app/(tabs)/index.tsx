@@ -657,8 +657,16 @@ export default function ShopScreen() {
         {sortedProducts.length === 0 ? (
           <FloatIn delay={360} distance={30}>
             <View style={styles.emptyState}>
-              <View style={[styles.emptyCircle, { backgroundColor: colors.card }]}>
-                <Feather name="package" size={38} color={colors.primary} />
+              {/* 3-D spinning box with pulsing rings */}
+              <View style={{ width: 180, height: 200, alignItems: "center", justifyContent: "center" }}>
+                <PulsingRing color={colors.primary} size={160} duration={2000} delay={0}   thickness={1} />
+                <PulsingRing color={colors.primary} size={130} duration={2000} delay={700} thickness={1.5} />
+                <PulsingRing color="#818CF8"         size={100} duration={1600} delay={400} thickness={1} />
+                <FloatingParticle x={10}  startY={60}  color={colors.primary} delay={0}    size={5} duration={3800} />
+                <FloatingParticle x={150} startY={100} color="#818CF8"        delay={900}  size={4} duration={4400} />
+                <FloatingParticle x={80}  startY={140} color={colors.primary} delay={450}  size={3} duration={3200} />
+                <FloatingParticle x={130} startY={50}  color="#818CF8"        delay={1300} size={4} duration={5000} />
+                <SpinBox3D size={90} color={colors.primary} topColor="#60A5FA" sideColor="#1D4ED8" />
               </View>
               <Text style={[styles.emptyTitle, { color: colors.text }]}>
                 {sortBy === "featured" ? "No featured products" : "No products yet"}
