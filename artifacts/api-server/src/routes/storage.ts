@@ -9,7 +9,7 @@ import { ObjectStorageService, ObjectNotFoundError, objectStorageClient } from "
 import { authMiddleware, adminMiddleware } from "../middleware/auth";
 import { setConfig } from "../lib/config";
 
-const LOCAL_UPLOADS_DIR = path.join(__dirname, "../../public/uploads");
+const LOCAL_UPLOADS_DIR = path.join(__dirname, "../public/uploads");
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
