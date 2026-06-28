@@ -387,25 +387,6 @@ router.get("/referrals/network", authMiddleware, async (req: AuthRequest, res) =
   res.json({ referrals: enriched, totalRevenue, totalCoinsEarned });
 });
 
-// ─── Tickets Admin ────────────────────────────────────────────────────────────
-
-router.get("/admin/tickets", authMiddleware, adminMiddleware, async (_req, res) => {
-  const tickets = await db.select().from(supportTicketsTable).orderBy(desc(supportTicketsTable.createdAt)).limit(100);
-  res.json({ tickets });
-});
-
-router.patch("/admin/tickets/:id/status", authMiddleware, adminMiddleware, async (req, res) => {
-  const { status } = req.body;
-  const allowed = ["open", "in_progress", "resolved", "closed"];
-  if (!allowed.includes(status)) { res.status(400).json({ error: "Invalid status" }); return; }
-  const [updated] = await db
-    .update(supportTicketsTable)
-    .set({ status, ...(status === "resolved" ? { resolvedAt: new Date() } : {}) })
-    .where(eq(supportTicketsTable.id, req.params.id))
-    .returning();
-  res.json({ ticket: updated });
-});
-
 // ─── Activity Logs ────────────────────────────────────────────────────────────
 
 router.get("/admin/activity-logs", authMiddleware, adminMiddleware, async (req, res) => {
