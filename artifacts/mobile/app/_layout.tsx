@@ -22,6 +22,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AppProvider } from "@/context/AppContext";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { LanguageProvider } from "@/context/LanguageContext";
+import SplashOverlay from "@/components/SplashOverlay";
 import { NotificationProvider } from "@/context/NotificationContext";
 import { SocketProvider } from "@/context/SocketContext";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
@@ -99,6 +100,7 @@ export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     DMSans_400Regular, DMSans_500Medium, DMSans_600SemiBold, DMSans_700Bold,
   });
+  const [showSplash, setShowSplash] = useState(true);
   const [maintenance, setMaintenance] = useState<{ active: boolean; message?: string }>({ active: false });
   const [forceUpdate, setForceUpdate] = useState<{ active: boolean; url: string; version: string; notes: string }>({ active: false, url: "", version: "", notes: "" });
 
@@ -171,6 +173,9 @@ export default function RootLayout() {
                     <KeyboardProvider>
                       <RootLayoutNav />
                     </KeyboardProvider>
+                  )}
+                  {showSplash && (
+                    <SplashOverlay onDone={() => setShowSplash(false)} />
                   )}
                 </GestureHandlerRootView>
               </SocketInit>
