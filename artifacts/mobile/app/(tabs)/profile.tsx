@@ -57,6 +57,8 @@ export default function ProfileScreen() {
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const [appVersion, setAppVersion] = useState<string>("1.0");
+  const [rateAppUrl, setRateAppUrl] = useState<string>("");
 
   useEffect(() => {
     AsyncStorage.getItem("@xc_avatar_uri").then((uri) => {
@@ -67,6 +69,17 @@ export default function ProfileScreen() {
   useEffect(() => {
     if (!loading && !user) router.replace("/(auth)/login");
   }, [user, loading]);
+
+  useEffect(() => {
+    const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
+    fetch(`${BASE_URL}/config/public`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.app_version) setAppVersion(d.app_version);
+        if (d?.rate_app_url) setRateAppUrl(d.rate_app_url);
+      })
+      .catch(() => {});
+  }, []);
 
   if (loading || !user) {
     return (
@@ -95,20 +108,6 @@ export default function ProfileScreen() {
       });
     } catch {}
   }
-
-  const [appVersion, setAppVersion] = useState<string>("1.0");
-  const [rateAppUrl, setRateAppUrl] = useState<string>("");
-
-  useEffect(() => {
-    const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
-    fetch(`${BASE_URL}/config/public`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (d?.app_version) setAppVersion(d.app_version);
-        if (d?.rate_app_url) setRateAppUrl(d.rate_app_url);
-      })
-      .catch(() => {});
-  }, []);
 
   async function handleCheckUpdates() {
     try {
