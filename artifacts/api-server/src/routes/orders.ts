@@ -2,7 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { ordersTable, productsTable, usersTable, couponsTable, referralsTable, walletTransactionsTable, orderSequencesTable } from "@workspace/db/schema";
 import { adminAuditLogsTable } from "@workspace/db/schema";
-import { eq, desc, sql, and, not, inArray } from "drizzle-orm";
+import { eq, desc, sql, and, not } from "drizzle-orm";
 import { sendEmail, orderStatusEmailHtml } from "../lib/email";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../middleware/auth";
 import { getConfig } from "../lib/config";
@@ -200,7 +200,7 @@ router.post("/orders", authMiddleware, async (req: AuthRequest, res) => {
       and(
         eq(ordersTable.userId, req.userId!),
         eq(ordersTable.productId, productId),
-        not(inArray(ordersTable.status, ["cancelled", "refunded"]))
+        not(eq(ordersTable.status, "cancelled"))
       )
     )
     .limit(1);

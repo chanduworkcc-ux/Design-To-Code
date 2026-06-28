@@ -185,6 +185,9 @@ export default function CheckoutScreen() {
   const [showSuccessAnim, setShowSuccessAnim] = useState(false);
   const [successOrder, setSuccessOrder] = useState<{ orderNumber: string; total: number } | null>(null);
 
+  // Error messages for form validation (must be here, not after early return)
+  const [errorMessages, setErrorMessages] = useState<Partial<Record<keyof ShippingForm, string>>>({});
+
   // Computed billing breakdown
   const subtotal = product ? Number(product.price) : 0;
   const taxAmount = Math.round((subtotal * billingConfig.taxPercent) / 100);
@@ -328,8 +331,6 @@ export default function CheckoutScreen() {
       </View>
     );
   }
-
-  const [errorMessages, setErrorMessages] = useState<Partial<Record<keyof ShippingForm, string>>>({});
 
   function validate(): boolean {
     const newErrors: Partial<Record<keyof ShippingForm, boolean>> = {};
