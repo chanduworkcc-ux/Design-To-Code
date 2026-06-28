@@ -86,7 +86,6 @@ export default function SplashOverlay({ onDone }: Props) {
             style={styles.logo}
             resizeMode="contain"
           />
-          <Text style={styles.brandName}>XyloCart</Text>
         </Animated.View>
 
         <View style={styles.dotsRow}>
