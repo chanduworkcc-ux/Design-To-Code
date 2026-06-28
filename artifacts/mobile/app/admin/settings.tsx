@@ -113,7 +113,9 @@ export default function SettingsScreen() {
   const [gatewayErrors, setGatewayErrors] = useState<Record<string, string>>({});
   const [secureFields, setSecureFields] = useState<Record<string, boolean>>({});
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoUrlNoBg, setLogoUrlNoBg] = useState<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
+  const [logoNoBgUploading, setLogoNoBgUploading] = useState(false);
   const topPadding = Platform.OS === "web" ? 0 : insets.top;
 
   useEffect(() => { fetchConfig(); fetchLogo(); }, []);
@@ -124,11 +126,13 @@ export default function SettingsScreen() {
       if (res.ok) {
         const d = await res.json();
         if (d.logo_url) setLogoUrl(d.logo_url);
+        if (d.logo_url_without_bg) setLogoUrlNoBg(d.logo_url_without_bg);
       }
     } catch {}
   }
 
-  async function uploadLogo() {
+  async function uploadLogoVariant(variant: "default" | "no_bg") {
+    const isNoBg = variant === "no_bg";
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       Alert.alert("Permission Required", "Please allow access to your photo library to upload a logo.");
@@ -145,11 +149,11 @@ export default function SettingsScreen() {
     if (result.canceled || !result.assets[0]) return;
 
     const asset = result.assets[0];
-    const fileName = asset.fileName ?? `logo-${Date.now()}.jpg`;
+    const fileName = asset.fileName ?? `logo-${Date.now()}.png`;
     const fileSize = asset.fileSize ?? 500000;
-    const mimeType = asset.mimeType ?? "image/jpeg";
+    const mimeType = asset.mimeType ?? "image/png";
 
-    setLogoUploading(true);
+    if (isNoBg) setLogoNoBgUploading(true); else setLogoUploading(true);
     try {
       const urlRes = await apiRequest("/storage/uploads/request-url", {
         method: "POST",
@@ -168,17 +172,19 @@ export default function SettingsScreen() {
 
       const saveRes = await apiRequest("/storage/uploads/logo", {
         method: "POST",
-        body: JSON.stringify({ objectPath }),
+        body: JSON.stringify({ objectPath, variant: isNoBg ? "no_bg" : "default" }),
       });
       if (!saveRes.ok) throw new Error("Failed to save logo URL");
       const { logoUrl: newUrl } = await saveRes.json();
-      setLogoUrl(newUrl);
-      Alert.alert("Success", "Logo updated successfully. It will appear instantly for all users.");
+      if (isNoBg) setLogoUrlNoBg(newUrl); else setLogoUrl(newUrl);
+      Alert.alert("Success", `${isNoBg ? "Transparent" : "Standard"} logo updated successfully.`);
     } catch (e: any) {
       Alert.alert("Upload Failed", e.message ?? "Could not upload logo. Please try again.");
     }
-    setLogoUploading(false);
+    if (isNoBg) setLogoNoBgUploading(false); else setLogoUploading(false);
   }
+
+  function uploadLogo() { return uploadLogoVariant("default"); }
 
   async function fetchConfig() {
     try {
@@ -307,25 +313,52 @@ export default function SettingsScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>APP BRANDING</Text>
             <View style={styles.card}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
-                <View style={styles.logoPreview}>
+              {/* Logo with background */}
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 14 }}>
+                <View style={[styles.logoPreview, { backgroundColor: "#F3F4F6" }]}>
                   {logoUrl
                     ? <Image source={{ uri: logoUrl }} style={styles.logoImg} resizeMode="contain" />
                     : <Feather name="image" size={28} color="#9CA3AF" />
                   }
                 </View>
                 <View style={{ flex: 1, gap: 4 }}>
-                  <Text style={styles.configLabel}>App Logo</Text>
+                  <Text style={styles.configLabel}>Logo (With Background)</Text>
                   <Text style={styles.configDesc}>
-                    {logoUrl ? "Custom logo active — tap to update" : "No custom logo set — using default"}
+                    {logoUrl ? "Active — tap to replace" : "No logo set — using default"}
                   </Text>
                 </View>
                 <Pressable
                   style={[styles.uploadBtn, { opacity: logoUploading ? 0.6 : 1 }]}
-                  onPress={uploadLogo}
+                  onPress={() => uploadLogoVariant("default")}
                   disabled={logoUploading}
                 >
                   {logoUploading
+                    ? <ActivityIndicator size="small" color="#fff" />
+                    : <><Feather name="upload" size={14} color="#fff" /><Text style={styles.uploadBtnText}>Upload</Text></>
+                  }
+                </Pressable>
+              </View>
+              <View style={{ height: 1, backgroundColor: "#E5EAF8", marginBottom: 14 }} />
+              {/* Logo without background */}
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+                <View style={[styles.logoPreview, { backgroundColor: "#111827" }]}>
+                  {logoUrlNoBg
+                    ? <Image source={{ uri: logoUrlNoBg }} style={styles.logoImg} resizeMode="contain" />
+                    : <Feather name="image" size={28} color="#6B7280" />
+                  }
+                </View>
+                <View style={{ flex: 1, gap: 4 }}>
+                  <Text style={styles.configLabel}>Logo (Transparent / No BG)</Text>
+                  <Text style={styles.configDesc}>
+                    {logoUrlNoBg ? "Active — tap to replace" : "Not set — upload PNG with transparency"}
+                  </Text>
+                </View>
+                <Pressable
+                  style={[styles.uploadBtn, { opacity: logoNoBgUploading ? 0.6 : 1 }]}
+                  onPress={() => uploadLogoVariant("no_bg")}
+                  disabled={logoNoBgUploading}
+                >
+                  {logoNoBgUploading
                     ? <ActivityIndicator size="small" color="#fff" />
                     : <><Feather name="upload" size={14} color="#fff" /><Text style={styles.uploadBtnText}>Upload</Text></>
                   }

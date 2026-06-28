@@ -6,3 +6,4 @@
 - [Email utility pattern](email-utility.md) — sendEmail() in api-server/src/lib/email.ts; skips silently when email_enabled≠"true" or SMTP unconfigured; orderStatusEmailHtml() and fraudAlertEmailHtml() helpers in same file
 - [Checkout billing breakdown](checkout-billing.md) — config/public endpoint already returns delivery_charge/tax_percent/service_charge/maintenance_charge; checkout.tsx fetches these on mount and shows live breakdown before order; coupon verified via POST /coupons/validate before placement
 - [3D purchase success animation](purchase-success-animation.md) — PurchaseSuccessAnimation.tsx uses ThreeD.tsx exports (FloatingOrb/PulsingRing/SpinBox3D/FloatIn/FloatingParticle); auto-calls onComplete after 3600ms; onComplete navigates to /orders
+- [Two-variant logo management](two-logo-variant.md) — admin settings has logo_url (with bg) + logo_url_without_bg (transparent); storage endpoint accepts variant="no_bg"; both keys exposed in GET /config/public

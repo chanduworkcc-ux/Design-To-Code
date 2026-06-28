@@ -68,7 +68,7 @@ router.post("/storage/uploads/request-url", authMiddleware, adminMiddleware, asy
 });
 
 router.post("/storage/uploads/logo", authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
-  const { objectPath } = req.body;
+  const { objectPath, variant } = req.body;
   if (!objectPath || typeof objectPath !== "string") {
     res.status(400).json({ error: "objectPath is required" });
     return;
@@ -79,8 +79,9 @@ router.post("/storage/uploads/logo", authMiddleware, adminMiddleware, async (req
     : "";
   const logoUrl = `${baseUrl}/api/storage/objects/${objectPath}`;
 
-  await setConfig("logo_url", logoUrl);
-  res.json({ logoUrl });
+  const configKey = variant === "no_bg" ? "logo_url_without_bg" : "logo_url";
+  await setConfig(configKey, logoUrl);
+  res.json({ logoUrl, variant: configKey });
 });
 
 router.get("/storage/public-objects/*filePath", async (req: Request, res: Response) => {
