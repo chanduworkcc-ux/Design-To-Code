@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { supportTicketsTable, ticketNotesTable, orderSequencesTable } from "@workspace/db/schema";
+import { supportTicketsTable, ticketNotesTable, orderSequencesTable, usersTable } from "@workspace/db/schema";
 import { eq, desc, sql } from "drizzle-orm";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../middleware/auth";
 import { getIO } from "../lib/socket";
@@ -27,7 +27,9 @@ async function generateTicketNumber(): Promise<string> {
 
 const ticketSchema = z.object({
   category: z.enum(["order_issue", "payment", "product", "account", "other"]),
+  title: z.string().min(3, "Title must be at least 3 characters"),
   description: z.string().min(10),
+  imageUrl: z.string().url().optional(),
 });
 
 router.get("/tickets", authMiddleware, async (req: AuthRequest, res) => {
@@ -50,14 +52,17 @@ router.post("/tickets", authMiddleware, async (req: AuthRequest, res) => {
     id: uuidv4(),
     ticketNumber,
     userId: req.userId!,
-    ...parsed.data,
+    category: parsed.data.category,
+    title: parsed.data.title,
+    description: parsed.data.description,
+    imageUrl: parsed.data.imageUrl ?? null,
     status: "open",
   }).returning();
 
   try {
     getIO().to("admins").emit("new_ticket", {
       ticket,
-      message: `New ticket ${ticketNumber}: ${parsed.data.category.replace("_", " ")}`,
+      message: `New ticket ${ticketNumber}: ${parsed.data.title}`,
     });
   } catch {}
 
@@ -115,11 +120,26 @@ router.post("/tickets/:id/notes", authMiddleware, async (req: AuthRequest, res) 
 });
 
 router.get("/admin/tickets", authMiddleware, adminMiddleware, async (_req, res) => {
-  const tickets = await db
-    .select()
+  const rows = await db
+    .select({
+      id: supportTicketsTable.id,
+      ticketNumber: supportTicketsTable.ticketNumber,
+      userId: supportTicketsTable.userId,
+      category: supportTicketsTable.category,
+      title: supportTicketsTable.title,
+      description: supportTicketsTable.description,
+      imageUrl: supportTicketsTable.imageUrl,
+      status: supportTicketsTable.status,
+      createdAt: supportTicketsTable.createdAt,
+      resolvedAt: supportTicketsTable.resolvedAt,
+      userName: usersTable.name,
+      userEmail: usersTable.email,
+      userMobile: usersTable.mobileNumber,
+    })
     .from(supportTicketsTable)
+    .leftJoin(usersTable, eq(supportTicketsTable.userId, usersTable.id))
     .orderBy(desc(supportTicketsTable.createdAt));
-  res.json({ tickets });
+  res.json({ tickets: rows });
 });
 
 router.patch("/admin/tickets/:id/status", authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {

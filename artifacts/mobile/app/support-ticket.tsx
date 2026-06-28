@@ -31,7 +31,9 @@ interface Ticket {
   id: string;
   ticketNumber: string | null;
   category: TicketCategory;
+  title: string;
   description: string;
+  imageUrl: string | null;
   status: TicketStatus;
   createdAt: string;
   resolvedAt?: string;
@@ -171,6 +173,12 @@ function TicketChat({
 
   return (
     <View style={[chat.wrap, { borderTopColor: colors.border }]}>
+      {ticket.imageUrl ? (
+        <View style={[chat.attachedImageWrap, { borderBottomColor: colors.border }]}>
+          <Text style={[chat.attachedImageLabel, { color: colors.mutedForeground }]}>Attached photo</Text>
+          <Image source={{ uri: ticket.imageUrl }} style={chat.attachedImage} resizeMode="cover" />
+        </View>
+      ) : null}
       <ScrollView
         ref={scrollRef}
         style={chat.scroll}
@@ -266,6 +274,9 @@ const chat = StyleSheet.create({
   sendBtn: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   closedBanner: { flexDirection: "row", alignItems: "center", gap: 8, padding: 12, borderTopWidth: 1 },
   closedText: { fontSize: 12, fontFamily: "DMSans_400Regular", flex: 1 },
+  attachedImageWrap: { padding: 12, borderBottomWidth: 1, gap: 6 },
+  attachedImageLabel: { fontSize: 11, fontFamily: "DMSans_500Medium" },
+  attachedImage: { width: "100%", height: 160, borderRadius: 10 },
 });
 
 export default function SupportTicketScreen() {
@@ -279,8 +290,13 @@ export default function SupportTicketScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [category, setCategory] = useState<TicketCategory>("order_issue");
+  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [formImageUri, setFormImageUri] = useState<string | null>(null);
+  const [formImageUrl, setFormImageUrl] = useState<string | null>(null);
+  const [uploadingFormImage, setUploadingFormImage] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [liveUpdate, setLiveUpdate] = useState<string | null>(null);
@@ -334,25 +350,97 @@ export default function SupportTicketScreen() {
     setRefreshing(false);
   }
 
+  async function pickFormImage() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Permission Required", "Please allow access to your photo library.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.7,
+    });
+    if (result.canceled || !result.assets[0]) return;
+    const asset = result.assets[0];
+    setFormImageUri(asset.uri);
+    setUploadingFormImage(true);
+    try {
+      const urlRes = await apiRequest("/storage/uploads/request-url", {
+        method: "POST",
+        body: JSON.stringify({
+          name: asset.fileName ?? `ticket-attach-${Date.now()}.jpg`,
+          size: asset.fileSize ?? 500000,
+          contentType: asset.mimeType ?? "image/jpeg",
+        }),
+      });
+      if (!urlRes.ok) throw new Error("Upload URL failed");
+      const { uploadURL, objectPath } = await urlRes.json();
+      const blob = await (await fetch(asset.uri)).blob();
+      const uploadRes = await fetch(uploadURL, {
+        method: "PUT",
+        body: blob,
+        headers: { "Content-Type": asset.mimeType ?? "image/jpeg" },
+      });
+      if (!uploadRes.ok) throw new Error("Upload failed");
+      const getRes = await apiRequest(`/storage/objects/${encodeURIComponent(objectPath)}`);
+      if (!getRes.ok) throw new Error("Could not get URL");
+      const { url } = await getRes.json();
+      setFormImageUrl(url);
+    } catch (e: any) {
+      Alert.alert("Upload Failed", e.message ?? "Could not upload image.");
+      setFormImageUri(null);
+      setFormImageUrl(null);
+    }
+    setUploadingFormImage(false);
+  }
+
+  function removeFormImage() {
+    setFormImageUri(null);
+    setFormImageUrl(null);
+  }
+
   async function handleSubmit() {
     setFormError(null);
+    if (!title.trim()) {
+      setFormError("Complaint title is required.");
+      return;
+    }
+    if (title.trim().length < 3) {
+      setFormError("Title must be at least 3 characters.");
+      return;
+    }
     if (description.trim().length < 10) {
-      setFormError(`Please write at least 10 characters (${description.trim().length}/10 so far).`);
+      setFormError(`Description must be at least 10 characters (${description.trim().length}/10 so far).`);
+      return;
+    }
+    if (uploadingFormImage) {
+      setFormError("Please wait for the image to finish uploading.");
       return;
     }
     setSubmitting(true);
     try {
+      const body: Record<string, string> = {
+        category,
+        title: title.trim(),
+        description: description.trim(),
+      };
+      if (formImageUrl) body.imageUrl = formImageUrl;
+
       const res = await apiRequest("/tickets", {
         method: "POST",
-        body: JSON.stringify({ category, description: description.trim() }),
+        body: JSON.stringify(body),
       });
       if (res.ok) {
         const d = await res.json();
+        setTitle("");
         setDescription("");
+        setFormImageUri(null);
+        setFormImageUrl(null);
         setFormError(null);
         setShowForm(false);
+        setShowSuccess(true);
         setTickets((prev) => [d.ticket, ...prev]);
-        setExpandedId(d.ticket.id);
+        setTimeout(() => setShowSuccess(false), 8000);
       } else {
         const data = await res.json().catch(() => ({}));
         setFormError(data.error ?? "Failed to submit ticket. Please try again.");
@@ -409,7 +497,7 @@ export default function SupportTicketScreen() {
           <Text style={[styles.headerTitle, { color: colors.text }]}>Help Center</Text>
           <Pressable
             style={[styles.newBtn, { backgroundColor: showForm ? colors.secondary : colors.primary }]}
-            onPress={() => { setShowForm((v) => !v); setExpandedId(null); }}
+            onPress={() => { setShowForm((v) => !v); setExpandedId(null); setFormError(null); }}
           >
             <Feather name={showForm ? "x" : "plus"} size={16} color={showForm ? colors.text : "#fff"} />
             <Text style={[styles.newBtnText, { color: showForm ? colors.text : "#fff" }]}>
@@ -422,6 +510,21 @@ export default function SupportTicketScreen() {
           <View style={[styles.liveToast, { backgroundColor: colors.primary }]}>
             <Feather name="zap" size={13} color="#fff" />
             <Text style={styles.liveToastText}>{liveUpdate}</Text>
+          </View>
+        )}
+
+        {showSuccess && (
+          <View style={[styles.successBanner, { backgroundColor: "#ECFDF5", borderColor: "#10B981" }]}>
+            <Feather name="check-circle" size={18} color="#10B981" />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.successTitle}>Ticket Submitted Successfully!</Text>
+              <Text style={styles.successBody}>
+                We will respond within 2 to 3 days. Please wait for our email update.
+              </Text>
+            </View>
+            <Pressable onPress={() => setShowSuccess(false)}>
+              <Feather name="x" size={16} color="#10B981" />
+            </Pressable>
           </View>
         )}
 
@@ -453,7 +556,21 @@ export default function SupportTicketScreen() {
                 ))}
               </ScrollView>
 
-              <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>Describe your issue</Text>
+              <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>
+                Complaint Title <Text style={{ color: "#EF4444" }}>*</Text>
+              </Text>
+              <TextInput
+                style={[styles.input, { color: colors.text, backgroundColor: colors.secondary, borderColor: colors.border }]}
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Enter a short title for your complaint..."
+                placeholderTextColor={colors.mutedForeground}
+                returnKeyType="next"
+              />
+
+              <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>
+                Describe your issue <Text style={{ color: "#EF4444" }}>*</Text>
+              </Text>
               <TextInput
                 style={[styles.textarea, { color: colors.text, backgroundColor: colors.secondary, borderColor: colors.border }]}
                 value={description}
@@ -465,10 +582,47 @@ export default function SupportTicketScreen() {
                 textAlignVertical="top"
               />
 
+              <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>
+                Attach Image <Text style={[styles.optionalTag, { color: colors.mutedForeground }]}>(optional)</Text>
+              </Text>
+              {formImageUri ? (
+                <View style={styles.imagePreviewWrap}>
+                  <Image source={{ uri: formImageUri }} style={styles.imagePreview} resizeMode="cover" />
+                  {uploadingFormImage && (
+                    <View style={styles.imageUploadOverlay}>
+                      <ActivityIndicator color="#fff" />
+                      <Text style={styles.imageUploadText}>Uploading…</Text>
+                    </View>
+                  )}
+                  {!uploadingFormImage && (
+                    <Pressable style={styles.imageRemoveBtn} onPress={removeFormImage}>
+                      <Feather name="x" size={14} color="#fff" />
+                    </Pressable>
+                  )}
+                </View>
+              ) : (
+                <Pressable
+                  style={[styles.imagePicker, { backgroundColor: colors.secondary, borderColor: colors.border }]}
+                  onPress={pickFormImage}
+                >
+                  <Feather name="image" size={20} color={colors.mutedForeground} />
+                  <Text style={[styles.imagePickerText, { color: colors.mutedForeground }]}>
+                    Tap to select from gallery
+                  </Text>
+                </Pressable>
+              )}
+
+              {formError && (
+                <View style={styles.errorRow}>
+                  <Feather name="alert-circle" size={13} color="#EF4444" />
+                  <Text style={styles.errorText}>{formError}</Text>
+                </View>
+              )}
+
               <Pressable
-                style={[styles.submitBtn, { backgroundColor: colors.primary, opacity: submitting ? 0.6 : 1 }]}
+                style={[styles.submitBtn, { backgroundColor: colors.primary, opacity: submitting || uploadingFormImage ? 0.6 : 1 }]}
                 onPress={handleSubmit}
-                disabled={submitting}
+                disabled={submitting || uploadingFormImage}
               >
                 {submitting ? (
                   <ActivityIndicator size="small" color="#fff" />
@@ -511,7 +665,12 @@ export default function SupportTicketScreen() {
                           <Text style={[styles.statusBadgeText, { color: sc.color }]}>{sc.label}</Text>
                         </View>
                       </View>
-                      <Text style={[styles.ticketDesc, { color: colors.text }]} numberOfLines={isExpanded ? undefined : 2}>
+                      {!!ticket.title && (
+                        <Text style={[styles.ticketTitle, { color: colors.text }]} numberOfLines={1}>
+                          {ticket.title}
+                        </Text>
+                      )}
+                      <Text style={[styles.ticketDesc, { color: colors.mutedForeground }]} numberOfLines={isExpanded ? undefined : 2}>
                         {ticket.description}
                       </Text>
                       <View style={styles.ticketMeta}>
@@ -555,29 +714,44 @@ const styles = StyleSheet.create({
   newBtnText: { fontSize: 13, fontFamily: "DMSans_600SemiBold" },
   liveToast: { flexDirection: "row", alignItems: "center", gap: 6, marginHorizontal: 16, marginTop: 8, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10 },
   liveToastText: { color: "#fff", fontSize: 13, fontFamily: "DMSans_500Medium", flex: 1 },
+  successBanner: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginHorizontal: 16, marginTop: 10, padding: 14, borderRadius: 12, borderWidth: 1 },
+  successTitle: { fontSize: 13, fontFamily: "DMSans_700Bold", color: "#065F46", marginBottom: 2 },
+  successBody: { fontSize: 12, fontFamily: "DMSans_400Regular", color: "#065F46", lineHeight: 17 },
   content: { padding: 16, gap: 12 },
   center: { alignItems: "center", gap: 12, paddingVertical: 60 },
   emptyTitle: { fontSize: 16, fontFamily: "DMSans_600SemiBold", textAlign: "center" },
   emptyBody: { fontSize: 13, fontFamily: "DMSans_400Regular", textAlign: "center", maxWidth: 260 },
   primaryBtn: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 },
   primaryBtnText: { color: "#fff", fontSize: 14, fontFamily: "DMSans_600SemiBold" },
-  formCard: { borderRadius: 16, borderWidth: 2, padding: 16, gap: 10 },
-  formTitle: { fontSize: 16, fontFamily: "DMSans_700Bold", marginBottom: 4 },
-  formLabel: { fontSize: 11, fontFamily: "DMSans_600SemiBold", letterSpacing: 0.6, marginBottom: 4 },
-  categoryRow: { gap: 8, paddingBottom: 4 },
-  categoryChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
-  categoryChipText: { fontSize: 12, fontFamily: "DMSans_600SemiBold" },
-  textarea: { borderRadius: 12, borderWidth: 1, padding: 12, fontSize: 14, fontFamily: "DMSans_400Regular", minHeight: 100, lineHeight: 20 },
-  submitBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 14, borderRadius: 12 },
+  formCard: { borderRadius: 14, borderWidth: 1.5, padding: 16, gap: 10 },
+  formTitle: { fontSize: 16, fontFamily: "DMSans_700Bold", marginBottom: 2 },
+  formLabel: { fontSize: 12, fontFamily: "DMSans_600SemiBold", marginBottom: -4 },
+  optionalTag: { fontSize: 11, fontFamily: "DMSans_400Regular" },
+  categoryRow: { gap: 8, paddingVertical: 2 },
+  categoryChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
+  categoryChipText: { fontSize: 13, fontFamily: "DMSans_500Medium" },
+  input: { borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, fontFamily: "DMSans_400Regular" },
+  textarea: { borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, fontSize: 13, fontFamily: "DMSans_400Regular", minHeight: 110, textAlignVertical: "top" },
+  imagePicker: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 12, borderWidth: 1, borderStyle: "dashed", padding: 16, justifyContent: "center" },
+  imagePickerText: { fontSize: 13, fontFamily: "DMSans_400Regular" },
+  imagePreviewWrap: { position: "relative", borderRadius: 12, overflow: "hidden" },
+  imagePreview: { width: "100%", height: 160, borderRadius: 12 },
+  imageUploadOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center", gap: 8 },
+  imageUploadText: { color: "#fff", fontSize: 12, fontFamily: "DMSans_500Medium" },
+  imageRemoveBtn: { position: "absolute", top: 8, right: 8, backgroundColor: "rgba(0,0,0,0.55)", borderRadius: 20, width: 28, height: 28, alignItems: "center", justifyContent: "center" },
+  errorRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  errorText: { fontSize: 12, fontFamily: "DMSans_400Regular", color: "#EF4444", flex: 1 },
+  submitBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 14, borderRadius: 12, marginTop: 4 },
   submitBtnText: { color: "#fff", fontSize: 15, fontFamily: "DMSans_600SemiBold" },
-  ticketCard: { borderRadius: 14, borderWidth: 1.5, overflow: "hidden" },
-  ticketTop: { flexDirection: "row", alignItems: "center", padding: 14, gap: 10 },
-  badgeRow: { flexDirection: "row", gap: 8, flexWrap: "wrap", marginBottom: 6 },
-  categoryBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
+  ticketCard: { borderRadius: 14, borderWidth: 1, overflow: "hidden" },
+  ticketTop: { flexDirection: "row", alignItems: "center", gap: 10, padding: 14 },
+  badgeRow: { flexDirection: "row", gap: 6, marginBottom: 6 },
+  categoryBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   categoryBadgeText: { fontSize: 11, fontFamily: "DMSans_600SemiBold" },
-  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   statusBadgeText: { fontSize: 11, fontFamily: "DMSans_600SemiBold" },
-  ticketDesc: { fontSize: 13, fontFamily: "DMSans_400Regular", lineHeight: 20, marginBottom: 6 },
+  ticketTitle: { fontSize: 14, fontFamily: "DMSans_700Bold", marginBottom: 2 },
+  ticketDesc: { fontSize: 13, fontFamily: "DMSans_400Regular", lineHeight: 18, marginBottom: 6 },
   ticketMeta: { flexDirection: "row", alignItems: "center", gap: 4 },
   ticketId: { fontSize: 11, fontFamily: "DMSans_600SemiBold", marginRight: 6 },
   ticketDate: { fontSize: 11, fontFamily: "DMSans_400Regular" },

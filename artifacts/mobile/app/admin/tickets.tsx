@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -21,10 +22,15 @@ interface Ticket {
   ticketNumber: string | null;
   userId: string;
   category: string;
+  title: string;
   description: string;
+  imageUrl: string | null;
   status: string;
   createdAt: string;
   resolvedAt: string | null;
+  userName: string | null;
+  userEmail: string | null;
+  userMobile: string | null;
 }
 
 interface TicketNote {
@@ -119,14 +125,56 @@ function ChatThread({
   }
 
   const STATUSES = ["open", "in_progress", "resolved", "closed"];
-  const cfg = STATUS_CONFIG[ticket.status] ?? STATUS_CONFIG.open;
   const isClosed = ticket.status === "closed" || ticket.status === "resolved";
 
   return (
     <View style={thread.wrap}>
+      {/* Customer info panel */}
+      <View style={thread.customerCard}>
+        <View style={thread.customerRow}>
+          <View style={thread.customerAvatar}>
+            <Feather name="user" size={14} color="#2563EB" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={thread.customerName}>{ticket.userName ?? "Unknown Customer"}</Text>
+            {!!ticket.userEmail && (
+              <View style={thread.customerDetail}>
+                <Feather name="mail" size={11} color="#6B7280" />
+                <Text style={thread.customerDetailText}>{ticket.userEmail}</Text>
+              </View>
+            )}
+            {!!ticket.userMobile && (
+              <View style={thread.customerDetail}>
+                <Feather name="phone" size={11} color="#6B7280" />
+                <Text style={thread.customerDetailText}>{ticket.userMobile}</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </View>
+
+      {/* Ticket title + initial image */}
+      {(!!ticket.title || !!ticket.imageUrl) && (
+        <View style={thread.ticketContentCard}>
+          {!!ticket.title && (
+            <View style={thread.ticketTitleRow}>
+              <Feather name="file-text" size={13} color="#374151" />
+              <Text style={thread.ticketTitleLabel}>Complaint Title:</Text>
+              <Text style={thread.ticketTitleValue} numberOfLines={2}>{ticket.title}</Text>
+            </View>
+          )}
+          {!!ticket.imageUrl && (
+            <View style={{ gap: 6 }}>
+              <Text style={thread.attachLabel}>Attached Photo:</Text>
+              <Image source={{ uri: ticket.imageUrl }} style={thread.attachedImage} resizeMode="cover" />
+            </View>
+          )}
+        </View>
+      )}
+
       {/* Status controls */}
       <View style={thread.statusRow}>
-        <Text style={thread.statusLabel}>Status:</Text>
+        <Text style={thread.statusLabel}>Change Status:</Text>
         {STATUSES.filter((s) => s !== ticket.status).map((s) => {
           const c = STATUS_CONFIG[s];
           return (
@@ -153,9 +201,11 @@ function ChatThread({
         contentContainerStyle={{ padding: 12, gap: 10 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Original description */}
+        {/* Original description bubble */}
         <View style={[thread.bubble, thread.userBubble]}>
-          <Text style={thread.bubbleLabel}>User · {new Date(ticket.createdAt).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</Text>
+          <Text style={thread.bubbleLabel}>
+            {ticket.userName ?? "Customer"} · {new Date(ticket.createdAt).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+          </Text>
           <Text style={thread.bubbleText}>{ticket.description}</Text>
         </View>
 
@@ -171,11 +221,11 @@ function ChatThread({
               ]}
             >
               <Text style={thread.bubbleLabel}>
-                {n.isAdmin ? "Admin" : "User"} · {new Date(n.createdAt).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                {n.isAdmin ? "Admin" : (ticket.userName ?? "Customer")} · {new Date(n.createdAt).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
               </Text>
               {!!n.note && <Text style={thread.bubbleText}>{n.note}</Text>}
               {!!n.imageUrl && (
-                <Text style={[thread.bubbleText, { color: "#2563EB" }]}>[Image attached]</Text>
+                <Image source={{ uri: n.imageUrl }} style={thread.bubbleImage} resizeMode="cover" />
               )}
             </View>
           ))
@@ -214,7 +264,19 @@ function ChatThread({
 
 const thread = StyleSheet.create({
   wrap: { flex: 1, borderTopWidth: 1, borderTopColor: "#F3F4F6" },
-  statusRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, padding: 12, alignItems: "center", backgroundColor: "#FAFAFA" },
+  customerCard: { backgroundColor: "#EFF6FF", padding: 12, borderBottomWidth: 1, borderBottomColor: "#DBEAFE" },
+  customerRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
+  customerAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#DBEAFE", alignItems: "center", justifyContent: "center" },
+  customerName: { fontSize: 13, fontFamily: "DMSans_700Bold", color: "#0F1740", marginBottom: 3 },
+  customerDetail: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 2 },
+  customerDetailText: { fontSize: 12, fontFamily: "DMSans_400Regular", color: "#374151" },
+  ticketContentCard: { backgroundColor: "#FAFAFA", padding: 12, borderBottomWidth: 1, borderBottomColor: "#F3F4F6", gap: 10 },
+  ticketTitleRow: { flexDirection: "row", alignItems: "flex-start", gap: 6, flexWrap: "wrap" },
+  ticketTitleLabel: { fontSize: 12, fontFamily: "DMSans_600SemiBold", color: "#374151" },
+  ticketTitleValue: { fontSize: 12, fontFamily: "DMSans_400Regular", color: "#1F2937", flex: 1 },
+  attachLabel: { fontSize: 11, fontFamily: "DMSans_600SemiBold", color: "#6B7280" },
+  attachedImage: { width: "100%", height: 160, borderRadius: 10 },
+  statusRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, padding: 12, alignItems: "center", backgroundColor: "#FAFAFA", borderBottomWidth: 1, borderBottomColor: "#F3F4F6" },
   statusLabel: { fontSize: 12, fontFamily: "DMSans_600SemiBold", color: "#374151" },
   statusBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, borderWidth: 1, flexDirection: "row", alignItems: "center", gap: 4 },
   statusBtnText: { fontSize: 12, fontFamily: "DMSans_600SemiBold" },
@@ -224,6 +286,7 @@ const thread = StyleSheet.create({
   userBubble: { backgroundColor: "#F9FAFB", alignSelf: "flex-end", borderWidth: 1, borderColor: "#E5E7EB" },
   bubbleLabel: { fontSize: 10, fontFamily: "DMSans_500Medium", color: "#9CA3AF" },
   bubbleText: { fontSize: 13, fontFamily: "DMSans_400Regular", color: "#1F2937", lineHeight: 18 },
+  bubbleImage: { width: 180, height: 120, borderRadius: 8, marginTop: 4 },
   replyRow: { flexDirection: "row", alignItems: "flex-end", gap: 8, padding: 10, borderTopWidth: 1, borderTopColor: "#F3F4F6" },
   replyInput: { flex: 1, backgroundColor: "#F3F4F6", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, fontFamily: "DMSans_400Regular", color: "#0F1740", maxHeight: 80 },
   sendBtn: { width: 38, height: 38, borderRadius: 12, backgroundColor: "#2563EB", alignItems: "center", justifyContent: "center" },
@@ -335,7 +398,7 @@ export default function TicketsScreen() {
               const cfg = STATUS_CONFIG[ticket.status] ?? STATUS_CONFIG.open;
               const isExpanded = expandedId === ticket.id;
               return (
-                <View key={ticket.id} style={styles.ticketCard}>
+                <View key={ticket.id} style={[styles.ticketCard, isExpanded && { borderColor: "#2563EB" }]}>
                   <Pressable
                     style={styles.ticketHeader}
                     onPress={() => setExpandedId(isExpanded ? null : ticket.id)}
@@ -343,8 +406,8 @@ export default function TicketsScreen() {
                     <View style={[styles.categoryDot, { backgroundColor: cfg.bg }]}>
                       <Feather name="life-buoy" size={16} color={cfg.color} />
                     </View>
-                    <View style={{ flex: 1 }}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                         <Text style={styles.ticketCategory}>
                           {CATEGORY_LABELS[ticket.category] ?? ticket.category}
                         </Text>
@@ -352,12 +415,32 @@ export default function TicketsScreen() {
                           <Text style={styles.ticketNum}>{ticket.ticketNumber}</Text>
                         )}
                       </View>
+                      {!!ticket.title && (
+                        <Text style={styles.ticketTitle} numberOfLines={1}>{ticket.title}</Text>
+                      )}
+                      {!!ticket.userName && (
+                        <View style={styles.customerPill}>
+                          <Feather name="user" size={10} color="#6B7280" />
+                          <Text style={styles.customerPillText}>{ticket.userName}</Text>
+                          {!!ticket.userEmail && (
+                            <Text style={styles.customerPillEmail}>· {ticket.userEmail}</Text>
+                          )}
+                        </View>
+                      )}
                       <Text style={styles.ticketDate}>
                         {new Date(ticket.createdAt).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                       </Text>
                     </View>
-                    <View style={[styles.statusBadge, { backgroundColor: cfg.bg }]}>
-                      <Text style={[styles.statusText, { color: cfg.color }]}>{cfg.label}</Text>
+                    <View style={{ alignItems: "flex-end", gap: 6 }}>
+                      <View style={[styles.statusBadge, { backgroundColor: cfg.bg }]}>
+                        <Text style={[styles.statusText, { color: cfg.color }]}>{cfg.label}</Text>
+                      </View>
+                      {ticket.imageUrl && (
+                        <View style={styles.imagePill}>
+                          <Feather name="image" size={10} color="#6B7280" />
+                          <Text style={styles.imagePillText}>Photo</Text>
+                        </View>
+                      )}
                     </View>
                     <Feather name={isExpanded ? "chevron-up" : "chevron-down"} size={16} color="#9CA3AF" style={{ marginLeft: 6 }} />
                   </Pressable>
@@ -396,7 +479,13 @@ const styles = StyleSheet.create({
   categoryDot: { width: 38, height: 38, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   ticketCategory: { fontSize: 14, fontFamily: "DMSans_700Bold", color: "#0F1740" },
   ticketNum: { fontSize: 12, fontFamily: "DMSans_500Medium", color: "#2563EB" },
-  ticketDate: { fontSize: 11, fontFamily: "DMSans_400Regular", color: "#9CA3AF", marginTop: 2 },
+  ticketTitle: { fontSize: 12, fontFamily: "DMSans_500Medium", color: "#374151" },
+  customerPill: { flexDirection: "row", alignItems: "center", gap: 4 },
+  customerPillText: { fontSize: 11, fontFamily: "DMSans_500Medium", color: "#6B7280" },
+  customerPillEmail: { fontSize: 11, fontFamily: "DMSans_400Regular", color: "#9CA3AF" },
+  ticketDate: { fontSize: 11, fontFamily: "DMSans_400Regular", color: "#9CA3AF", marginTop: 1 },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
   statusText: { fontSize: 11, fontFamily: "DMSans_600SemiBold" },
+  imagePill: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#F3F4F6", paddingHorizontal: 6, paddingVertical: 3, borderRadius: 6 },
+  imagePillText: { fontSize: 10, fontFamily: "DMSans_500Medium", color: "#6B7280" },
 });
