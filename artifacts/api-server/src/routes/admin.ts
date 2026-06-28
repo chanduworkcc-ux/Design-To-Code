@@ -15,6 +15,7 @@ import {
 import { eq, desc, count, sql, and, gte, lte, inArray } from "drizzle-orm";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../middleware/auth";
 import { getAllConfig, setConfig, getConfig } from "../lib/config";
+import { getIO } from "../lib/socket";
 import { insertAutoNotification } from "./notifications";
 import { sendEmail, orderStatusEmailHtml } from "../lib/email";
 import { z } from "zod";
@@ -182,64 +183,69 @@ router.get("/admin/users", authMiddleware, adminMiddleware, async (req, res) => 
 });
 
 router.get("/admin/users/:id/logs", authMiddleware, adminMiddleware, async (req, res) => {
+  const id = req.params.id as string;
   const logs = await db
     .select()
     .from(activityLogsTable)
-    .where(eq(activityLogsTable.userId, req.params.id))
+    .where(eq(activityLogsTable.userId, id))
     .orderBy(desc(activityLogsTable.timestamp))
     .limit(50);
   res.json({ logs });
 });
 
 router.post("/admin/users/:id/ban", authMiddleware, adminMiddleware, async (req, res) => {
+  const id = req.params.id as string;
   const { reason } = req.body;
   const banReason = reason || "Policy violation";
   const [updated] = await db
     .update(usersTable)
     .set({ status: "banned", banReason })
-    .where(eq(usersTable.id, req.params.id))
+    .where(eq(usersTable.id, id))
     .returning({ id: usersTable.id, status: usersTable.status });
-  try { await insertAutoNotification(req.params.id, "Account Banned", `Your account has been permanently banned. Reason: ${banReason}`, "alert-circle"); } catch {}
+  try { await insertAutoNotification(id, "Account Banned", `Your account has been permanently banned. Reason: ${banReason}`, "alert-circle"); } catch {}
   res.json({ user: updated });
 });
 
 router.post("/admin/users/:id/unban", authMiddleware, adminMiddleware, async (req, res) => {
+  const id = req.params.id as string;
   const [updated] = await db
     .update(usersTable)
     .set({ status: "active", banReason: null, suspendedUntil: null })
-    .where(eq(usersTable.id, req.params.id))
+    .where(eq(usersTable.id, id))
     .returning({ id: usersTable.id, status: usersTable.status });
-  try { await insertAutoNotification(req.params.id, "Account Reinstated", "Your account has been reinstated. You can now log in and use XyloCart normally.", "check-circle"); } catch {}
+  try { await insertAutoNotification(id, "Account Reinstated", "Your account has been reinstated. You can now log in and use XyloCart normally.", "check-circle"); } catch {}
   res.json({ user: updated });
 });
 
 router.post("/admin/users/:id/approve", authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
-  const [before] = await db.select({ status: usersTable.status, name: usersTable.name, email: usersTable.email }).from(usersTable).where(eq(usersTable.id, req.params.id));
+  const id = req.params.id as string;
+  const [before] = await db.select({ status: usersTable.status, name: usersTable.name, email: usersTable.email }).from(usersTable).where(eq(usersTable.id, id));
   const [updated] = await db
     .update(usersTable)
     .set({ status: "active", banReason: null })
-    .where(eq(usersTable.id, req.params.id))
+    .where(eq(usersTable.id, id))
     .returning({ id: usersTable.id, status: usersTable.status });
   if (before) {
-    await db.insert(adminAuditLogsTable).values({ id: uuidv4(), adminId: req.userId!, action: "approve_user", entityType: "user", entityId: req.params.id, previousState: before.status, newState: "active" }).catch(() => {});
+    await db.insert(adminAuditLogsTable).values({ id: uuidv4(), adminId: req.userId!, action: "approve_user", entityType: "user", entityId: id, previousState: before.status, newState: "active" }).catch(() => {});
   }
-  try { await insertAutoNotification(req.params.id, "Account Approved! 🎉", "Welcome to XyloCart! Your registration has been approved. You can now log in and start shopping.", "check-circle"); } catch {}
+  try { await insertAutoNotification(id, "Account Approved! 🎉", "Welcome to XyloCart! Your registration has been approved. You can now log in and start shopping.", "check-circle"); } catch {}
   res.json({ user: updated });
 });
 
 router.post("/admin/users/:id/reject", authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
+  const id = req.params.id as string;
   const { reason } = req.body;
   const rejectReason = reason || "Registration rejected by admin";
-  const [before] = await db.select({ status: usersTable.status }).from(usersTable).where(eq(usersTable.id, req.params.id));
+  const [before] = await db.select({ status: usersTable.status }).from(usersTable).where(eq(usersTable.id, id));
   const [updated] = await db
     .update(usersTable)
     .set({ status: "rejected", banReason: rejectReason })
-    .where(eq(usersTable.id, req.params.id))
+    .where(eq(usersTable.id, id))
     .returning({ id: usersTable.id, status: usersTable.status });
   if (before) {
-    await db.insert(adminAuditLogsTable).values({ id: uuidv4(), adminId: req.userId!, action: "reject_user", entityType: "user", entityId: req.params.id, previousState: before.status, newState: "rejected", notes: rejectReason }).catch(() => {});
+    await db.insert(adminAuditLogsTable).values({ id: uuidv4(), adminId: req.userId!, action: "reject_user", entityType: "user", entityId: id, previousState: before.status, newState: "rejected", notes: rejectReason }).catch(() => {});
   }
-  try { await insertAutoNotification(req.params.id, "Registration Rejected", `Your registration has been reviewed and rejected. Reason: ${rejectReason}`, "alert-circle"); } catch {}
+  try { await insertAutoNotification(id, "Registration Rejected", `Your registration has been reviewed and rejected. Reason: ${rejectReason}`, "alert-circle"); } catch {}
   res.json({ user: updated });
 });
 
@@ -250,6 +256,7 @@ const suspendSchema = z.object({
 });
 
 router.post("/admin/users/:id/suspend", authMiddleware, adminMiddleware, async (req, res) => {
+  const id = req.params.id as string;
   const parsed = suspendSchema.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: "duration (number), unit (hours|days|weeks), and reason are required" }); return; }
   const { duration, unit, reason } = parsed.data;
@@ -260,12 +267,12 @@ router.post("/admin/users/:id/suspend", authMiddleware, adminMiddleware, async (
   const [updated] = await db
     .update(usersTable)
     .set({ status: "suspended", suspendedUntil: until, banReason: reason })
-    .where(eq(usersTable.id, req.params.id))
+    .where(eq(usersTable.id, id))
     .returning({ id: usersTable.id, status: usersTable.status, suspendedUntil: usersTable.suspendedUntil });
 
   try {
     const label = `${duration} ${unit}`;
-    await insertAutoNotification(req.params.id, "Account Suspended", `Your account has been suspended for ${label}. Reason: ${reason}`, "alert-circle");
+    await insertAutoNotification(id, "Account Suspended", `Your account has been suspended for ${label}. Reason: ${reason}`, "alert-circle");
   } catch {}
 
   res.json({ user: updated });
@@ -365,11 +372,11 @@ async function handleOrderStatusUpdate(orderId: string, newStatus: string, res: 
 }
 
 router.patch("/admin/orders/:id/status", authMiddleware, adminMiddleware, async (req, res) => {
-  await handleOrderStatusUpdate(req.params.id, req.body.status, res);
+  await handleOrderStatusUpdate(req.params.id as string, req.body.status, res);
 });
 
 router.put("/admin/orders/:id/status", authMiddleware, adminMiddleware, async (req, res) => {
-  await handleOrderStatusUpdate(req.params.id, req.body.status, res);
+  await handleOrderStatusUpdate(req.params.id as string, req.body.status, res);
 });
 
 // ─── Admin Cancel Order with UTR + Reason ─────────────────────────────────────
@@ -380,22 +387,23 @@ const cancelSchema = z.object({
 });
 
 router.patch("/admin/orders/:id/cancel", authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
+  const id = req.params.id as string;
   const parsed = cancelSchema.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: "cancellationReason is required" }); return; }
   const { cancellationReason, utrNumber } = parsed.data;
 
-  const [before] = await db.select({ status: ordersTable.status }).from(ordersTable).where(eq(ordersTable.id, req.params.id));
+  const [before] = await db.select({ status: ordersTable.status }).from(ordersTable).where(eq(ordersTable.id, id));
   if (!before) { res.status(404).json({ error: "Order not found" }); return; }
 
   const [updated] = await db
     .update(ordersTable)
     .set({ status: "cancelled", cancellationReason, utrNumber: utrNumber || null, updatedAt: new Date() })
-    .where(eq(ordersTable.id, req.params.id))
+    .where(eq(ordersTable.id, id))
     .returning();
 
   await db.insert(adminAuditLogsTable).values({
     id: uuidv4(), adminId: req.userId!, action: "cancel_order",
-    entityType: "order", entityId: req.params.id,
+    entityType: "order", entityId: id,
     previousState: JSON.stringify({ status: before.status }),
     newState: JSON.stringify({ status: "cancelled", cancellationReason, utrNumber }),
   }).catch(() => {});
@@ -410,13 +418,13 @@ router.patch("/admin/orders/:id/cancel", authMiddleware, adminMiddleware, async 
       await insertAutoNotification(
         user.id,
         "Order Cancelled",
-        `Your order ${updated.orderNumber ?? req.params.id.slice(0, 8).toUpperCase()} has been cancelled. Reason: ${cancellationReason}${utrNumber ? ` | UTR: ${utrNumber}` : ""}`,
+        `Your order ${updated.orderNumber ?? id.slice(0, 8).toUpperCase()} has been cancelled. Reason: ${cancellationReason}${utrNumber ? ` | UTR: ${utrNumber}` : ""}`,
         "alert-circle",
         { targetType: "refunds" },
       );
     } catch {}
     try {
-      getIO().to(`user:${user.id}`).emit("order_cancelled", { orderId: req.params.id, cancellationReason, utrNumber });
+      getIO().to(`user:${user.id}`).emit("order_cancelled", { orderId: id, cancellationReason, utrNumber });
     } catch {}
   }
 
@@ -658,6 +666,7 @@ const shippingUpdateSchema = z.object({
 });
 
 router.put("/admin/orders/:id/shipping", authMiddleware, adminMiddleware, async (req, res) => {
+  const id = req.params.id as string;
   const parsed = shippingUpdateSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "courierPartner, trackingLink (valid URL), and estimatedDelivery are required" });
@@ -667,7 +676,7 @@ router.put("/admin/orders/:id/shipping", authMiddleware, adminMiddleware, async 
   const [updated] = await db
     .update(ordersTable)
     .set({ courierPartner, trackingLink, estimatedDelivery, updatedAt: new Date() })
-    .where(eq(ordersTable.id, req.params.id))
+    .where(eq(ordersTable.id, id))
     .returning();
   if (!updated) { res.status(404).json({ error: "Order not found" }); return; }
   res.json({ order: updated });

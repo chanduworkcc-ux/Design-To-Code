@@ -233,10 +233,9 @@ router.post("/orders", authMiddleware, async (req: AuthRequest, res) => {
     const [coupon] = await db.select().from(couponsTable).where(eq(couponsTable.code, couponCode.toUpperCase()));
     if (coupon && coupon.isActive) {
       const now = new Date();
-      const validFrom = coupon.validFrom ? new Date(coupon.validFrom) : null;
-      const validUntil = coupon.validUntil ? new Date(coupon.validUntil) : null;
-      const isValid = (!validFrom || now >= validFrom) && (!validUntil || now <= validUntil);
-      if (isValid && (!coupon.maxUses || (coupon.usedCount ?? 0) < coupon.maxUses)) {
+      const expiresAt = coupon.expiresAt ? new Date(coupon.expiresAt) : null;
+      const isValid = !expiresAt || now <= expiresAt;
+      if (isValid && (!coupon.usageLimit || (coupon.usedCount ?? 0) < coupon.usageLimit)) {
         if (coupon.discountType === "percent") {
           discountAmount = (subtotal * coupon.discountValue) / 100;
         } else {

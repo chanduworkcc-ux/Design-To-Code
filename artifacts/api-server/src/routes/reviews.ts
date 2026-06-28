@@ -16,10 +16,10 @@ const submitSchema = z.object({
 
 router.post("/reviews", authMiddleware as any, async (req: AuthRequest, res) => {
   const parse = submitSchema.safeParse(req.body);
-  if (!parse.success) return res.status(400).json({ error: "Invalid input" });
+  if (!parse.success) { res.status(400).json({ error: "Invalid input" }); return; }
 
   const { orderId, rating, comment } = parse.data;
-  const userId = req.user!.sub;
+  const userId = req.userId!;
 
   const [order] = await db
     .select()
@@ -27,11 +27,11 @@ router.post("/reviews", authMiddleware as any, async (req: AuthRequest, res) => 
     .where(and(eq(ordersTable.id, orderId), eq(ordersTable.userId, userId)))
     .limit(1);
 
-  if (!order) return res.status(404).json({ error: "Order not found" });
-  if (order.status !== "delivered") return res.status(400).json({ error: "Can only review delivered orders" });
+  if (!order) { res.status(404).json({ error: "Order not found" }); return; }
+  if (order.status !== "delivered") { res.status(400).json({ error: "Can only review delivered orders" }); return; }
 
   const existing = await db.select().from(reviewsTable).where(eq(reviewsTable.orderId, orderId)).limit(1);
-  if (existing.length > 0) return res.status(409).json({ error: "Already reviewed this order" });
+  if (existing.length > 0) { res.status(409).json({ error: "Already reviewed this order" }); return; }
 
   const [review] = await db.insert(reviewsTable).values({
     id: uuidv4(),
@@ -55,7 +55,7 @@ router.post("/reviews", authMiddleware as any, async (req: AuthRequest, res) => 
 });
 
 router.get("/reviews/order/:orderId", authMiddleware as any, async (req: AuthRequest, res) => {
-  const userId = req.user!.sub;
+  const userId = req.userId!;
   const { orderId } = req.params;
 
   const [review] = await db
@@ -124,7 +124,7 @@ router.delete("/admin/reviews/:id", authMiddleware as any, adminMiddleware as an
     .where(eq(reviewsTable.id, id))
     .returning();
 
-  if (!deleted) return res.status(404).json({ error: "Review not found" });
+  if (!deleted) { res.status(404).json({ error: "Review not found" }); return; }
 
   const [agg] = await db
     .select({ avg: avg(reviewsTable.rating) })

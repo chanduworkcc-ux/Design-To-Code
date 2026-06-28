@@ -159,7 +159,7 @@ router.patch("/admin/tickets/:id/status", authMiddleware, adminMiddleware, async
     .where(eq(supportTicketsTable.id, req.params.id))
     .returning();
 
-  let noteRecord = null;
+  let noteRecord: Record<string, unknown> | null = null;
   if (note?.trim()) {
     [noteRecord] = await db.insert(ticketNotesTable).values({
       id: uuidv4(),

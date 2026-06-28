@@ -125,7 +125,7 @@ router.get("/storage/objects/*objectPath", async (req: Request, res: Response) =
     const raw = req.params.objectPath;
     const objectPath = Array.isArray(raw) ? raw.join("/") : raw;
 
-    const file = await objectStorageService.getObjectEntity(objectPath);
+    const file = await objectStorageService.getObjectEntityFile(objectPath);
     if (!file) {
       res.status(404).json({ error: "Object not found" });
       return;

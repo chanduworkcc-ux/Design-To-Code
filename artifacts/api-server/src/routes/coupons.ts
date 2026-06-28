@@ -47,8 +47,8 @@ router.get("/admin/coupons", authMiddleware, adminMiddleware, async (_req, res) 
 router.post("/admin/coupons", authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
   const parsed = couponSchema.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: "Validation failed", details: parsed.error.issues }); return; }
-  const { expiresAt, ...rest } = parsed.data;
-  const [coupon] = await db.insert(couponsTable).values({ id: uuidv4(), code: parsed.data.code.toUpperCase(), ...rest, expiresAt: expiresAt ? new Date(expiresAt) : undefined }).returning();
+  const { expiresAt, code, ...rest } = parsed.data;
+  const [coupon] = await db.insert(couponsTable).values({ id: uuidv4(), code: code.toUpperCase(), ...rest, expiresAt: expiresAt ? new Date(expiresAt) : undefined }).returning();
   res.status(201).json({ coupon });
 });
 
