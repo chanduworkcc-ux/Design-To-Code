@@ -155,6 +155,7 @@ export default function AdminDashboardScreen() {
     { icon: "tag", label: "Coupons", id: "coupons", route: "/admin/coupons" },
     { icon: "image", label: "Banners", id: "banners", route: "/admin/banners" },
     { icon: "bell", label: "Notifications", id: "notifications", route: "/admin/notifications" },
+    { icon: "help-circle", label: "Q&A", id: "faq", route: "/admin/faq" },
     { icon: "activity", label: "Activity Logs", id: "activity", route: "/admin/activity" },
     { icon: "settings", label: "Settings", id: "settings", route: "/admin/settings" },
   ];

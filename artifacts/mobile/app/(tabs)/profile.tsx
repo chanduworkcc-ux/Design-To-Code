@@ -393,7 +393,7 @@ export default function ProfileScreen() {
         <FloatIn delay={540} distance={14}>
           <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("support").toUpperCase()}</Text>
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <MenuItem icon="help-circle"    label={t("helpCenter")}  onPress={() => router.push("/support-ticket" as any)} />
+            <MenuItem icon="help-circle"    label="Q&A / Help"       onPress={() => router.push("/faq" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <MenuItem icon="message-circle" label={t("contactUs")}   onPress={() => router.push("/support-ticket" as any)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />

@@ -13,3 +13,4 @@ export * from "./push-tokens";
 export * from "./password-reset";
 export * from "./addresses";
 export * from "./reviews";
+export * from "./faqs";
