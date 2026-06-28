@@ -169,14 +169,14 @@ export default function AdminDashboardScreen() {
   }
 
   const STATS_CONFIG = [
-    { label: "Total Users", key: "totalUsers", icon: "users", color: "#2563EB", bg: "#EFF6FF" },
-    { label: "Online Now", key: "onlineNow", icon: "wifi", color: "#10B981", bg: "#ECFDF5", live: true },
-    { label: "Total Orders", key: "totalOrders", icon: "shopping-bag", color: "#8B5CF6", bg: "#F5F3FF" },
-    { label: "Pending Orders", key: "pendingOrders", icon: "alert-triangle", color: "#F97316", bg: "#FFF7ED" },
-    { label: "Open Tickets", key: "openTickets", icon: "message-square", color: "#EF4444", bg: "#FEF2F2" },
-    { label: "Shipped", key: "shippedOrders", icon: "truck", color: "#3B82F6", bg: "#EFF6FF" },
-    { label: "Delivered", key: "deliveredOrders", icon: "check-circle", color: "#10B981", bg: "#ECFDF5" },
-    { label: "Withdrawals", key: "pendingWithdrawals", icon: "download", color: "#F59E0B", bg: "#FFFBEB" },
+    { label: "Total Users", key: "totalUsers", icon: "users", color: "#2563EB", bg: "#EFF6FF", route: "/admin/users" },
+    { label: "Online Now", key: "onlineNow", icon: "wifi", color: "#10B981", bg: "#ECFDF5", live: true, route: "/admin/users" },
+    { label: "Total Orders", key: "totalOrders", icon: "shopping-bag", color: "#8B5CF6", bg: "#F5F3FF", route: "/admin/orders" },
+    { label: "Pending Orders", key: "pendingOrders", icon: "alert-triangle", color: "#F97316", bg: "#FFF7ED", route: "/admin/orders" },
+    { label: "Open Tickets", key: "openTickets", icon: "message-square", color: "#EF4444", bg: "#FEF2F2", route: "/admin/tickets" },
+    { label: "Shipped", key: "shippedOrders", icon: "truck", color: "#3B82F6", bg: "#EFF6FF", route: "/admin/orders" },
+    { label: "Delivered", key: "deliveredOrders", icon: "check-circle", color: "#10B981", bg: "#ECFDF5", route: "/admin/orders" },
+    { label: "Withdrawals", key: "pendingWithdrawals", icon: "download", color: "#F59E0B", bg: "#FFFBEB", route: "/admin/withdrawals" },
   ];
 
   return (
@@ -258,7 +258,11 @@ export default function AdminDashboardScreen() {
         ) : (
           <View style={styles.statsGrid}>
             {STATS_CONFIG.map((s) => (
-              <View key={s.key} style={[styles.statCard, { backgroundColor: s.bg }]}>
+              <Pressable
+                key={s.key}
+                style={({ pressed }) => [styles.statCard, { backgroundColor: s.bg, opacity: pressed ? 0.82 : 1 }]}
+                onPress={() => router.push((s as any).route as any)}
+              >
                 <View style={styles.statTop}>
                   <View style={[styles.statIcon, { backgroundColor: s.color + "22" }]}>
                     <Feather name={s.icon as any} size={16} color={s.color} />
@@ -275,7 +279,7 @@ export default function AdminDashboardScreen() {
                     </View>
                   )}
                 </View>
-              </View>
+              </Pressable>
             ))}
           </View>
         )}
