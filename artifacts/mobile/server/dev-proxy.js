@@ -99,12 +99,16 @@ function proxyRequest(req, res) {
     targetPath = "/";
   }
 
+  const forwardHeaders = { ...req.headers, host: `localhost:${METRO_PORT}` };
+  delete forwardHeaders["origin"];
+  delete forwardHeaders["referer"];
+
   const options = {
     hostname: "127.0.0.1",
     port: METRO_PORT,
     path: targetPath,
     method: req.method,
-    headers: { ...req.headers, host: `localhost:${METRO_PORT}` },
+    headers: forwardHeaders,
   };
 
   const proxyReq = http.request(options, (proxyRes) => {

@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useEffect } from "react";
@@ -202,9 +203,9 @@ export function ProductCard({ product, style, index = 0 }: ProductCardProps) {
               onPress={handleWishlist}
               hitSlop={8}
             >
-              <Feather
-                name={inWishlist ? "heart" : "heart"}
-                size={13}
+              <Ionicons
+                name={inWishlist ? "heart" : "heart-outline"}
+                size={14}
                 color={inWishlist ? "#EF4444" : colors.mutedForeground}
               />
             </Pressable>
@@ -219,7 +220,7 @@ export function ProductCard({ product, style, index = 0 }: ProductCardProps) {
             {product.name}
           </Text>
           <View style={styles.ratingRow}>
-            <Feather name="star" size={11} color="#F59E0B" />
+            <Ionicons name="star" size={12} color="#F59E0B" />
             <Text style={[styles.rating, { color: colors.mutedForeground }]}>
               {" "}{Number(product.rating).toFixed(1)}
             </Text>

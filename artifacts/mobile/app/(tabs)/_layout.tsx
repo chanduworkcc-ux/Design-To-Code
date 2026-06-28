@@ -1,4 +1,4 @@
-import { Feather } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { Tabs } from "expo-router";
 import React, { useEffect, useRef } from "react";
@@ -20,11 +20,11 @@ import { useColors } from "@/hooks/useColors";
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 const TABS = [
-  { name: "index",    label: "Shop",    icon: "home"           },
-  { name: "search",   label: "Search",  icon: "search"         },
-  { name: "wishlist", label: "Wishlist", icon: "heart"          },
-  { name: "cart",     label: "Cart",     icon: "shopping-cart"  },
-  { name: "profile",  label: "Profile",  icon: "user"           },
+  { name: "index",    label: "Shop",    icon: "home-outline",         activeIcon: "home"                },
+  { name: "search",   label: "Search",  icon: "search-outline",       activeIcon: "search"              },
+  { name: "wishlist", label: "Wishlist", icon: "heart-outline",        activeIcon: "heart"               },
+  { name: "cart",     label: "Cart",    icon: "cart-outline",         activeIcon: "cart"                },
+  { name: "profile",  label: "Profile", icon: "person-outline",       activeIcon: "person"              },
 ] as const;
 
 const TAB_COUNT = TABS.length;
@@ -101,7 +101,11 @@ function TabItem({ tab, isActive, onPress, badge }: TabItemProps) {
 
         {/* Icon with optional badge */}
         <View style={{ position: "relative" }}>
-          <Feather name={tab.icon as any} size={22} color={iconColor} />
+          <Ionicons
+            name={(isActive ? tab.activeIcon : tab.icon) as any}
+            size={23}
+            color={iconColor}
+          />
           {badge !== undefined && badge > 0 && (
             <View style={styles.badgeDot}>
               <Text style={styles.badgeDotText}>{badge > 9 ? "9+" : badge}</Text>

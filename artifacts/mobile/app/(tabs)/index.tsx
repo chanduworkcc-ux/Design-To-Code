@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -409,14 +410,14 @@ export default function ShopScreen() {
                 style={[styles.iconBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
                 onPress={() => router.push("/notifications-user" as any)}
               >
-                <Feather name="bell" size={19} color={colors.text} />
+                <Ionicons name="notifications-outline" size={21} color={colors.text} />
                 <NotifBadge count={unreadCount} />
               </Pressable>
               <Pressable
                 style={[styles.iconBtn, styles.iconBtnCart, { backgroundColor: colors.primary }]}
                 onPress={() => router.push("/(tabs)/cart")}
               >
-                <Feather name="shopping-cart" size={19} color="#fff" />
+                <Ionicons name="cart" size={21} color="#fff" />
                 <CartBadge count={cartCount} />
               </Pressable>
             </View>

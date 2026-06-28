@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -56,7 +57,7 @@ function Empty3DCart() {
       <View style={styles.emptyScene}>
         <View style={styles.emptyIconBox}>
           <Animated2.View style={[styles.emptyIconCircle, { backgroundColor: colors.card }, iconStyle]}>
-            <Feather name="shopping-cart" size={42} color={colors.primary} />
+            <Ionicons name="cart-outline" size={46} color={colors.primary} />
           </Animated2.View>
         </View>
       </View>
@@ -68,7 +69,7 @@ function Empty3DCart() {
         style={[styles.startBtn, { backgroundColor: colors.primary }]}
         onPress={() => router.push("/(tabs)")}
       >
-        <Feather name="shopping-bag" size={16} color="#fff" />
+        <Ionicons name="bag-check-outline" size={17} color="#fff" />
         <Text style={styles.startBtnText}>Browse Products</Text>
       </Pressable>
     </View>
@@ -249,7 +250,7 @@ export default function CartScreen() {
                 style={[styles.deleteBtn, { backgroundColor: "#FEF2F2" }]}
                 onPress={() => removeFromCart(cartItem.id)}
               >
-                <Feather name="trash-2" size={16} color="#EF4444" />
+                <Ionicons name="trash-outline" size={17} color="#EF4444" />
               </Pressable>
             </View>
           );

@@ -57,12 +57,15 @@ app.get("/", (_req, res) => {
 const MOBILE_PROXY_PORT = parseInt(process.env.MOBILE_PORT || "18115", 10);
 app.use("/mobile", (req: Request, res: Response) => {
   const targetPath = "/mobile" + (req.url || "/");
+  const fwdHeaders: Record<string, any> = { ...req.headers, host: `localhost:${MOBILE_PROXY_PORT}` };
+  delete fwdHeaders["origin"];
+  delete fwdHeaders["referer"];
   const options = {
     hostname: "127.0.0.1",
     port: MOBILE_PROXY_PORT,
     path: targetPath,
     method: req.method,
-    headers: { ...req.headers, host: `localhost:${MOBILE_PROXY_PORT}` },
+    headers: fwdHeaders,
   };
   const proxyReq = http.request(options, (proxyRes) => {
     const headers = { ...proxyRes.headers };
@@ -83,12 +86,15 @@ app.use("/mobile", (req: Request, res: Response) => {
 // so we must proxy them here to avoid 404s.
 function proxyToMobile(req: Request, res: Response) {
   const targetPath = req.originalUrl;
+  const fwdHeaders: Record<string, any> = { ...req.headers, host: `localhost:${MOBILE_PROXY_PORT}` };
+  delete fwdHeaders["origin"];
+  delete fwdHeaders["referer"];
   const options = {
     hostname: "127.0.0.1",
     port: MOBILE_PROXY_PORT,
     path: targetPath,
     method: req.method,
-    headers: { ...req.headers, host: `localhost:${MOBILE_PROXY_PORT}` },
+    headers: fwdHeaders,
   };
   const proxyReq = http.request(options, (proxyRes) => {
     const headers = { ...proxyRes.headers };

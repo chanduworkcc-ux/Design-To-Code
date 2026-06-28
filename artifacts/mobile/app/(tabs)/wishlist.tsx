@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef } from "react";
@@ -55,7 +56,7 @@ function WishlistEmpty3D() {
     <View style={{ width: "100%", height: 190, alignItems: "center", justifyContent: "center", overflow: "visible", marginBottom: 8 }}>
       <View style={{ width: 130, height: 130, alignItems: "center", justifyContent: "center" }}>
         <Animated.View style={[{ width: 90, height: 90, borderRadius: 45, alignItems: "center", justifyContent: "center", backgroundColor: colors.card }, iconStyle]}>
-          <Feather name="heart" size={42} color="#EF4444" />
+          <Ionicons name="heart" size={42} color="#EF4444" />
         </Animated.View>
       </View>
     </View>
@@ -138,9 +139,9 @@ function WishlistCard({
               ]}
               onPress={handleAddToCart}
             >
-              <Feather
-                name="shopping-cart"
-                size={14}
+              <Ionicons
+                name={isInCart ? "cart" : "cart-outline"}
+                size={15}
                 color={isInCart ? colors.primary : "#fff"}
               />
               <Text style={[styles.addToCartText, { color: isInCart ? colors.primary : "#fff" }]}>
@@ -163,7 +164,7 @@ function WishlistCard({
             style={[styles.deleteBtn, { borderColor: colors.border }]}
             onPress={handleRemove}
           >
-            <Feather name="heart" size={18} color="#EF4444" />
+            <Ionicons name="heart" size={18} color="#EF4444" />
           </Pressable>
         </Animated.View>
         <BurstAnimation

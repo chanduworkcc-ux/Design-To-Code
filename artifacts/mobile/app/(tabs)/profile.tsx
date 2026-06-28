@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -42,7 +43,7 @@ function MenuItem({ icon, label, onPress, badge, value }: MenuItemProps) {
           <Text style={styles.badgeText}>{badge}</Text>
         </View>
       )}
-      <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+      <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
     </Pressable>
   );
 }
@@ -214,7 +215,7 @@ export default function ProfileScreen() {
               <Text style={styles.walletInr}>≈ ₹{(user.walletBalance / 100).toFixed(2)} INR</Text>
             </View>
             <View style={[styles.walletBadge, { backgroundColor: "rgba(255,255,255,0.2)" }]}>
-              <Feather name="award" size={24} color="#fff" />
+              <Ionicons name="trophy-outline" size={24} color="#fff" />
             </View>
           </View>
         </View>
@@ -317,7 +318,7 @@ export default function ProfileScreen() {
 
         {user.role === "admin" && (
           <Pressable style={[styles.adminBtn, { backgroundColor: colors.primary }]} onPress={() => router.push("/admin" as any)}>
-            <Feather name="shield" size={18} color="#fff" />
+            <Ionicons name="shield-checkmark-outline" size={18} color="#fff" />
             <Text style={styles.adminBtnText}>Admin Panel</Text>
           </Pressable>
         )}
@@ -326,7 +327,7 @@ export default function ProfileScreen() {
           style={[styles.signOutBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
           onPress={handleSignOut}
         >
-          <Feather name="log-out" size={18} color={colors.destructive} />
+          <Ionicons name="log-out-outline" size={18} color={colors.destructive} />
           <Text style={[styles.signOutText, { color: colors.destructive }]}>Sign Out</Text>
         </Pressable>
 
