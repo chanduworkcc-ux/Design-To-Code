@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
-import { Tabs, useSegments } from "expo-router";
+import { Tabs } from "expo-router";
 import React, { useEffect, useRef } from "react";
 import {
   Animated,
@@ -20,17 +20,17 @@ import { useColors } from "@/hooks/useColors";
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 const TABS = [
-  { name: "index",    label: "Shop",     icon: "home"          },
-  { name: "search",   label: "Search",   icon: "search"        },
-  { name: "wishlist", label: "Wishlist",  icon: "heart"         },
-  { name: "cart",     label: "Cart",      icon: "shopping-cart" },
-  { name: "profile",  label: "Profile",   icon: "user"          },
+  { name: "index",    label: "Shop",    icon: "home"           },
+  { name: "search",   label: "Search",  icon: "search"         },
+  { name: "wishlist", label: "Wishlist", icon: "heart"          },
+  { name: "cart",     label: "Cart",     icon: "shopping-cart"  },
+  { name: "profile",  label: "Profile",  icon: "user"           },
 ] as const;
 
 const TAB_COUNT = TABS.length;
 
 interface TabItemProps {
-  tab: (typeof TABS)[number];
+  tab: typeof TABS[number];
   isActive: boolean;
   onPress: () => void;
   badge?: number;
@@ -40,42 +40,37 @@ function TabItem({ tab, isActive, onPress, badge }: TabItemProps) {
   const colors = useColors();
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const translateYAnim = useRef(new Animated.Value(0)).current;
-  const colorAnim = useRef(new Animated.Value(isActive ? 1 : 0)).current;
+  const activeAnim = useRef(new Animated.Value(isActive ? 1 : 0)).current;
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.spring(colorAnim, {
-        toValue: isActive ? 1 : 0,
-        damping: 14,
-        stiffness: 200,
-        useNativeDriver: false,
-      }),
-    ]).start();
+    Animated.spring(activeAnim, {
+      toValue: isActive ? 1 : 0,
+      damping: 16,
+      stiffness: 220,
+      useNativeDriver: false,
+    }).start();
   }, [isActive]);
 
   function handlePressIn() {
     Animated.parallel([
-      Animated.spring(scaleAnim, { toValue: 0.85, damping: 18, stiffness: 400, useNativeDriver: true }),
-      Animated.timing(translateYAnim, { toValue: -2, duration: 120, useNativeDriver: true }),
+      Animated.spring(scaleAnim, { toValue: 0.82, damping: 20, stiffness: 450, useNativeDriver: true }),
+      Animated.timing(translateYAnim, { toValue: -3, duration: 100, useNativeDriver: true }),
     ]).start();
   }
 
   function handlePressOut() {
     Animated.parallel([
-      Animated.spring(scaleAnim, { toValue: 1, damping: 12, stiffness: 250, useNativeDriver: true }),
+      Animated.spring(scaleAnim, { toValue: 1, damping: 12, stiffness: 220, useNativeDriver: true }),
       Animated.spring(translateYAnim, { toValue: 0, damping: 10, stiffness: 180, useNativeDriver: true }),
     ]).start();
   }
 
-  const iconColor = colorAnim.interpolate({
+  const iconColor = activeAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [colors.mutedForeground, colors.primary],
   });
-
-  const labelOpacity = colorAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.55, 1],
-  });
+  const pillOpacity = activeAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
+  const pillScale = activeAnim.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] });
 
   return (
     <Pressable
@@ -86,26 +81,26 @@ function TabItem({ tab, isActive, onPress, badge }: TabItemProps) {
       hitSlop={4}
     >
       <Animated.View
-        style={[
-          styles.tabItemInner,
-          {
-            transform: [
-              { scale: scaleAnim },
-              { translateY: translateYAnim },
-            ],
-          },
-        ]}
+        style={{
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 3,
+          transform: [{ scale: scaleAnim }, { translateY: translateYAnim }],
+        }}
       >
-        {/* Active pill behind icon */}
-        {isActive && (
-          <Animated.View
-            style={[
-              styles.activePill,
-              { backgroundColor: colors.primary + "18" },
-            ]}
-          />
-        )}
+        {/* Active pill background */}
+        <Animated.View
+          style={[
+            styles.activePill,
+            {
+              backgroundColor: colors.primary + "1A",
+              opacity: pillOpacity,
+              transform: [{ scale: pillScale }],
+            },
+          ]}
+        />
 
+        {/* Icon with optional badge */}
         <View style={{ position: "relative" }}>
           <Animated.Text style={{ color: iconColor }}>
             <Feather name={tab.icon as any} size={22} />
@@ -117,12 +112,7 @@ function TabItem({ tab, isActive, onPress, badge }: TabItemProps) {
           )}
         </View>
 
-        <Animated.Text
-          style={[
-            styles.tabLabel,
-            { color: iconColor, opacity: labelOpacity },
-          ]}
-        >
+        <Animated.Text style={[styles.tabLabel, { color: iconColor }]}>
           {tab.label}
         </Animated.Text>
       </Animated.View>
@@ -130,7 +120,7 @@ function TabItem({ tab, isActive, onPress, badge }: TabItemProps) {
   );
 }
 
-function CustomTabBar({ state, descriptors, navigation }: any) {
+function CustomTabBar({ state, navigation }: any) {
   const colors = useColors();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -141,7 +131,13 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
   const { unreadCount } = useNotifications();
 
   const tabWidth = SCREEN_WIDTH / TAB_COUNT;
+  const accentOffset = useRef(tabWidth * 0.275).current;
+
   const pillarAnim = useRef(new Animated.Value(state.index * tabWidth)).current;
+  const pillarOffsetAnim = useRef(new Animated.Value(accentOffset)).current;
+  const translateXAnim = useRef(
+    Animated.add(pillarAnim, pillarOffsetAnim)
+  ).current;
 
   useEffect(() => {
     Animated.spring(pillarAnim, {
@@ -155,9 +151,9 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
   const tabHeight = isWeb ? 84 : 62 + insets.bottom;
 
   function getBadge(name: string) {
-    if (name === "cart") return cartCount > 0 ? cartCount : undefined;
+    if (name === "cart")     return cartCount    > 0 ? cartCount    : undefined;
     if (name === "wishlist") return wishlistCount > 0 ? wishlistCount : undefined;
-    if (name === "profile") return unreadCount > 0 ? unreadCount : undefined;
+    if (name === "profile")  return unreadCount   > 0 ? unreadCount   : undefined;
     return undefined;
   }
 
@@ -180,26 +176,17 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
           style={StyleSheet.absoluteFill}
         />
       ) : (
-        <View
-          style={[StyleSheet.absoluteFill, { backgroundColor: colors.card }]}
-        />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.card }]} />
       )}
 
-      {/* Animated sliding top accent line */}
+      {/* Animated sliding top-accent line */}
       <Animated.View
         style={[
           styles.slideAccent,
           {
             width: tabWidth * 0.45,
             backgroundColor: colors.primary,
-            transform: [
-              {
-                translateX: Animated.add(
-                  pillarAnim,
-                  new Animated.Value(tabWidth * 0.275)
-                ),
-              },
-            ],
+            transform: [{ translateX: translateXAnim }],
           },
         ]}
       />
@@ -211,6 +198,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
           const route = state.routes[i];
 
           function onPress() {
+            if (!route) return;
             const event = navigation.emit({
               type: "tabPress",
               target: route.key,
@@ -240,9 +228,7 @@ export default function TabLayout() {
   return (
     <Tabs
       tabBar={(props) => <CustomTabBar {...props} />}
-      screenOptions={{
-        headerShown: false,
-      }}
+      screenOptions={{ headerShown: false }}
     >
       <Tabs.Screen name="index" />
       <Tabs.Screen name="search" />
@@ -284,20 +270,10 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 4,
   },
-  tabItemInner: {
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 3,
-    position: "relative",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
   activePill: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    width: 52,
+    height: 38,
     borderRadius: 12,
   },
   tabLabel: {

@@ -729,7 +729,6 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 20, fontFamily: "Inter_700Bold", letterSpacing: -0.3 },
   sectionUnderline: {
     height: 3, width: 32, borderRadius: 2, marginTop: 4,
-    transformOrigin: "left",
   },
   seeAllBtn: {
     flexDirection: "row", alignItems: "center", gap: 3,
