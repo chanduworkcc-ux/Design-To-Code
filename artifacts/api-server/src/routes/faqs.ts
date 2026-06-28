@@ -43,13 +43,13 @@ router.post("/admin/faqs", authMiddleware, adminMiddleware, async (req: AuthRequ
 router.put("/admin/faqs/:id", authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
   const parsed = faqSchema.partial().safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: "Validation failed" }); return; }
-  const [faq] = await db.update(faqsTable).set({ ...parsed.data, updatedAt: new Date() }).where(eq(faqsTable.id, req.params.id)).returning();
+  const [faq] = await db.update(faqsTable).set({ ...parsed.data, updatedAt: new Date() }).where(eq(faqsTable.id, req.params.id as string)).returning();
   if (!faq) { res.status(404).json({ error: "FAQ not found" }); return; }
   res.json({ faq });
 });
 
 router.delete("/admin/faqs/:id", authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
-  await db.delete(faqsTable).where(eq(faqsTable.id, req.params.id));
+  await db.delete(faqsTable).where(eq(faqsTable.id, req.params.id as string));
   res.json({ success: true });
 });
 

@@ -70,7 +70,8 @@ router.post("/tickets", authMiddleware, async (req: AuthRequest, res) => {
 });
 
 router.get("/tickets/:id/notes", authMiddleware, async (req: AuthRequest, res) => {
-  const [ticket] = await db.select().from(supportTicketsTable).where(eq(supportTicketsTable.id, req.params.id));
+  const id = req.params.id as string;
+  const [ticket] = await db.select().from(supportTicketsTable).where(eq(supportTicketsTable.id, id));
   if (!ticket || (ticket.userId !== req.userId && req.userRole !== "admin")) {
     res.status(404).json({ error: "Ticket not found" });
     return;
@@ -78,18 +79,19 @@ router.get("/tickets/:id/notes", authMiddleware, async (req: AuthRequest, res) =
   const notes = await db
     .select()
     .from(ticketNotesTable)
-    .where(eq(ticketNotesTable.ticketId, req.params.id))
+    .where(eq(ticketNotesTable.ticketId, id))
     .orderBy(ticketNotesTable.createdAt);
   res.json({ notes });
 });
 
 router.post("/tickets/:id/notes", authMiddleware, async (req: AuthRequest, res) => {
+  const id = req.params.id as string;
   const { note, imageUrl } = req.body;
   if (!note?.trim() && !imageUrl) {
     res.status(400).json({ error: "Note or image required" });
     return;
   }
-  const [ticket] = await db.select().from(supportTicketsTable).where(eq(supportTicketsTable.id, req.params.id));
+  const [ticket] = await db.select().from(supportTicketsTable).where(eq(supportTicketsTable.id, id));
   if (!ticket || (ticket.userId !== req.userId && req.userRole !== "admin")) {
     res.status(403).json({ error: "Forbidden" });
     return;
@@ -97,7 +99,7 @@ router.post("/tickets/:id/notes", authMiddleware, async (req: AuthRequest, res) 
 
   const [newNote] = await db.insert(ticketNotesTable).values({
     id: uuidv4(),
-    ticketId: req.params.id,
+    ticketId: id,
     authorId: req.userId!,
     note: note?.trim() ?? "",
     imageUrl: imageUrl ?? null,
@@ -143,6 +145,7 @@ router.get("/admin/tickets", authMiddleware, adminMiddleware, async (_req, res) 
 });
 
 router.patch("/admin/tickets/:id/status", authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
+  const id = req.params.id as string;
   const { status, note } = req.body;
   const validStatuses = ["open", "in_progress", "resolved", "closed"];
   if (!validStatuses.includes(status)) {
@@ -150,20 +153,20 @@ router.patch("/admin/tickets/:id/status", authMiddleware, adminMiddleware, async
     return;
   }
 
-  const [ticket] = await db.select().from(supportTicketsTable).where(eq(supportTicketsTable.id, req.params.id));
+  const [ticket] = await db.select().from(supportTicketsTable).where(eq(supportTicketsTable.id, id));
   if (!ticket) { res.status(404).json({ error: "Ticket not found" }); return; }
 
   const [updated] = await db
     .update(supportTicketsTable)
     .set({ status, resolvedAt: ["resolved", "closed"].includes(status) ? new Date() : undefined })
-    .where(eq(supportTicketsTable.id, req.params.id))
+    .where(eq(supportTicketsTable.id, id))
     .returning();
 
   let noteRecord: Record<string, unknown> | null = null;
   if (note?.trim()) {
     [noteRecord] = await db.insert(ticketNotesTable).values({
       id: uuidv4(),
-      ticketId: req.params.id,
+      ticketId: id,
       authorId: req.userId!,
       note: note.trim(),
       isAdmin: true,

@@ -48,14 +48,14 @@ router.put("/admin/banners/:id", authMiddleware, adminMiddleware, async (req, re
   const [updated] = await db
     .update(bannersTable)
     .set({ ...parsed.data, updatedAt: new Date() })
-    .where(eq(bannersTable.id, req.params.id))
+    .where(eq(bannersTable.id, req.params.id as string))
     .returning();
   if (!updated) { res.status(404).json({ error: "Banner not found" }); return; }
   res.json({ banner: updated });
 });
 
 router.delete("/admin/banners/:id", authMiddleware, adminMiddleware, async (req, res) => {
-  await db.delete(bannersTable).where(eq(bannersTable.id, req.params.id));
+  await db.delete(bannersTable).where(eq(bannersTable.id, req.params.id as string));
   res.json({ success: true });
 });
 

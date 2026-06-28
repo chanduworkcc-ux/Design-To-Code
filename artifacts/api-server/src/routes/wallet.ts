@@ -54,19 +54,21 @@ router.get("/admin/withdrawals", authMiddleware, adminMiddleware, async (_req, r
 });
 
 router.post("/admin/withdrawals/:id/approve", authMiddleware, adminMiddleware, async (req, res) => {
+  const id = req.params.id as string;
   const { adminNote } = req.body;
   const [updated] = await db.update(withdrawalRequestsTable)
     .set({ status: "approved", adminNote, resolvedAt: new Date() })
-    .where(eq(withdrawalRequestsTable.id, req.params.id)).returning();
+    .where(eq(withdrawalRequestsTable.id, id)).returning();
   res.json({ withdrawal: updated });
 });
 
 router.post("/admin/withdrawals/:id/reject", authMiddleware, adminMiddleware, async (req, res) => {
+  const id = req.params.id as string;
   const { adminNote } = req.body;
-  const [wr] = await db.select().from(withdrawalRequestsTable).where(eq(withdrawalRequestsTable.id, req.params.id));
+  const [wr] = await db.select().from(withdrawalRequestsTable).where(eq(withdrawalRequestsTable.id, id));
   if (!wr) { res.status(404).json({ error: "Request not found" }); return; }
 
-  await db.update(withdrawalRequestsTable).set({ status: "rejected", adminNote, resolvedAt: new Date() }).where(eq(withdrawalRequestsTable.id, req.params.id));
+  await db.update(withdrawalRequestsTable).set({ status: "rejected", adminNote, resolvedAt: new Date() }).where(eq(withdrawalRequestsTable.id, id));
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, wr.userId));
   await db.update(usersTable).set({ walletBalance: user.walletBalance + wr.coins }).where(eq(usersTable.id, wr.userId));
   await db.insert(walletTransactionsTable).values({ id: uuidv4(), userId: wr.userId, type: "credit", coins: wr.coins, description: `Withdrawal rejected — coins refunded`, referenceId: wr.id });
@@ -82,20 +84,21 @@ const walletAdjustSchema = z.object({
 });
 
 router.post("/admin/users/:id/wallet-adjust", authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
+  const id = req.params.id as string;
   const parsed = walletAdjustSchema.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: "Validation failed", details: parsed.error.issues }); return; }
   const { coins, reason } = parsed.data;
 
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.params.id));
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id));
   if (!user) { res.status(404).json({ error: "User not found" }); return; }
 
   const newBalance = user.walletBalance + coins;
   if (newBalance < 0) { res.status(400).json({ error: `Insufficient balance. User has ${user.walletBalance} coins.` }); return; }
 
-  await db.update(usersTable).set({ walletBalance: newBalance }).where(eq(usersTable.id, req.params.id));
+  await db.update(usersTable).set({ walletBalance: newBalance }).where(eq(usersTable.id, id));
   await db.insert(walletTransactionsTable).values({
     id: uuidv4(),
-    userId: req.params.id,
+    userId: id,
     type: coins > 0 ? "credit" : "debit",
     coins: Math.abs(coins),
     description: `Admin adjustment: ${reason}`,

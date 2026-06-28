@@ -41,7 +41,7 @@ router.post("/addresses", authMiddleware, async (req: Request, res: Response) =>
 
 router.put("/addresses/:id", authMiddleware, async (req: Request, res: Response) => {
   const userId = (req as AuthRequest).userId!;
-  const { id } = req.params;
+  const id = req.params.id as string;
   const { label, fullName, phone, line1, line2, city, state, pincode, isDefault } = req.body;
   const existing = await db.select().from(addressesTable).where(and(eq(addressesTable.id, id), eq(addressesTable.userId, userId)));
   if (!existing.length) { res.status(404).json({ error: "Address not found." }); return; }
@@ -65,7 +65,7 @@ router.put("/addresses/:id", authMiddleware, async (req: Request, res: Response)
 
 router.delete("/addresses/:id", authMiddleware, async (req: Request, res: Response) => {
   const userId = (req as AuthRequest).userId!;
-  const { id } = req.params;
+  const id = req.params.id as string;
   const existing = await db.select().from(addressesTable).where(and(eq(addressesTable.id, id), eq(addressesTable.userId, userId)));
   if (!existing.length) { res.status(404).json({ error: "Address not found." }); return; }
   await db.delete(addressesTable).where(and(eq(addressesTable.id, id), eq(addressesTable.userId, userId)));

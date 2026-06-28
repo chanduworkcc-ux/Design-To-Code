@@ -56,7 +56,7 @@ router.post("/reviews", authMiddleware as any, async (req: AuthRequest, res) => 
 
 router.get("/reviews/order/:orderId", authMiddleware as any, async (req: AuthRequest, res) => {
   const userId = req.userId!;
-  const { orderId } = req.params;
+  const orderId = req.params.orderId as string;
 
   const [review] = await db
     .select()
@@ -68,7 +68,7 @@ router.get("/reviews/order/:orderId", authMiddleware as any, async (req: AuthReq
 });
 
 router.get("/reviews/product/:productId", async (req, res) => {
-  const { productId } = req.params;
+  const productId = req.params.productId as string;
 
   const reviews = await db
     .select({
@@ -117,7 +117,7 @@ router.get("/admin/reviews", authMiddleware as any, adminMiddleware as any, asyn
 });
 
 router.delete("/admin/reviews/:id", authMiddleware as any, adminMiddleware as any, async (req, res) => {
-  const { id } = req.params;
+  const id = req.params.id as string;
 
   const [deleted] = await db
     .delete(reviewsTable)

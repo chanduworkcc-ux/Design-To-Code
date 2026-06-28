@@ -71,7 +71,7 @@ router.get("/admin/products", authMiddleware, adminMiddleware, async (_req, res)
 });
 
 router.get("/products/:id", async (req, res) => {
-  const products = await db.select().from(productsTable).where(eq(productsTable.id, req.params.id));
+  const products = await db.select().from(productsTable).where(eq(productsTable.id, req.params.id as string));
   if (!products.length) { res.status(404).json({ error: "Product not found" }); return; }
   res.json({ product: products[0] });
 });
@@ -101,14 +101,14 @@ router.post("/products", authMiddleware, adminMiddleware, async (req: AuthReques
 router.put("/products/:id", authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
   const parsed = productSchema.partial().safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: "Validation failed" }); return; }
-  const [updated] = await db.update(productsTable).set(parsed.data).where(eq(productsTable.id, req.params.id)).returning();
+  const [updated] = await db.update(productsTable).set(parsed.data).where(eq(productsTable.id, req.params.id as string)).returning();
   if (!updated) { res.status(404).json({ error: "Product not found" }); return; }
   broadcastProductsUpdated();
   res.json({ product: updated });
 });
 
 router.delete("/products/:id", authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
-  await db.update(productsTable).set({ isActive: false }).where(eq(productsTable.id, req.params.id));
+  await db.update(productsTable).set({ isActive: false }).where(eq(productsTable.id, req.params.id as string));
   broadcastProductsUpdated();
   res.json({ success: true });
 });
@@ -117,24 +117,24 @@ router.post("/admin/products/:id/add-stock", authMiddleware, adminMiddleware, as
   const { quantity } = req.body;
   const qty = parseInt(quantity);
   if (isNaN(qty) || qty <= 0) { res.status(400).json({ error: "quantity must be a positive integer" }); return; }
-  const existing = await db.select().from(productsTable).where(eq(productsTable.id, req.params.id));
+  const existing = await db.select().from(productsTable).where(eq(productsTable.id, req.params.id as string));
   if (!existing.length) { res.status(404).json({ error: "Product not found" }); return; }
   const [updated] = await db
     .update(productsTable)
     .set({ stock: sql`${productsTable.stock} + ${qty}` })
-    .where(eq(productsTable.id, req.params.id))
+    .where(eq(productsTable.id, req.params.id as string))
     .returning();
   res.json({ product: updated });
 });
 
 router.post("/admin/products/:id/out-of-stock", authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
-  const existing = await db.select().from(productsTable).where(eq(productsTable.id, req.params.id));
+  const existing = await db.select().from(productsTable).where(eq(productsTable.id, req.params.id as string));
   if (!existing.length) { res.status(404).json({ error: "Product not found" }); return; }
   const product = existing[0];
   const [updated] = await db
     .update(productsTable)
     .set({ stock: 0, isActive: false })
-    .where(eq(productsTable.id, req.params.id))
+    .where(eq(productsTable.id, req.params.id as string))
     .returning();
 
   // Insert a broadcast notification so carts can detect the removal

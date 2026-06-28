@@ -56,12 +56,12 @@ router.put("/admin/coupons/:id", authMiddleware, adminMiddleware, async (req: Au
   const parsed = couponSchema.partial().safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: "Validation failed" }); return; }
   const { expiresAt, ...rest } = parsed.data;
-  const [updated] = await db.update(couponsTable).set({ ...rest, expiresAt: expiresAt ? new Date(expiresAt) : undefined }).where(eq(couponsTable.id, req.params.id)).returning();
+  const [updated] = await db.update(couponsTable).set({ ...rest, expiresAt: expiresAt ? new Date(expiresAt) : undefined }).where(eq(couponsTable.id, req.params.id as string)).returning();
   res.json({ coupon: updated });
 });
 
 router.delete("/admin/coupons/:id", authMiddleware, adminMiddleware, async (req, res) => {
-  await db.update(couponsTable).set({ isActive: false }).where(eq(couponsTable.id, req.params.id));
+  await db.update(couponsTable).set({ isActive: false }).where(eq(couponsTable.id, req.params.id as string));
   res.json({ success: true });
 });
 

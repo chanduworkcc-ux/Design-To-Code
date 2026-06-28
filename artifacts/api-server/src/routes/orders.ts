@@ -343,7 +343,7 @@ router.get("/orders/:id/invoice", authMiddleware, async (req: AuthRequest, res) 
     .from(ordersTable)
     .leftJoin(productsTable, eq(ordersTable.productId, productsTable.id))
     .leftJoin(usersTable, eq(ordersTable.userId, usersTable.id))
-    .where(eq(ordersTable.id, req.params.id));
+    .where(eq(ordersTable.id, req.params.id as string));
 
   if (!order || (order as any).userId !== req.userId && req.userRole !== "admin") {
     res.status(404).json({ error: "Order not found" }); return;
