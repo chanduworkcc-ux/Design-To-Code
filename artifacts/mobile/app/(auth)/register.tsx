@@ -139,7 +139,7 @@ export default function RegisterScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.logoArea}>
-          <Image source={require("@/assets/logo-transparent.png")} style={styles.logoImg} resizeMode="contain" />
+          <Image source={require("@/assets/logo-nobg.png")} style={styles.logoImg} resizeMode="contain" />
           <Text style={[styles.tagline, { color: colors.mutedForeground }]}>Join millions of smart shoppers</Text>
         </View>
 

@@ -20,7 +20,7 @@ import { FloatingOrb, PulsingRing } from "@/components/ThreeD";
 import { useColors } from "@/hooks/useColors";
 
 const { width: W, height: H } = Dimensions.get("window");
-const LOGO = require("@/assets/logo-transparent.png");
+const LOGO = require("@/assets/logo-nobg.png");
 
 // Animated dots: "Loading..." → "Loading." → "Loading.." → "Loading..."
 function LoadingDots() {

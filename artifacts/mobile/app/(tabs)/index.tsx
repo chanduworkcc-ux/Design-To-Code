@@ -386,11 +386,10 @@ export default function ShopScreen() {
         <FloatIn delay={0} distance={30}>
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              {/* Logo with glow ring */}
+              {/* Logo */}
               <View style={styles.logoWrapper}>
-                <FloatingOrb color={colors.primary} size={44} style={styles.logoGlow} delay={0} amplitude={6} duration={2800} />
                 <Image
-                  source={require("@/assets/logo-transparent.png")}
+                  source={require("@/assets/logo-nobg.png")}
                   style={styles.headerLogo}
                   resizeMode="contain"
                 />
@@ -698,9 +697,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   headerLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
-  logoWrapper: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
+  logoWrapper: { width: 52, height: 52, alignItems: "center", justifyContent: "center", borderRadius: 14, overflow: "hidden", backgroundColor: "#EFF6FF", borderWidth: 1.5, borderColor: "#BFDBFE" },
   logoGlow: { top: 0, left: 0 },
-  headerLogo: { width: 42, height: 42, zIndex: 1 },
+  headerLogo: { width: 52, height: 52 },
   greetingText: { fontSize: 12, fontFamily: "DMSans_400Regular", marginBottom: 1 },
   brandName: { fontSize: 24, fontFamily: "DMSans_700Bold", letterSpacing: -0.5 },
   headerActions: { flexDirection: "row", gap: 8 },

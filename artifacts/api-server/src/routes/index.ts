@@ -11,6 +11,7 @@ import bannersRouter from "./banners";
 import notificationsRouter from "./notifications";
 import storageRouter from "./storage";
 import addressesRouter from "./addresses";
+import reviewsRouter from "./reviews";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(bannersRouter);
 router.use(notificationsRouter);
 router.use(storageRouter);
 router.use(addressesRouter);
+router.use(reviewsRouter);
 
 export default router;

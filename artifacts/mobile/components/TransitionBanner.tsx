@@ -10,7 +10,7 @@ import {
 } from "react-native";
 
 const { width: W, height: H } = Dimensions.get("window");
-const LOCAL_LOGO = require("@/assets/logo-transparent.png");
+const LOCAL_LOGO = require("@/assets/logo-nobg.png");
 const SLIDE_DURATION = 1800;
 const DISPLAY_MS = 3200;
 

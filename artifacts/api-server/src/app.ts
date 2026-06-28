@@ -78,7 +78,34 @@ app.use("/mobile", (req: Request, res: Response) => {
   req.pipe(proxyReq, { end: true });
 });
 
-app.get(/^\/(?!api\/|mobile|assets\/)(.+)$/, (req: Request, res: Response) => {
+// Forward /assets, /_expo, /node_modules, /packages to the mobile Metro server.
+// The Expo web bundle uses absolute asset paths without the /mobile prefix,
+// so we must proxy them here to avoid 404s.
+function proxyToMobile(req: Request, res: Response) {
+  const targetPath = req.originalUrl;
+  const options = {
+    hostname: "127.0.0.1",
+    port: MOBILE_PROXY_PORT,
+    path: targetPath,
+    method: req.method,
+    headers: { ...req.headers, host: `localhost:${MOBILE_PROXY_PORT}` },
+  };
+  const proxyReq = http.request(options, (proxyRes) => {
+    const headers = { ...proxyRes.headers };
+    res.writeHead(proxyRes.statusCode || 200, headers);
+    proxyRes.pipe(res, { end: true });
+  });
+  proxyReq.on("error", (err) => {
+    logger.warn({ err }, "Asset proxy error");
+    if (!res.headersSent) res.status(502).send("Asset unavailable");
+  });
+  req.pipe(proxyReq, { end: true });
+}
+
+app.use("/assets", proxyToMobile);
+app.use("/_expo", proxyToMobile);
+
+app.get(/^\/(?!api\/|mobile|assets\/|_expo\/)(.+)$/, (req: Request, res: Response) => {
   const path = (req.params as any)[0] ?? "";
   res.redirect(302, `/mobile/${path}`);
 });
