@@ -7,7 +7,7 @@ import path from "path";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { activityLogger } from "./middleware/auth";
-import { seedDefaultConfig, seedAdminUser, seedDemoData } from "./lib/config";
+import { seedDefaultConfig, seedAdminUser, seedDemoData, seedDefaultFaqs } from "./lib/config";
 
 const app: Express = express();
 
@@ -129,6 +129,7 @@ app.use("/api", router);
 
 seedDefaultConfig().catch((err) => logger.error({ err }, "Failed to seed config"));
 seedAdminUser().catch((err) => logger.error({ err }, "Failed to seed admin user"));
+seedDefaultFaqs().catch((err) => logger.error({ err }, "Failed to seed default FAQs"));
 
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   logger.error({ err }, "Unhandled error");

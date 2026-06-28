@@ -1,5 +1,5 @@
 import { db } from "@workspace/db";
-import { systemConfigTable, usersTable, productsTable, bannersTable } from "@workspace/db/schema";
+import { systemConfigTable, usersTable, productsTable, bannersTable, faqsTable } from "@workspace/db/schema";
 import { eq, count } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
@@ -186,4 +186,38 @@ export async function seedDemoData(): Promise<void> {
   ];
 
   await db.insert(bannersTable).values(demoBanners);
+}
+
+export async function seedDefaultFaqs(): Promise<void> {
+  const [{ total }] = await db.select({ total: count() }).from(faqsTable);
+  if (total > 0) return;
+
+  const now = new Date();
+  const faqs = [
+    // Orders
+    { id: uuidv4(), category: "Orders", sortOrder: 10, question: "How do I place an order?", answer: 'Browse products, tap "Add to Cart", then go to your Cart and tap "Place Order". Choose your delivery address and payment method, then confirm. You\'ll get a confirmation notification once the order is placed.' },
+    { id: uuidv4(), category: "Orders", sortOrder: 11, question: "Can I cancel my order?", answer: 'Yes, you can cancel an order before it is shipped. Go to Profile > My Orders, open the order, and tap "Cancel Order". Once shipped, cancellations are not possible, but you can raise a return request.' },
+    { id: uuidv4(), category: "Orders", sortOrder: 12, question: "How do I track my order?", answer: "Go to Profile > My Orders and tap on your order. You'll see the current status (Confirmed, Processing, Shipped, Delivered). Tracking updates are shown in real time as the order progresses." },
+    { id: uuidv4(), category: "Orders", sortOrder: 13, question: "What if I receive a wrong or damaged product?", answer: "We're sorry about that! Please raise a support ticket from Profile > Support within 48 hours of delivery, attach a photo, and our team will arrange a replacement or refund promptly." },
+
+    // Payments
+    { id: uuidv4(), category: "Payments", sortOrder: 20, question: "What payment methods are accepted?", answer: "We accept Cash on Delivery (COD), UPI, debit/credit cards, and net banking via our payment gateway. You can also use your XyloCart Wallet balance to pay for orders." },
+    { id: uuidv4(), category: "Payments", sortOrder: 21, question: "Is it safe to pay on XyloCart?", answer: "Absolutely. All online payments are processed through a secure, encrypted payment gateway. We never store your card or UPI details on our servers." },
+    { id: uuidv4(), category: "Payments", sortOrder: 22, question: "How does the Wallet work?", answer: "Your XyloCart Wallet is credited with coins from referrals and promotions. Coins can be redeemed at checkout to get discounts. Go to Profile > Wallet to see your balance and transaction history." },
+
+    // Shipping
+    { id: uuidv4(), category: "Shipping", sortOrder: 30, question: "How long does delivery take?", answer: "Standard delivery takes 3-7 business days depending on your location. Express delivery (where available) delivers within 1-2 business days. You can see the estimated delivery date on the product page." },
+    { id: uuidv4(), category: "Shipping", sortOrder: 31, question: "Is there a delivery charge?", answer: "A small delivery fee applies per order. You can see the exact fee at checkout before placing your order. Occasionally we run free-shipping promotions -- keep an eye on the home page banners!" },
+
+    // Returns & Refunds
+    { id: uuidv4(), category: "Returns", sortOrder: 40, question: "What is your return policy?", answer: "We accept returns within 7 days of delivery for unused products in original packaging. Raise a return request via Profile > Support Tickets, and our team will guide you through the process." },
+    { id: uuidv4(), category: "Returns", sortOrder: 41, question: "How long does a refund take?", answer: "Refunds are processed within 5-7 business days after the returned item is received and inspected. The amount is credited back to your original payment method or XyloCart Wallet." },
+
+    // Account
+    { id: uuidv4(), category: "Account", sortOrder: 50, question: "How do I refer a friend and earn rewards?", answer: "Go to Profile > Refer & Earn to find your unique referral link. Share it with friends -- when they sign up and place their first order, both of you earn XyloCart Wallet coins automatically!" },
+    { id: uuidv4(), category: "Account", sortOrder: 51, question: "How do I reset my password?", answer: 'On the Login screen tap "Forgot Password", enter your registered email, and you\'ll receive a password reset link. Follow the link to set a new password. If you face issues, contact us via Support Tickets.' },
+    { id: uuidv4(), category: "Account", sortOrder: 52, question: "How do I contact customer support?", answer: 'Go to Profile > Support Tickets and tap "New Ticket". Describe your issue and our team will respond within 24 hours. For urgent matters you can also search the Q&A section for quick answers.' },
+  ];
+
+  await db.insert(faqsTable).values(faqs.map((f) => ({ ...f, createdAt: now, updatedAt: now })));
 }
