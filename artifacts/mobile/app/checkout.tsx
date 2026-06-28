@@ -75,10 +75,11 @@ const ALL_PAYMENT_OPTIONS: { key: PaymentMethod; label: string; icon: string; de
 ];
 
 function FormField({
-  label, value, onChange, placeholder, keyboard, required, colors, error,
+  label, value, onChange, placeholder, keyboard, required, colors, error, errorMsg, maxLength,
 }: {
   label: string; value: string; onChange: (v: string) => void;
-  placeholder?: string; keyboard?: any; required?: boolean; colors: any; error?: boolean;
+  placeholder?: string; keyboard?: any; required?: boolean; colors: any;
+  error?: boolean; errorMsg?: string; maxLength?: number;
 }) {
   return (
     <View style={fieldStyles.group}>
@@ -93,7 +94,11 @@ function FormField({
         placeholderTextColor={colors.mutedForeground}
         keyboardType={keyboard ?? "default"}
         autoCorrect={false}
+        maxLength={maxLength}
       />
+      {error && errorMsg ? (
+        <Text style={fieldStyles.errorText}>{errorMsg}</Text>
+      ) : null}
     </View>
   );
 }
@@ -102,6 +107,7 @@ const fieldStyles = StyleSheet.create({
   group: { marginBottom: 12 },
   label: { fontSize: 11, fontFamily: "DMSans_600SemiBold", letterSpacing: 0.4, marginBottom: 5 },
   input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 13, paddingVertical: 11, fontSize: 14, fontFamily: "DMSans_400Regular" },
+  errorText: { fontSize: 10, fontFamily: "DMSans_500Medium", color: "#EF4444", marginTop: 3 },
 });
 
 function BillingRow({ label, value, valueColor, bold, dividerAbove, secondary }: {
@@ -316,17 +322,63 @@ export default function CheckoutScreen() {
     );
   }
 
+  const [errorMessages, setErrorMessages] = useState<Partial<Record<keyof ShippingForm, string>>>({});
+
   function validate(): boolean {
-    const required: (keyof ShippingForm)[] = ["fullName", "mobile", "email", "line1", "pincode", "city", "state"];
     const newErrors: Partial<Record<keyof ShippingForm, boolean>> = {};
+    const newMessages: Partial<Record<keyof ShippingForm, string>> = {};
     let valid = true;
-    for (const key of required) {
-      if (!form[key].trim()) { newErrors[key] = true; valid = false; }
+
+    const addError = (key: keyof ShippingForm, msg: string) => {
+      newErrors[key] = true;
+      newMessages[key] = msg;
+      valid = false;
+    };
+
+    if (!form.fullName.trim()) {
+      addError("fullName", "Name is required.");
+    } else if (form.fullName.trim().length < 4) {
+      addError("fullName", "Name must be at least 4 characters.");
+    } else if (!/^[A-Za-z\s]+$/.test(form.fullName.trim())) {
+      addError("fullName", "Name must contain letters only.");
     }
-    if (form.email.trim() && !/\S+@\S+\.\S+/.test(form.email.trim())) { newErrors.email = true; valid = false; }
-    if (form.mobile.trim() && !/^\d{10}$/.test(form.mobile.replace(/\s/g, ""))) { newErrors.mobile = true; valid = false; }
-    if (form.pincode.trim() && !/^\d{6}$/.test(form.pincode.trim())) { newErrors.pincode = true; valid = false; }
+
+    if (!form.mobile.trim()) {
+      addError("mobile", "Mobile number is required.");
+    } else if (!/^\d{10}$/.test(form.mobile.trim())) {
+      addError("mobile", "Must be exactly 10 digits.");
+    }
+
+    if (!form.email.trim()) {
+      addError("email", "Email is required.");
+    } else if (!/\S+@\S+\.\S+/.test(form.email.trim())) {
+      addError("email", "Enter a valid email address.");
+    }
+
+    if (!form.line1.trim()) {
+      addError("line1", "Address is required.");
+    }
+
+    if (!form.pincode.trim()) {
+      addError("pincode", "Pincode is required.");
+    } else if (!/^\d{6}$/.test(form.pincode.trim())) {
+      addError("pincode", "Must be exactly 6 digits.");
+    }
+
+    if (!form.city.trim()) {
+      addError("city", "City is required.");
+    } else if (!/^[A-Za-z\s]+$/.test(form.city.trim())) {
+      addError("city", "Letters only.");
+    }
+
+    if (!form.state.trim()) {
+      addError("state", "State is required.");
+    } else if (!/^[A-Za-z\s]+$/.test(form.state.trim())) {
+      addError("state", "Letters only.");
+    }
+
     setErrors(newErrors);
+    setErrorMessages(newMessages);
     return valid;
   }
 
@@ -509,24 +561,63 @@ export default function CheckoutScreen() {
             <View style={[styles.card, { backgroundColor: colors.background, borderColor: colors.border, padding: 14 }]}>
               <View style={styles.row2}>
                 <View style={{ flex: 1 }}>
-                  <FormField label="Full Name" value={form.fullName} onChange={(v) => setForm({ ...form, fullName: v })} placeholder="Rajesh Kumar" required colors={colors} error={errors.fullName} />
+                  <FormField
+                    label="Full Name" value={form.fullName} required colors={colors}
+                    error={errors.fullName} errorMsg={errorMessages.fullName}
+                    placeholder="Rajesh Kumar"
+                    onChange={(v) => setForm({ ...form, fullName: v.replace(/[^A-Za-z\s]/g, "") })}
+                  />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <FormField label="Mobile Number" value={form.mobile} onChange={(v) => setForm({ ...form, mobile: v })} placeholder="9876543210" keyboard="phone-pad" required colors={colors} error={errors.mobile} />
+                  <FormField
+                    label="Mobile Number" value={form.mobile} keyboard="phone-pad" required colors={colors}
+                    error={errors.mobile} errorMsg={errorMessages.mobile}
+                    placeholder="9876543210" maxLength={10}
+                    onChange={(v) => setForm({ ...form, mobile: v.replace(/[^0-9]/g, "") })}
+                  />
                 </View>
               </View>
-              <FormField label="Email ID" value={form.email} onChange={(v) => setForm({ ...form, email: v })} placeholder="you@example.com" keyboard="email-address" required colors={colors} error={errors.email} />
-              <FormField label="Complete Address" value={form.line1} onChange={(v) => setForm({ ...form, line1: v })} placeholder="House/Flat No., Building, Street" required colors={colors} error={errors.line1} />
-              <FormField label="Landmark" value={form.landmark} onChange={(v) => setForm({ ...form, landmark: v })} placeholder="Near metro station (optional)" colors={colors} />
+              <FormField
+                label="Email ID" value={form.email} keyboard="email-address" required colors={colors}
+                error={errors.email} errorMsg={errorMessages.email}
+                placeholder="you@example.com"
+                onChange={(v) => setForm({ ...form, email: v })}
+              />
+              <FormField
+                label="Complete Address" value={form.line1} required colors={colors}
+                error={errors.line1} errorMsg={errorMessages.line1}
+                placeholder="House/Flat No., Building, Street"
+                onChange={(v) => setForm({ ...form, line1: v })}
+              />
+              <FormField
+                label="Landmark" value={form.landmark} colors={colors}
+                placeholder="Near Landmark (optional)"
+                onChange={(v) => setForm({ ...form, landmark: v.replace(/[^A-Za-z\s]/g, "") })}
+              />
               <View style={styles.row3}>
                 <View style={{ flex: 1 }}>
-                  <FormField label="Pin Code" value={form.pincode} onChange={(v) => setForm({ ...form, pincode: v })} placeholder="400001" keyboard="numeric" required colors={colors} error={errors.pincode} />
+                  <FormField
+                    label="Pin Code" value={form.pincode} keyboard="numeric" required colors={colors}
+                    error={errors.pincode} errorMsg={errorMessages.pincode}
+                    placeholder="400001" maxLength={6}
+                    onChange={(v) => setForm({ ...form, pincode: v.replace(/[^0-9]/g, "") })}
+                  />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <FormField label="City" value={form.city} onChange={(v) => setForm({ ...form, city: v })} placeholder="Mumbai" required colors={colors} error={errors.city} />
+                  <FormField
+                    label="City" value={form.city} required colors={colors}
+                    error={errors.city} errorMsg={errorMessages.city}
+                    placeholder="Mumbai"
+                    onChange={(v) => setForm({ ...form, city: v.replace(/[^A-Za-z\s]/g, "") })}
+                  />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <FormField label="State" value={form.state} onChange={(v) => setForm({ ...form, state: v })} placeholder="Maharashtra" required colors={colors} error={errors.state} />
+                  <FormField
+                    label="State" value={form.state} required colors={colors}
+                    error={errors.state} errorMsg={errorMessages.state}
+                    placeholder="Maharashtra"
+                    onChange={(v) => setForm({ ...form, state: v.replace(/[^A-Za-z\s]/g, "") })}
+                  />
                 </View>
               </View>
             </View>

@@ -183,7 +183,7 @@ router.post("/orders", authMiddleware, async (req: AuthRequest, res) => {
 
   const [product] = await db.select().from(productsTable).where(eq(productsTable.id, productId));
   if (!product) { res.status(404).json({ error: "Product not found" }); return; }
-  if (!product.isAvailable || product.stock <= 0) {
+  if (!product.isActive || product.stock <= 0) {
     res.status(400).json({ error: "This product is currently out of stock or unavailable." });
     return;
   }
