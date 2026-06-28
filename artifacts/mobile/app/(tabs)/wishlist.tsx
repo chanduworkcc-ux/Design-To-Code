@@ -2,12 +2,13 @@ import { Feather } from "@expo/vector-icons";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   FlatList,
   Image,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -179,6 +180,15 @@ function WishlistCard({
   );
 }
 
+const SORT_OPTIONS = [
+  { key: "default",    label: "Default"  },
+  { key: "price_asc",  label: "Price ↑"  },
+  { key: "price_desc", label: "Price ↓"  },
+  { key: "name_asc",   label: "A → Z"   },
+  { key: "name_desc",  label: "Z → A"   },
+  { key: "top_rated",  label: "⭐ Top"  },
+];
+
 export default function WishlistScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -186,6 +196,7 @@ export default function WishlistScreen() {
   const { t } = useLanguage();
   const { wishlist, removeFromWishlist, addToCart, isInCart } = useApp();
   const { emit } = useSocket();
+  const [sortBy, setSortBy] = useState("default");
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : 0;
 
@@ -193,6 +204,16 @@ export default function WishlistScreen() {
     addToCart(item);
     emit("user:cart_add", { productId: item.id, productName: item.name });
   }
+
+  const sortedWishlist = (() => {
+    let list = [...wishlist];
+    if (sortBy === "top_rated")  list.sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0));
+    if (sortBy === "price_asc")  list.sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0));
+    if (sortBy === "price_desc") list.sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0));
+    if (sortBy === "name_asc")   list.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
+    if (sortBy === "name_desc")  list.sort((a, b) => (b.name ?? "").localeCompare(a.name ?? ""));
+    return list;
+  })();
 
   if (wishlist.length === 0) {
     return (
@@ -223,7 +244,7 @@ export default function WishlistScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <FlatList
-        data={wishlist}
+        data={sortedWishlist}
         keyExtractor={(item) => item.id}
         contentContainerStyle={[
           styles.list,
@@ -238,6 +259,36 @@ export default function WishlistScreen() {
                 {wishlist.length} items
               </Text>
             </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterRow}
+              style={{ marginBottom: 16 }}
+            >
+              {SORT_OPTIONS.map((opt) => {
+                const active = sortBy === opt.key;
+                return (
+                  <Pressable
+                    key={opt.key}
+                    style={[
+                      styles.filterChip,
+                      {
+                        backgroundColor: active ? colors.primary + "18" : "transparent",
+                        borderColor: active ? colors.primary : colors.border,
+                      },
+                    ]}
+                    onPress={() => {
+                      setSortBy(opt.key);
+                      if (Platform.OS !== "web") Haptics.selectionAsync();
+                    }}
+                  >
+                    <Text style={[styles.filterChipText, { color: active ? colors.primary : colors.mutedForeground }]}>
+                      {opt.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
           </View>
         }
         renderItem={({ item }) => (
@@ -310,4 +361,7 @@ const styles = StyleSheet.create({
   emptyScene: { width: "100%", height: 190, alignItems: "center", justifyContent: "center", overflow: "visible", marginBottom: 8 },
   emptyIconBox: { width: 130, height: 130, alignItems: "center", justifyContent: "center" },
   emptyIconCircle3D: { width: 90, height: 90, borderRadius: 45, alignItems: "center", justifyContent: "center" },
+  filterRow: { gap: 8, paddingRight: 4 },
+  filterChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 12, borderWidth: 1 },
+  filterChipText: { fontSize: 12, fontFamily: "DMSans_600SemiBold" },
 });

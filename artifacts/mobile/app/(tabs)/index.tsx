@@ -333,19 +333,19 @@ export default function ShopScreen() {
   }
 
   const SORT_OPTIONS = [
-    { key: "default",    label: "Default"  },
-    { key: "price_asc",  label: "Price ↑"  },
-    { key: "price_desc", label: "Price ↓"  },
-    { key: "name_asc",   label: "A → Z"    },
-    { key: "name_desc",  label: "Z → A"    },
-    { key: "featured",   label: "⭐ Top"   },
+    { key: "default",    label: "Default"   },
+    { key: "price_asc",  label: "Price ↑"   },
+    { key: "price_desc", label: "Price ↓"   },
+    { key: "name_asc",   label: "A → Z"     },
+    { key: "name_desc",  label: "Z → A"     },
+    { key: "top_rated",  label: "⭐ Top"    },
   ];
 
   const sortedProducts = (() => {
     let list = [...products];
-    if (sortBy === "featured")   list = list.filter((p) => (p as any).featured);
-    if (sortBy === "price_asc")  list.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
-    if (sortBy === "price_desc") list.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
+    if (sortBy === "top_rated")  list.sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0));
+    if (sortBy === "price_asc")  list.sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0));
+    if (sortBy === "price_desc") list.sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0));
     if (sortBy === "name_asc")   list.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
     if (sortBy === "name_desc")  list.sort((a, b) => (b.name ?? "").localeCompare(a.name ?? ""));
     return list;

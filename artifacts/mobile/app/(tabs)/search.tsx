@@ -1,9 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  FlatList,
-  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -14,26 +12,67 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ProductCard } from "@/components/ProductCard";
-import { products } from "@/data/products";
+import { Product } from "@/data/products";
 import { useColors } from "@/hooks/useColors";
 import { useLanguage } from "@/context/LanguageContext";
+import { useAuth } from "@/context/AuthContext";
+
+const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
 const TRENDING = ["Wireless Earbuds", "Linen Shirt", "Dark Chocolate", "Yoga Mat", "Smart Watch"];
+
+const SORT_OPTIONS = [
+  { key: "default",    label: "Default"  },
+  { key: "price_asc",  label: "Price ↑"  },
+  { key: "price_desc", label: "Price ↓"  },
+  { key: "name_asc",   label: "A → Z"   },
+  { key: "name_desc",  label: "Z → A"   },
+  { key: "top_rated",  label: "⭐ Top"  },
+];
 
 export default function SearchScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t } = useLanguage();
+  const { token } = useAuth();
   const [query, setQuery] = useState("");
+  const [sortBy, setSortBy] = useState("default");
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
 
-  const results = query.trim()
-    ? products.filter(
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  async function fetchProducts() {
+    try {
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const res = await fetch(`${BASE_URL}/products`, { headers });
+      if (res.ok) {
+        const d = await res.json();
+        if (d.products) setAllProducts(d.products);
+      }
+    } catch {}
+  }
+
+  const filtered = query.trim()
+    ? allProducts.filter(
         (p) =>
           p.name.toLowerCase().includes(query.toLowerCase()) ||
           p.category.toLowerCase().includes(query.toLowerCase())
       )
-    : [];
+    : allProducts;
+
+  const sorted = (() => {
+    let list = [...filtered];
+    if (sortBy === "top_rated")  list.sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0));
+    if (sortBy === "price_asc")  list.sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0));
+    if (sortBy === "price_desc") list.sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0));
+    if (sortBy === "name_asc")   list.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
+    if (sortBy === "name_desc")  list.sort((a, b) => (b.name ?? "").localeCompare(a.name ?? ""));
+    return list;
+  })();
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -63,8 +102,40 @@ export default function SearchScreen() {
           )}
         </View>
 
+        {/* Sort Chips */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterRow}
+          style={{ marginBottom: 20 }}
+        >
+          {SORT_OPTIONS.map((opt) => {
+            const active = sortBy === opt.key;
+            return (
+              <Pressable
+                key={opt.key}
+                style={[
+                  styles.filterChip,
+                  {
+                    backgroundColor: active ? colors.primary + "18" : "transparent",
+                    borderColor: active ? colors.primary : colors.border,
+                  },
+                ]}
+                onPress={() => {
+                  setSortBy(opt.key);
+                  if (Platform.OS !== "web") Haptics.selectionAsync();
+                }}
+              >
+                <Text style={[styles.filterChipText, { color: active ? colors.primary : colors.mutedForeground }]}>
+                  {opt.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+
         {/* Trending or Results */}
-        {query.trim() === "" ? (
+        {query.trim() === "" && sortBy === "default" ? (
           <>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("popularSearches")}</Text>
             <View style={styles.trendingList}>
@@ -83,13 +154,13 @@ export default function SearchScreen() {
               ))}
             </View>
           </>
-        ) : results.length > 0 ? (
+        ) : sorted.length > 0 ? (
           <>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Results ({results.length})
+              {query.trim() ? `Results (${sorted.length})` : `All Products (${sorted.length})`}
             </Text>
             <View style={styles.grid}>
-              {results.map((product) => (
+              {sorted.map((product) => (
                 <ProductCard key={product.id} product={product} style={{ width: "47%" }} />
               ))}
             </View>
@@ -120,7 +191,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 16,
     paddingVertical: 13,
-    marginBottom: 24,
+    marginBottom: 14,
   },
   input: {
     flex: 1,
@@ -128,6 +199,14 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans_400Regular",
     padding: 0,
   },
+  filterRow: { gap: 8, paddingRight: 4 },
+  filterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  filterChipText: { fontSize: 12, fontFamily: "DMSans_600SemiBold" },
   sectionTitle: { fontSize: 18, fontFamily: "DMSans_700Bold", marginBottom: 14 },
   trendingList: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   trendingChip: {
