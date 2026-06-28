@@ -52,6 +52,53 @@ async function writeAuditLog(opts: {
   } catch {}
 }
 
+// ─── Public order tracking (no auth required) ────────────────────────────────
+
+router.get("/orders/track/:query", async (req, res) => {
+  const query = req.params.query.trim().toUpperCase();
+  if (!query || query.length < 6) {
+    res.status(400).json({ error: "Invalid order ID" });
+    return;
+  }
+
+  // Match by orderNumber suffix (e.g. "E2026001") or raw UUID prefix
+  const [order] = await db
+    .select({
+      id: ordersTable.id,
+      orderNumber: ordersTable.orderNumber,
+      status: ordersTable.status,
+      paymentMethod: ordersTable.paymentMethod,
+      paymentStatus: ordersTable.paymentStatus,
+      total: ordersTable.total,
+      createdAt: ordersTable.createdAt,
+      updatedAt: ordersTable.updatedAt,
+    })
+    .from(ordersTable)
+    .where(
+      sql`upper(replace(replace(${ordersTable.orderNumber}, '#', ''), '-', '')) = ${query}
+        OR upper(left(${ordersTable.id}::text, 8)) = ${query.slice(0, 8)}`
+    )
+    .limit(1);
+
+  if (!order) {
+    res.status(404).json({ error: "Order not found. Please check the Order ID and try again." });
+    return;
+  }
+
+  res.json({
+    id: order.id,
+    displayId: order.orderNumber
+      ? order.orderNumber.replace("#", "")
+      : order.id.slice(0, 8).toUpperCase(),
+    status: order.status,
+    paymentMethod: order.paymentMethod,
+    paymentStatus: order.paymentStatus,
+    total: order.total,
+    createdAt: order.createdAt,
+    updatedAt: order.updatedAt,
+  });
+});
+
 // ─── Track page view ─────────────────────────────────────────────────────────
 import { activityLogsTable } from "@workspace/db/schema";
 
