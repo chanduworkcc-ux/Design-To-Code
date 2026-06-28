@@ -16,6 +16,16 @@ export interface Product {
   stock?: number;
   isActive?: boolean;
   featured?: boolean;
+  /** ISO timestamp from the DB — used to show a "New" badge for recent products */
+  createdAt?: string | null;
+}
+
+/** Returns true if the product was added within the last 7 days */
+export function isNewProduct(product: Product): boolean {
+  if (!product.createdAt) return false;
+  const added = new Date(product.createdAt).getTime();
+  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  return added >= sevenDaysAgo;
 }
 
 /** Fallback empty array — all products are loaded from the API */

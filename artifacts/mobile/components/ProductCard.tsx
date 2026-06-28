@@ -21,7 +21,7 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import { useApp } from "@/context/AppContext";
-import { Product } from "@/data/products";
+import { Product, isNewProduct } from "@/data/products";
 import { useColors } from "@/hooks/useColors";
 
 interface ProductCardProps {
@@ -38,6 +38,7 @@ export function ProductCard({ product, style, index = 0 }: ProductCardProps) {
   const inCart = isInCart(product.id);
   const stock = (product as any).stock ?? 100;
   const isOutOfStock = stock <= 0;
+  const isNew = isNewProduct(product);
 
   const enterY = useSharedValue(50);
   const enterOpacity = useSharedValue(0);
@@ -174,11 +175,18 @@ export function ProductCard({ product, style, index = 0 }: ProductCardProps) {
               </View>
             </View>
           ) : (
-            product.discount && product.discount > 0 && (
-              <View style={styles.discountBadge}>
-                <Text style={styles.discountText}>-{product.discount}%</Text>
-              </View>
-            )
+            <View style={styles.badgeStack}>
+              {isNew && (
+                <View style={styles.newBadge}>
+                  <Text style={styles.newBadgeText}>NEW</Text>
+                </View>
+              )}
+              {product.discount && product.discount > 0 ? (
+                <View style={styles.discountBadge}>
+                  <Text style={styles.discountText}>-{product.discount}%</Text>
+                </View>
+              ) : null}
+            </View>
           )}
 
           <Animated.View style={[styles.wishlistWrapper, heartAnimStyle]}>
@@ -327,10 +335,30 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans_700Bold",
     letterSpacing: 0.3,
   },
-  discountBadge: {
+  badgeStack: {
     position: "absolute",
     top: 8,
     left: 8,
+    gap: 4,
+  },
+  newBadge: {
+    borderRadius: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    backgroundColor: "#10B981",
+    shadowColor: "#10B981",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.45,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  newBadgeText: {
+    color: "#fff",
+    fontSize: 10,
+    fontFamily: "DMSans_700Bold",
+    letterSpacing: 0.8,
+  },
+  discountBadge: {
     borderRadius: 8,
     paddingHorizontal: 7,
     paddingVertical: 3,
