@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { usePageTracker } from "@/hooks/usePageTracker";
 import PurchaseSuccessAnimation from "@/components/PurchaseSuccessAnimation";
 import PolicyBadges from "@/components/PolicyBadges";
 
@@ -134,6 +135,7 @@ const billingStyles = StyleSheet.create({
 });
 
 export default function CheckoutScreen() {
+  usePageTracker("checkout", "Checkout");
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();

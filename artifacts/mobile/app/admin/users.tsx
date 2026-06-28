@@ -685,7 +685,24 @@ export default function UsersScreen() {
   const [walletUser, setWalletUser] = useState<AdminUser | null>(null);
   const [suspendUser, setSuspendUser] = useState<AdminUser | null>(null);
   const [banUser, setBanUser] = useState<AdminUser | null>(null);
+  const [realtimeOnline, setRealtimeOnline] = useState<Set<string>>(new Set());
   const topPadding = Platform.OS === "web" ? 0 : insets.top;
+
+  // Poll real-time online users from socket.io every 10 seconds
+  useEffect(() => {
+    async function pollOnline() {
+      try {
+        const res = await apiRequest("/admin/online-users");
+        if (res.ok) {
+          const { userIds } = await res.json();
+          setRealtimeOnline(new Set(userIds as string[]));
+        }
+      } catch {}
+    }
+    pollOnline();
+    const interval = setInterval(pollOnline, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   async function handleApprove(user: AdminUser) {
     const res = await apiRequest(`/admin/users/${user.id}/approve`, { method: "POST" });
@@ -875,7 +892,7 @@ export default function UsersScreen() {
           {filtered.map((u) => (
             <UserCard
               key={u.id}
-              user={u}
+              user={{ ...u, online: realtimeOnline.has(u.id) || u.online }}
               onBan={handleBan}
               onUnban={handleUnban}
               onViewLogs={handleViewLogs}

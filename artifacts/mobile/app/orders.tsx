@@ -26,6 +26,7 @@ import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { usePageTracker } from "@/hooks/usePageTracker";
 import LoadingScreen from "@/components/LoadingScreen";
 
 interface Order {
@@ -192,6 +193,7 @@ function PriceRow({ label, value, highlight }: { label: string; value: number; h
 }
 
 export default function OrdersScreen() {
+  usePageTracker("orders", "Orders");
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();

@@ -17,6 +17,8 @@ import { useApp } from "@/context/AppContext";
 import { useNotifications } from "@/context/NotificationContext";
 import { useColors } from "@/hooks/useColors";
 import { useLanguage } from "@/context/LanguageContext";
+import { useAuth } from "@/context/AuthContext";
+import { usePresence } from "@/hooks/usePresence";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -232,6 +234,9 @@ function CustomTabBar({ state, navigation }: any) {
 }
 
 export default function TabLayout() {
+  const { user } = useAuth();
+  usePresence(user?.id ?? null);
+
   return (
     <Tabs
       tabBar={(props) => <CustomTabBar {...props} />}

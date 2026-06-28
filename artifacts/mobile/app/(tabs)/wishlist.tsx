@@ -25,6 +25,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
+import { usePageTracker } from "@/hooks/usePageTracker";
 import { useLanguage } from "@/context/LanguageContext";
 import BurstAnimation, { type BurstHandle } from "@/components/BurstAnimation";
 import { useSocket } from "@/context/SocketContext";
@@ -191,6 +192,7 @@ const SORT_OPTIONS = [
 ];
 
 export default function WishlistScreen() {
+  usePageTracker("wishlist", "Wishlist");
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();

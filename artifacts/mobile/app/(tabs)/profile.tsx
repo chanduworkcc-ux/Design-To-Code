@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { usePageTracker } from "@/hooks/usePageTracker";
 import { useLanguage } from "@/context/LanguageContext";
 import { LANGUAGE_LABELS } from "@/lib/i18n";
 import { GlobalFooter } from "@/components/GlobalFooter";
@@ -60,6 +61,7 @@ function MenuItem({ icon, label, onPress, badge, value }: MenuItemProps) {
 }
 
 export default function ProfileScreen() {
+  usePageTracker("profile", "Profile");
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();

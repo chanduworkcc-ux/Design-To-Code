@@ -24,6 +24,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ProductCard } from "@/components/ProductCard";
 import { Product } from "@/data/products";
 import { useColors } from "@/hooks/useColors";
+import { usePageTracker } from "@/hooks/usePageTracker";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import { FloatIn, FloatingOrb, PulsingRing, FloatingParticle } from "@/components/ThreeD";
@@ -92,6 +93,7 @@ function SearchOrb({ colors }: { colors: any }) {
 }
 
 export default function SearchScreen() {
+  usePageTracker("search", "Search");
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t } = useLanguage();

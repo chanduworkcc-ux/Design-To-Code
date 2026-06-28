@@ -18,6 +18,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { useApp } from "@/context/AppContext";
 import { products as staticProducts, isNewProduct } from "@/data/products";
 import { useColors } from "@/hooks/useColors";
+import { usePageTracker } from "@/hooks/usePageTracker";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useNotifications } from "@/context/NotificationContext";
@@ -232,6 +233,7 @@ function HotLabel() {
 }
 
 export default function ShopScreen() {
+  usePageTracker("home", "Home");
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();

@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { Dimensions, Modal, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { Animated, Dimensions, Easing, Modal, StyleSheet, Text, View } from "react-native";
 import {
   FloatIn,
   FloatingOrb,
@@ -28,12 +28,41 @@ const PARTICLES = [
   { x: width - 180, y: height * 0.73, delay: 150,  size: 11 },
   { x: width / 2 - 40, y: height * 0.75, delay: 350, size: 8 },
   { x: width / 2 + 40, y: height * 0.67, delay: 250, size: 6 },
+  { x: width * 0.15, y: height * 0.45, delay: 700, size: 5 },
+  { x: width * 0.85, y: height * 0.42, delay: 900, size: 7 },
 ];
+
+function CheckmarkRing({ delay = 0 }: { delay?: number }) {
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const checkAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      Animated.sequence([
+        Animated.parallel([
+          Animated.spring(scaleAnim, { toValue: 1, damping: 14, stiffness: 220, useNativeDriver: true }),
+          Animated.timing(opacityAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+        ]),
+        Animated.timing(checkAnim, { toValue: 1, duration: 400, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
+      ]).start();
+    }, delay);
+    return () => clearTimeout(t);
+  }, []);
+
+  return (
+    <Animated.View style={[styles.checkRing, { transform: [{ scale: scaleAnim }], opacity: opacityAnim }]}>
+      <Animated.View style={[styles.checkInner]}>
+        <Text style={styles.checkMark}>✓</Text>
+      </Animated.View>
+    </Animated.View>
+  );
+}
 
 export default function PurchaseSuccessAnimation({ visible, orderNumber, total, onComplete }: Props) {
   useEffect(() => {
     if (!visible) return;
-    const t = setTimeout(onComplete, 3600);
+    const t = setTimeout(onComplete, 4200);
     return () => clearTimeout(t);
   }, [visible, onComplete]);
 
@@ -44,25 +73,26 @@ export default function PurchaseSuccessAnimation({ visible, orderNumber, total, 
   return (
     <Modal visible transparent animationType="fade" statusBarTranslucent>
       <View style={styles.root}>
-        {/* Background blobs */}
-        <FloatingOrb color="#fff" size={320} style={{ top: -100, left: -100 }} delay={0} amplitude={14} />
-        <FloatingOrb color="#fff" size={220} style={{ bottom: 0, right: -70 }} delay={600} amplitude={10} />
-        <FloatingOrb color="#60A5FA" size={160} style={{ top: height * 0.35, left: -60 }} delay={300} amplitude={18} />
+        {/* Gradient-like background blobs */}
+        <FloatingOrb color="#fff" size={340} style={{ top: -120, left: -120, opacity: 0.08 }} delay={0} amplitude={14} />
+        <FloatingOrb color="#fff" size={240} style={{ bottom: -40, right: -80, opacity: 0.06 }} delay={600} amplitude={10} />
+        <FloatingOrb color="#60A5FA" size={180} style={{ top: height * 0.3, left: -70, opacity: 0.18 }} delay={300} amplitude={18} />
+        <FloatingOrb color="#34D399" size={120} style={{ top: height * 0.1, right: -30, opacity: 0.14 }} delay={900} amplitude={12} />
 
-        {/* Pulsing sonar rings */}
+        {/* Sonar rings */}
         <View style={styles.ringWrap}>
-          <PulsingRing color="rgba(255,255,255,0.35)" size={200} delay={0}    duration={2200} thickness={2} />
-          <PulsingRing color="rgba(255,255,255,0.22)" size={290} delay={700}  duration={2200} thickness={1.5} />
-          <PulsingRing color="rgba(255,255,255,0.12)" size={370} delay={1400} duration={2200} thickness={1} />
+          <PulsingRing color="rgba(255,255,255,0.30)" size={220} delay={0}    duration={2400} thickness={2} />
+          <PulsingRing color="rgba(255,255,255,0.18)" size={320} delay={800}  duration={2400} thickness={1.5} />
+          <PulsingRing color="rgba(255,255,255,0.10)" size={420} delay={1600} duration={2400} thickness={1} />
         </View>
 
-        {/* 3D spinning box */}
+        {/* 3D spinning box top-centre */}
         <View style={styles.boxWrap}>
           <SpinBox3D
-            size={110}
-            color="rgba(255,255,255,0.92)"
-            topColor="#BFDBFE"
-            sideColor="rgba(191,219,254,0.6)"
+            size={100}
+            color="rgba(255,255,255,0.90)"
+            topColor="#A5F3D0"
+            sideColor="rgba(165,243,208,0.5)"
           />
         </View>
 
@@ -72,38 +102,45 @@ export default function PurchaseSuccessAnimation({ visible, orderNumber, total, 
             key={i}
             x={p.x}
             startY={p.y}
-            color="rgba(255,255,255,0.55)"
+            color="rgba(255,255,255,0.50)"
             delay={p.delay}
             size={p.size}
-            duration={3200}
+            duration={3400}
           />
         ))}
 
-        {/* Text content */}
+        {/* Main text content */}
         <View style={styles.textBlock}>
-          <FloatIn delay={200}>
-            <Text style={styles.emoji}>🎉</Text>
+          {/* Animated checkmark */}
+          <CheckmarkRing delay={100} />
+
+          <FloatIn delay={320} distance={30}>
+            <Text style={styles.title}>Your order has{"\n"}been placed</Text>
           </FloatIn>
 
-          <FloatIn delay={380}>
-            <Text style={styles.title}>Order Placed!</Text>
+          <FloatIn delay={480} distance={20}>
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerDot}>✦</Text>
+              <View style={styles.dividerLine} />
+            </View>
           </FloatIn>
 
           {!!orderNumber && (
-            <FloatIn delay={520}>
+            <FloatIn delay={580} distance={16}>
               <Text style={styles.orderNum}>{orderNumber}</Text>
             </FloatIn>
           )}
 
           {total != null && (
-            <FloatIn delay={660}>
+            <FloatIn delay={700} distance={16}>
               <View style={styles.totalBadge}>
                 <Text style={styles.totalText}>₹{fmt(total)}</Text>
               </View>
             </FloatIn>
           )}
 
-          <FloatIn delay={820}>
+          <FloatIn delay={900} distance={14}>
             <Text style={styles.redirectMsg}>Taking you to order tracking…</Text>
           </FloatIn>
         </View>
@@ -115,7 +152,7 @@ export default function PurchaseSuccessAnimation({ visible, orderNumber, total, 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#1D4ED8",
+    backgroundColor: "#059669",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -127,24 +164,59 @@ const styles = StyleSheet.create({
   },
   boxWrap: {
     position: "absolute",
-    top: height * 0.12,
+    top: height * 0.10,
     alignSelf: "center",
+  },
+  checkRing: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: "rgba(255,255,255,0.22)",
+    borderWidth: 2.5,
+    borderColor: "rgba(255,255,255,0.55)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 22,
+  },
+  checkInner: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkMark: {
+    fontSize: 46,
+    color: "#fff",
+    fontWeight: "700",
+    lineHeight: 54,
   },
   textBlock: {
     alignItems: "center",
     paddingHorizontal: 32,
-    marginTop: 140,
-  },
-  emoji: {
-    fontSize: 52,
-    marginBottom: 8,
+    marginTop: 120,
   },
   title: {
-    fontSize: 36,
+    fontSize: 34,
     fontFamily: "DMSans_700Bold",
     color: "#fff",
-    letterSpacing: -1,
+    letterSpacing: -0.8,
     textAlign: "center",
+    lineHeight: 42,
+  },
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 18,
+    marginBottom: 4,
+    paddingHorizontal: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.30)",
+  },
+  dividerDot: {
+    color: "rgba(255,255,255,0.55)",
+    fontSize: 12,
   },
   orderNum: {
     fontSize: 15,
@@ -155,24 +227,24 @@ const styles = StyleSheet.create({
   },
   totalBadge: {
     marginTop: 14,
-    paddingHorizontal: 28,
-    paddingVertical: 10,
+    paddingHorizontal: 32,
+    paddingVertical: 11,
     backgroundColor: "rgba(255,255,255,0.18)",
     borderRadius: 40,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.3)",
+    borderColor: "rgba(255,255,255,0.32)",
   },
   totalText: {
-    fontSize: 26,
+    fontSize: 28,
     fontFamily: "DMSans_700Bold",
     color: "#fff",
     letterSpacing: -0.5,
   },
   redirectMsg: {
-    marginTop: 28,
+    marginTop: 30,
     fontSize: 14,
     fontFamily: "DMSans_400Regular",
-    color: "rgba(255,255,255,0.6)",
+    color: "rgba(255,255,255,0.60)",
     letterSpacing: 0.3,
   },
 });

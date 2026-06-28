@@ -24,6 +24,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { usePageTracker } from "@/hooks/usePageTracker";
 import { useLanguage } from "@/context/LanguageContext";
 import { FloatIn, FloatingOrb, FloatingParticle, ShimmerWallet, PulsingRing } from "@/components/ThreeD";
 
@@ -108,6 +109,7 @@ function Empty3DCart() {
 }
 
 export default function CartScreen() {
+  usePageTracker("cart", "Cart");
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
