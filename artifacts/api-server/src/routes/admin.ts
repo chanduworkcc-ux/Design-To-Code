@@ -328,6 +328,7 @@ async function handleOrderStatusUpdate(orderId: string, newStatus: string, res: 
         statusLabels[newStatus],
         `Your order ${updated.orderNumber ?? orderId.slice(0, 8).toUpperCase()} has been ${newStatus}.`,
         newStatus === "cancelled" ? "alert-circle" : "package",
+        { targetType: "order", orderId, orderNumber: updated.orderNumber },
       );
     } catch {}
   }

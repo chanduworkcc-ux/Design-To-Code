@@ -5,16 +5,56 @@ import { useRouter } from "expo-router";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowBanner: false,
-    shouldShowList: false,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
   }),
 });
 
-export function usePushNotifications(_token: string | null) {
+const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
+
+async function registerPushToken(authToken: string): Promise<void> {
+  if (Platform.OS === "web") return;
+
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  let finalStatus = existingStatus;
+
+  if (existingStatus !== "granted") {
+    const { status } = await Notifications.requestPermissionsAsync();
+    finalStatus = status;
+  }
+
+  if (finalStatus !== "granted") return;
+
+  const tokenData = await Notifications.getExpoPushTokenAsync({
+    projectId: process.env.EXPO_PUBLIC_REPL_ID,
+  });
+
+  const pushToken = tokenData.data;
+  if (!pushToken) return;
+
+  await fetch(`${BASE_URL}/notifications/register-token`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${authToken}`,
+    },
+    body: JSON.stringify({ token: pushToken, platform: Platform.OS }),
+  });
+}
+
+export function usePushNotifications(authToken: string | null) {
   const router = useRouter();
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
+  const registeredRef = useRef(false);
+
+  useEffect(() => {
+    if (!authToken || Platform.OS === "web") return;
+    if (registeredRef.current) return;
+    registeredRef.current = true;
+    registerPushToken(authToken).catch(() => {});
+  }, [authToken]);
 
   useEffect(() => {
     if (Platform.OS === "web") return;

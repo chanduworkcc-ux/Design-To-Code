@@ -293,7 +293,7 @@ router.post("/orders", authMiddleware, async (req: AuthRequest, res) => {
   } catch {}
 
   try {
-    await insertAutoNotification(req.userId!, "Order Placed! 🎉", `Your order ${orderNumber} has been placed successfully. We'll update you as it progresses.`, "shopping-bag");
+    await insertAutoNotification(req.userId!, "Order Placed! 🎉", `Your order ${orderNumber} has been placed successfully. We'll update you as it progresses.`, "shopping-bag", { targetType: "order", orderNumber });
   } catch {}
 
   try {

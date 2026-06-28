@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { notificationsTable, pushTokensTable, usersTable } from "@workspace/db/schema";
-import { eq, desc, or, lt, gte } from "drizzle-orm";
+import { eq, desc, or, lt, gte, inArray } from "drizzle-orm";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../middleware/auth";
 import { getConfig } from "../lib/config";
 import { z } from "zod";
@@ -30,11 +30,84 @@ async function sendSmsNotification(to: string, body: string): Promise<void> {
   });
 }
 
+async function sendExpoPushToUser(
+  userId: string,
+  title: string,
+  body: string,
+  data: Record<string, unknown> = {},
+): Promise<void> {
+  try {
+    const tokenRows = await db
+      .select({ token: pushTokensTable.token })
+      .from(pushTokensTable)
+      .where(eq(pushTokensTable.userId, userId));
+
+    if (!tokenRows.length) return;
+
+    const messages = tokenRows.map((r) => ({
+      to: r.token,
+      title,
+      body,
+      data,
+      sound: "default" as const,
+      priority: "high" as const,
+    }));
+
+    await fetch("https://exp.host/--/api/v2/push/send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "Accept-Encoding": "gzip, deflate",
+      },
+      body: JSON.stringify(messages),
+    });
+  } catch {}
+}
+
+export async function sendExpoPushToUsers(
+  userIds: string[],
+  title: string,
+  body: string,
+  data: Record<string, unknown> = {},
+): Promise<void> {
+  try {
+    if (!userIds.length) return;
+
+    const tokenRows = await db
+      .select({ token: pushTokensTable.token })
+      .from(pushTokensTable)
+      .where(inArray(pushTokensTable.userId, userIds));
+
+    if (!tokenRows.length) return;
+
+    const messages = tokenRows.map((r) => ({
+      to: r.token,
+      title,
+      body,
+      data,
+      sound: "default" as const,
+      priority: "high" as const,
+    }));
+
+    await fetch("https://exp.host/--/api/v2/push/send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "Accept-Encoding": "gzip, deflate",
+      },
+      body: JSON.stringify(messages),
+    });
+  } catch {}
+}
+
 export async function insertAutoNotification(
   userId: string,
   title: string,
   body: string,
   iconName = "bell",
+  data: Record<string, unknown> = {},
 ): Promise<void> {
   await db.insert(notificationsTable).values({
     id: uuidv4(),
@@ -45,7 +118,10 @@ export async function insertAutoNotification(
     iconName,
   });
 
-  const smsEnabled = await getConfig("sms_enabled");
+  const [smsEnabled] = await Promise.all([
+    getConfig("sms_enabled"),
+    sendExpoPushToUser(userId, title, body, data),
+  ]);
 
   if (smsEnabled === "true") {
     try {
