@@ -428,7 +428,7 @@ export default function CheckoutScreen() {
     } catch {}
     setCheckingStock(false);
 
-    const shippingAddress = JSON.stringify({
+    const shippingAddress = {
       fullName: form.fullName.trim(),
       mobile: form.mobile.trim(),
       email: form.email.trim(),
@@ -437,7 +437,7 @@ export default function CheckoutScreen() {
       pincode: form.pincode.trim(),
       city: form.city.trim(),
       state: form.state.trim(),
-    });
+    };
 
     setPlacing(true);
     try {

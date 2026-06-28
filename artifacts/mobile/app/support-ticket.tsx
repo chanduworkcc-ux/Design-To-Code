@@ -282,6 +282,7 @@ export default function SupportTicketScreen() {
   const [category, setCategory] = useState<TicketCategory>("order_issue");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [liveUpdate, setLiveUpdate] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -334,8 +335,9 @@ export default function SupportTicketScreen() {
   }
 
   async function handleSubmit() {
+    setFormError(null);
     if (description.trim().length < 10) {
-      Alert.alert("Too short", "Please describe your issue in at least 10 characters.");
+      setFormError(`Please write at least 10 characters (${description.trim().length}/10 so far).`);
       return;
     }
     setSubmitting(true);
@@ -347,14 +349,16 @@ export default function SupportTicketScreen() {
       if (res.ok) {
         const d = await res.json();
         setDescription("");
+        setFormError(null);
         setShowForm(false);
         setTickets((prev) => [d.ticket, ...prev]);
         setExpandedId(d.ticket.id);
       } else {
-        Alert.alert("Error", "Failed to submit ticket. Please try again.");
+        const data = await res.json().catch(() => ({}));
+        setFormError(data.error ?? "Failed to submit ticket. Please try again.");
       }
     } catch {
-      Alert.alert("Error", "Network error.");
+      setFormError("Network error — please check your connection and try again.");
     }
     setSubmitting(false);
   }
