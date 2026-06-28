@@ -150,7 +150,7 @@ export default function AdminDashboardScreen() {
     { icon: "package", label: "Products", id: "products", route: "/admin/products" },
     { icon: "shopping-bag", label: "Orders", id: "orders", route: "/admin/orders", badge: stats?.pendingOrders },
     { icon: "life-buoy", label: "Support Tickets", id: "support", route: "/admin/tickets", badge: stats?.openTickets },
-    { icon: "share-2", label: "Referrals", id: "referrals", comingSoon: true },
+    { icon: "share-2", label: "Referrals", id: "referrals", route: "/admin/referrals" },
     { icon: "download", label: "Withdrawals", id: "withdrawals", route: "/admin/withdrawals", badge: stats?.pendingWithdrawals },
     { icon: "tag", label: "Coupons", id: "coupons", route: "/admin/coupons" },
     { icon: "image", label: "Banners", id: "banners", route: "/admin/banners" },
@@ -370,6 +370,7 @@ export default function AdminDashboardScreen() {
               {[
                 { icon: "package", label: "Products", route: "/admin/products", color: "#F97316", bg: "#FFF7ED" },
                 { icon: "tag", label: "Coupons", route: "/admin/coupons", color: "#8B5CF6", bg: "#F5F3FF" },
+                { icon: "share-2", label: "Referrals", route: "/admin/referrals", color: "#059669", bg: "#ECFDF5" },
                 { icon: "download", label: "Withdrawals", route: "/admin/withdrawals", color: "#F59E0B", bg: "#FFFBEB" },
                 { icon: "image", label: "Banners", route: "/admin/banners", color: "#3B82F6", bg: "#EFF6FF" },
                 { icon: "bell", label: "Notifications", route: "/admin/notifications", color: "#EF4444", bg: "#FEF2F2" },

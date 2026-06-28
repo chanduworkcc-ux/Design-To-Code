@@ -426,25 +426,35 @@ router.patch("/admin/orders/:id/cancel", authMiddleware, adminMiddleware, async 
 // ─── Referral Network (User) ──────────────────────────────────────────────────
 
 router.get("/referrals/network", authMiddleware, async (req: AuthRequest, res) => {
-  const referrals = await db
-    .select()
-    .from(referralsTable)
-    .where(eq(referralsTable.referrerId, req.userId!))
-    .orderBy(desc(referralsTable.createdAt));
-
-  if (!referrals.length) { res.json({ referrals: [], totalRevenue: 0, totalCoinsEarned: 0 }); return; }
-
-  const refereeIds = referrals.map((r) => r.refereeId);
-  const referees = await db
+  // All users who registered using this user's referral code
+  const allReferred = await db
     .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email, createdAt: usersTable.createdAt, status: usersTable.status })
     .from(usersTable)
-    .where(inArray(usersTable.id, refereeIds));
+    .where(eq(usersTable.referredById, req.userId!))
+    .orderBy(desc(usersTable.createdAt));
 
-  const refereeMap = Object.fromEntries(referees.map((u) => [u.id, u]));
+  if (!allReferred.length) {
+    res.json({ referrals: [], pendingReferrals: [], totalRevenue: 0, totalCoinsEarned: 0, orderedCount: 0, pendingCount: 0 });
+    return;
+  }
 
-  const allOrders = refereeIds.length
-    ? await db.select().from(ordersTable).where(inArray(ordersTable.userId, refereeIds)).orderBy(desc(ordersTable.createdAt))
-    : [];
+  const refereeIds = allReferred.map((u) => u.id);
+
+  // Referral reward records (only created when first order is placed)
+  const referralRecords = await db
+    .select()
+    .from(referralsTable)
+    .where(eq(referralsTable.referrerId, req.userId!));
+
+  const referralByRefereeId: Record<string, typeof referralRecords[0]> =
+    Object.fromEntries(referralRecords.map((r) => [r.refereeId, r]));
+
+  // All orders by referred users
+  const allOrders = await db
+    .select()
+    .from(ordersTable)
+    .where(inArray(ordersTable.userId, refereeIds))
+    .orderBy(desc(ordersTable.createdAt));
 
   const ordersByUser: Record<string, typeof allOrders> = {};
   for (const o of allOrders) {
@@ -453,17 +463,138 @@ router.get("/referrals/network", authMiddleware, async (req: AuthRequest, res) =
   }
 
   const totalRevenue = allOrders.reduce((sum, o) => sum + (o.total ?? 0), 0);
-  const totalCoinsEarned = referrals.reduce((sum, r) => sum + r.coinsAwarded, 0);
+  const totalCoinsEarned = referralRecords.reduce((sum, r) => sum + r.coinsAwarded, 0);
 
-  const enriched = referrals.map((r) => ({
-    ...r,
-    referee: refereeMap[r.refereeId] ?? null,
-    orders: ordersByUser[r.refereeId] ?? [],
-    orderCount: (ordersByUser[r.refereeId] ?? []).length,
-    orderRevenue: (ordersByUser[r.refereeId] ?? []).reduce((s, o) => s + (o.total ?? 0), 0),
+  // Split into ordered (placed ≥1 order) and pending (no orders yet)
+  const ordered = allReferred
+    .filter((u) => (ordersByUser[u.id] ?? []).length > 0)
+    .map((u) => ({
+      id: referralByRefereeId[u.id]?.id ?? u.id,
+      refereeId: u.id,
+      coinsAwarded: referralByRefereeId[u.id]?.coinsAwarded ?? 0,
+      createdAt: referralByRefereeId[u.id]?.createdAt ?? u.createdAt,
+      joinedAt: u.createdAt,
+      referee: u,
+      orders: ordersByUser[u.id] ?? [],
+      orderCount: (ordersByUser[u.id] ?? []).length,
+      orderRevenue: (ordersByUser[u.id] ?? []).reduce((s, o) => s + (o.total ?? 0), 0),
+    }));
+
+  const pending = allReferred
+    .filter((u) => (ordersByUser[u.id] ?? []).length === 0)
+    .map((u) => ({
+      id: u.id,
+      refereeId: u.id,
+      coinsAwarded: 0,
+      createdAt: u.createdAt,
+      joinedAt: u.createdAt,
+      referee: u,
+      orders: [],
+      orderCount: 0,
+      orderRevenue: 0,
+    }));
+
+  res.json({
+    referrals: ordered,
+    pendingReferrals: pending,
+    totalRevenue,
+    totalCoinsEarned,
+    orderedCount: ordered.length,
+    pendingCount: pending.length,
+  });
+});
+
+// ─── Admin Referral Stats ──────────────────────────────────────────────────────
+
+router.get("/admin/referrals/stats", authMiddleware, adminMiddleware, async (_req, res) => {
+  // All users referred (have referredById set)
+  const totalReferredRows = await db
+    .select({ cnt: count() })
+    .from(usersTable)
+    .where(sql`${usersTable.referredById} IS NOT NULL`);
+  const totalReferred = Number(totalReferredRows[0]?.cnt ?? 0);
+
+  // Referral reward records (one per converted referee)
+  const referralRecords = await db.select().from(referralsTable);
+  const convertedCount = referralRecords.length;
+  const pendingCount = Math.max(0, totalReferred - convertedCount);
+  const totalCoinsDistributed = referralRecords.reduce((s, r) => s + r.coinsAwarded, 0);
+
+  // Unique referrers (users who have referred at least one person)
+  const uniqueReferrersRows = await db
+    .selectDistinct({ referrerId: usersTable.referredById })
+    .from(usersTable)
+    .where(sql`${usersTable.referredById} IS NOT NULL`);
+  const uniqueReferrers = uniqueReferrersRows.length;
+
+  // New referred users in last 30 days
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const recentRows = await db
+    .select({ cnt: count() })
+    .from(usersTable)
+    .where(and(sql`${usersTable.referredById} IS NOT NULL`, gte(usersTable.createdAt, thirtyDaysAgo)));
+  const recentJoins = Number(recentRows[0]?.cnt ?? 0);
+
+  // Top referrers: group referred users by referredById
+  const topReferrerRaw = await db
+    .select({ referrerId: usersTable.referredById, referralCount: count() })
+    .from(usersTable)
+    .where(sql`${usersTable.referredById} IS NOT NULL`)
+    .groupBy(usersTable.referredById)
+    .orderBy(desc(count()))
+    .limit(10);
+
+  const referrerIds = topReferrerRaw.map((r) => r.referrerId).filter(Boolean) as string[];
+  const referrerUsers = referrerIds.length
+    ? await db
+        .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email, referralCode: usersTable.referralCode, walletBalance: usersTable.walletBalance })
+        .from(usersTable)
+        .where(inArray(usersTable.id, referrerIds))
+    : [];
+  const referrerMap = Object.fromEntries(referrerUsers.map((u) => [u.id, u]));
+
+  // Coins earned per referrer
+  const coinsByReferrer: Record<string, number> = {};
+  for (const r of referralRecords) {
+    coinsByReferrer[r.referrerId] = (coinsByReferrer[r.referrerId] ?? 0) + r.coinsAwarded;
+  }
+
+  const topReferrers = topReferrerRaw.map((r) => ({
+    referrerId: r.referrerId,
+    referralCount: Number(r.referralCount),
+    coinsEarned: coinsByReferrer[r.referrerId as string] ?? 0,
+    user: referrerMap[r.referrerId as string] ?? null,
   }));
 
-  res.json({ referrals: enriched, totalRevenue, totalCoinsEarned });
+  // Recent referral joins (last 10)
+  const recentReferrals = await db
+    .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email, createdAt: usersTable.createdAt, referredById: usersTable.referredById })
+    .from(usersTable)
+    .where(sql`${usersTable.referredById} IS NOT NULL`)
+    .orderBy(desc(usersTable.createdAt))
+    .limit(10);
+
+  // Get referrer names for recent
+  const recentReferrerIds = [...new Set(recentReferrals.map((u) => u.referredById).filter(Boolean))] as string[];
+  const recentReferrers = recentReferrerIds.length
+    ? await db.select({ id: usersTable.id, name: usersTable.name }).from(usersTable).where(inArray(usersTable.id, recentReferrerIds))
+    : [];
+  const recentReferrerMap = Object.fromEntries(recentReferrers.map((u) => [u.id, u.name]));
+
+  res.json({
+    totalReferred,
+    convertedCount,
+    pendingCount,
+    conversionRate: totalReferred > 0 ? Math.round((convertedCount / totalReferred) * 100) : 0,
+    totalCoinsDistributed,
+    uniqueReferrers,
+    recentJoins,
+    topReferrers,
+    recentReferrals: recentReferrals.map((u) => ({
+      ...u,
+      referrerName: recentReferrerMap[u.referredById as string] ?? "Unknown",
+    })),
+  });
 });
 
 // ─── Activity Logs ────────────────────────────────────────────────────────────
