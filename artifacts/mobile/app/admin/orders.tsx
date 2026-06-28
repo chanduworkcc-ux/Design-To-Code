@@ -13,6 +13,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Print from "expo-print";
+import * as Sharing from "expo-sharing";
 import { useAuth } from "@/context/AuthContext";
 
 interface Order {
@@ -114,6 +116,20 @@ export default function OrdersScreen() {
     setRefreshing(true);
     await fetchOrders();
     setRefreshing(false);
+  }
+
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  async function handleDownloadInvoice(orderId: string) {
+    setDownloadingId(orderId);
+    try {
+      const res = await apiRequest(`/admin/orders/${orderId}/invoice`);
+      if (!res.ok) { setDownloadingId(null); return; }
+      const html = await res.text();
+      const { uri } = await Print.printToFileAsync({ html, base64: false });
+      await Sharing.shareAsync(uri, { mimeType: "application/pdf", dialogTitle: "Save Invoice" });
+    } catch {}
+    setDownloadingId(null);
   }
 
   async function updateStatus(orderId: string, status: string, extras?: { utrNumber?: string; cancellationReason?: string }) {
@@ -439,6 +455,20 @@ export default function OrdersScreen() {
                         </Text>
                       </View>
                     )}
+
+                    <Pressable
+                      style={[styles.invoiceBtn, { opacity: downloadingId === order.id ? 0.6 : 1 }]}
+                      onPress={() => handleDownloadInvoice(order.id)}
+                      disabled={downloadingId === order.id}
+                    >
+                      {downloadingId === order.id
+                        ? <ActivityIndicator size="small" color="#6B7280" />
+                        : <Feather name="file-text" size={15} color="#6B7280" />
+                      }
+                      <Text style={styles.invoiceBtnText}>
+                        {downloadingId === order.id ? "Generating PDF…" : "Download Invoice"}
+                      </Text>
+                    </Pressable>
                   </View>
                 )}
               </View>
@@ -495,6 +525,12 @@ const styles = StyleSheet.create({
   cancelFormBackText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#374151" },
   cancelFormConfirm: { flex: 1, paddingVertical: 12, alignItems: "center", borderRadius: 10, backgroundColor: "#EF4444" },
   cancelFormConfirmText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#fff" },
+  invoiceBtn: {
+    flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 10,
+    paddingHorizontal: 14, borderRadius: 10, borderWidth: 1, borderColor: "#E5EAF8",
+    borderStyle: "dashed", justifyContent: "center",
+  },
+  invoiceBtnText: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#6B7280" },
   lockNotice: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#F9FAFB", borderRadius: 8, padding: 10 },
   lockText: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#6B7280", flex: 1 },
   notifBanner: { flexDirection: "row", alignItems: "flex-start", gap: 10, backgroundColor: "#1E3A5F", padding: 14, borderBottomWidth: 1, borderBottomColor: "#2563EB" },

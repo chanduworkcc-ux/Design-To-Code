@@ -472,6 +472,222 @@ router.put("/admin/orders/:id/status", authMiddleware, adminMiddleware, async (r
   res.json({ order: updated, notification: template });
 });
 
+function fmt(n: number) {
+  return "₹" + Number(n).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function buildInvoiceHtml(o: {
+  orderNumber: string | null; id: string; createdAt: Date | string;
+  status: string; paymentMethod: string; paymentStatus: string;
+  productName: string | null; quantity: number;
+  subtotal: number; deliveryCharge: number; taxAmount: number;
+  serviceCharge: number; maintenanceCharge: number; discountAmount: number; total: number;
+  shippingAddress: string | null; courierPartner: string | null; trackingNumber: string | null;
+  utrNumber?: string | null;
+  customerName: string | null; customerEmail: string | null; customerMobile: string | null;
+  storeName: string; taxPercent: string;
+}): string {
+  const invNum = o.orderNumber ? `INV-${o.orderNumber}` : `INV-${o.id.slice(0, 8).toUpperCase()}`;
+  const date = new Date(o.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+
+  let addrHtml = "";
+  if (o.shippingAddress) {
+    try {
+      const a = JSON.parse(o.shippingAddress) as Record<string, string>;
+      addrHtml = [a.line1, a.landmark, a.city, a.state, a.pincode].filter(Boolean).join(", ");
+    } catch { addrHtml = o.shippingAddress; }
+  }
+
+  const rows = [
+    ["Item Price", fmt(o.subtotal)],
+    o.deliveryCharge > 0 ? ["Delivery Charge", fmt(o.deliveryCharge)] : null,
+    o.taxAmount > 0 ? [`GST (${o.taxPercent}%)`, fmt(o.taxAmount)] : null,
+    o.serviceCharge > 0 ? ["Service Charge", fmt(o.serviceCharge)] : null,
+    o.maintenanceCharge > 0 ? ["Maintenance Charge", fmt(o.maintenanceCharge)] : null,
+    o.discountAmount > 0 ? ["Discount", `<span style="color:#10B981">-${fmt(o.discountAmount)}</span>`] : null,
+  ].filter(Boolean) as [string, string][];
+
+  const statusColors: Record<string, string> = {
+    pending: "#F59E0B", confirmed: "#3B82F6", packed: "#F97316",
+    shipped: "#8B5CF6", delivered: "#10B981", cancelled: "#EF4444",
+  };
+  const statusColor = statusColors[o.status] ?? "#6B7280";
+  const statusLabel = o.status.charAt(0).toUpperCase() + o.status.slice(1);
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>${invNum}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Helvetica Neue',Arial,sans-serif;color:#1F2937;background:#fff;padding:32px}
+  .invoice{max-width:680px;margin:0 auto;border:1px solid #E5E7EB;border-radius:12px;overflow:hidden}
+  .header{background:linear-gradient(135deg,#1E3A8A 0%,#2563EB 100%);padding:28px 32px;display:flex;justify-content:space-between;align-items:flex-start}
+  .brand{color:#fff}
+  .brand-name{font-size:26px;font-weight:800;letter-spacing:-0.5px}
+  .brand-sub{font-size:12px;opacity:0.75;margin-top:4px}
+  .inv-meta{text-align:right;color:#fff}
+  .inv-meta h1{font-size:16px;font-weight:700;letter-spacing:2px;opacity:0.85;text-transform:uppercase}
+  .inv-meta .inv-num{font-size:22px;font-weight:800;margin-top:4px}
+  .inv-meta .inv-date{font-size:12px;opacity:0.75;margin-top:4px}
+  .status-bar{background:#F9FAFB;padding:12px 32px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #E5E7EB}
+  .status-pill{padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;color:#fff;background:${statusColor}}
+  .status-label{font-size:12px;color:#6B7280}
+  .body{padding:28px 32px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  .section-title{font-size:10px;font-weight:700;letter-spacing:1.5px;color:#9CA3AF;text-transform:uppercase;margin-bottom:8px}
+  .info-val{font-size:14px;color:#1F2937;line-height:1.6}
+  .info-val strong{font-weight:700}
+  table{width:100%;border-collapse:collapse;margin:0 32px 0 32px;width:calc(100% - 64px)}
+  thead tr{background:#F3F4F6}
+  th{padding:10px 12px;font-size:11px;font-weight:700;letter-spacing:0.5px;color:#6B7280;text-align:left;text-transform:uppercase}
+  th:last-child{text-align:right}
+  td{padding:12px;font-size:13px;color:#1F2937;border-bottom:1px solid #F3F4F6}
+  td:last-child{text-align:right;font-weight:600}
+  .totals{margin:0 32px 28px 32px;background:#F9FAFB;border-radius:8px;padding:16px}
+  .total-row{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:#6B7280}
+  .total-row.grand{border-top:2px solid #E5E7EB;margin-top:8px;padding-top:12px;font-size:16px;font-weight:800;color:#1F2937}
+  .footer{background:#F3F4F6;padding:16px 32px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #E5E7EB}
+  .footer-note{font-size:11px;color:#9CA3AF}
+  .footer-brand{font-size:13px;font-weight:700;color:#2563EB}
+  @media print{body{padding:0}.invoice{border:none;border-radius:0}}
+</style>
+</head>
+<body>
+<div class="invoice">
+  <div class="header">
+    <div class="brand">
+      <div class="brand-name">${o.storeName || "XyloCart"}</div>
+      <div class="brand-sub">Official Store Receipt</div>
+    </div>
+    <div class="inv-meta">
+      <h1>Tax Invoice</h1>
+      <div class="inv-num">${invNum}</div>
+      <div class="inv-date">${date}</div>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <span class="status-pill">${statusLabel}</span>
+    <span class="status-label">Order Status · Payment: ${o.paymentMethod.toUpperCase()} · ${o.paymentStatus.toUpperCase()}</span>
+  </div>
+
+  <div class="body">
+    <div>
+      <div class="section-title">Billed To</div>
+      <div class="info-val">
+        <strong>${o.customerName || "Customer"}</strong><br/>
+        ${o.customerEmail ? o.customerEmail + "<br/>" : ""}
+        ${o.customerMobile ? o.customerMobile + "<br/>" : ""}
+        ${addrHtml ? addrHtml : ""}
+      </div>
+    </div>
+    <div>
+      <div class="section-title">Order Details</div>
+      <div class="info-val">
+        <strong>Order #:</strong> ${o.orderNumber ?? o.id.slice(0, 8).toUpperCase()}<br/>
+        <strong>Quantity:</strong> ${o.quantity}<br/>
+        ${o.courierPartner ? `<strong>Courier:</strong> ${o.courierPartner}<br/>` : ""}
+        ${o.trackingNumber ? `<strong>Tracking:</strong> ${o.trackingNumber}<br/>` : ""}
+        ${o.utrNumber ? `<strong>UTR No.:</strong> ${o.utrNumber}<br/>` : ""}
+      </div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Item Description</th>
+        <th>Qty</th>
+        <th>Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>${o.productName || "Product"}</td>
+        <td>${o.quantity}</td>
+        <td>${fmt(o.subtotal)}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="totals" style="margin-top:16px">
+    ${rows.map(([l, v]) => `<div class="total-row"><span>${l}</span><span>${v}</span></div>`).join("")}
+    <div class="total-row grand"><span>Total Paid</span><span>${fmt(o.total)}</span></div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-note">Thank you for your order! Keep this invoice for your records.</div>
+    <div class="footer-brand">${o.storeName || "XyloCart"}</div>
+  </div>
+</div>
+</body>
+</html>`;
+}
+
+router.get("/orders/:id/invoice", authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const rows = await db.select({
+      id: ordersTable.id, orderNumber: ordersTable.orderNumber,
+      createdAt: ordersTable.createdAt, status: ordersTable.status,
+      paymentMethod: ordersTable.paymentMethod, paymentStatus: ordersTable.paymentStatus,
+      productName: productsTable.name,
+      quantity: ordersTable.quantity, subtotal: ordersTable.subtotal,
+      deliveryCharge: ordersTable.deliveryCharge, taxAmount: ordersTable.taxAmount,
+      serviceCharge: ordersTable.serviceCharge, maintenanceCharge: ordersTable.maintenanceCharge,
+      discountAmount: ordersTable.discountAmount, total: ordersTable.total,
+      shippingAddress: ordersTable.shippingAddress,
+      courierPartner: ordersTable.courierPartner, trackingNumber: ordersTable.trackingNumber,
+      utrNumber: ordersTable.utrNumber,
+      customerName: usersTable.name, customerEmail: usersTable.email, customerMobile: usersTable.mobileNumber,
+    })
+    .from(ordersTable)
+    .leftJoin(productsTable, eq(ordersTable.productId, productsTable.id))
+    .leftJoin(usersTable, eq(ordersTable.userId, usersTable.id))
+    .where(eq(ordersTable.id, req.params.id));
+
+    if (!rows.length || rows[0].id !== req.params.id) { res.status(404).json({ error: "Order not found" }); return; }
+    const o = rows[0] as any;
+    if (o.userId !== req.userId) { res.status(403).json({ error: "Forbidden" }); return; }
+
+    const [taxPercent] = await Promise.all([getConfig("tax_percent")]);
+    const html = buildInvoiceHtml({ ...o, storeName: "XyloCart", taxPercent });
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(html);
+  } catch { res.status(500).json({ error: "Failed to generate invoice" }); }
+});
+
+router.get("/admin/orders/:id/invoice", authMiddleware, adminMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const rows = await db.select({
+      id: ordersTable.id, orderNumber: ordersTable.orderNumber,
+      createdAt: ordersTable.createdAt, status: ordersTable.status,
+      paymentMethod: ordersTable.paymentMethod, paymentStatus: ordersTable.paymentStatus,
+      productName: productsTable.name,
+      quantity: ordersTable.quantity, subtotal: ordersTable.subtotal,
+      deliveryCharge: ordersTable.deliveryCharge, taxAmount: ordersTable.taxAmount,
+      serviceCharge: ordersTable.serviceCharge, maintenanceCharge: ordersTable.maintenanceCharge,
+      discountAmount: ordersTable.discountAmount, total: ordersTable.total,
+      shippingAddress: ordersTable.shippingAddress,
+      courierPartner: ordersTable.courierPartner, trackingNumber: ordersTable.trackingNumber,
+      utrNumber: ordersTable.utrNumber,
+      customerName: usersTable.name, customerEmail: usersTable.email, customerMobile: usersTable.mobileNumber,
+    })
+    .from(ordersTable)
+    .leftJoin(productsTable, eq(ordersTable.productId, productsTable.id))
+    .leftJoin(usersTable, eq(ordersTable.userId, usersTable.id))
+    .where(eq(ordersTable.id, req.params.id));
+
+    if (!rows.length) { res.status(404).json({ error: "Order not found" }); return; }
+    const o = rows[0] as any;
+    const taxPercent = await getConfig("tax_percent");
+    const html = buildInvoiceHtml({ ...o, storeName: "XyloCart", taxPercent });
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(html);
+  } catch { res.status(500).json({ error: "Failed to generate invoice" }); }
+});
+
 router.get("/orders/track/:orderRef", async (req, res) => {
   const raw = (req.params.orderRef ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
   if (raw.length < 6) {
