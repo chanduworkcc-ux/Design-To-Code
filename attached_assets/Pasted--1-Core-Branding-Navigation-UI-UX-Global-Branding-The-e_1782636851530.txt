@@ -1,0 +1,14 @@
+ 1. Core Branding, Navigation, & UI/UX
+ * *Global Branding:* The entire platform must be heavily branded as *FX PRIME 26* across all user and admin interface screens.
+ * *3D Splash Screen:* Upon application launch, display a high-quality 3D animated splash screen featuring the official company logo.
+ * *3D Transition Banners:* When transitioning between major sections, display a 3D sliding animation of the *FX PRIME 26* logo moving from side to side for a duration of 10 to 15 seconds.
+ * *Global Footer:* A permanent, centered copyright text must be anchored at the bottom of all primary layouts.
+ * *UI Cleanliness:* Eliminate all visual rendering glitches, overlaps, and data mapping errors across both the user and admin panels.
+### 2. Admin Panel & Asset Management
+ * *Logo Management:* The admin section must include a feature to easily update the application logo. This feature must allow the administrator to upload two variations of the logo: one "with background" and one "without background." The admin must be able to assign exactly where each version should be utilized in the app interface.
+ * *Refresh Timestamps:* The admin dashboard must feature a refresh button. Next to this button, the system must display precise timestamps indicating the exact time of the current refresh and the exact time of the last refresh, automatically adjusted to operate on Indian Standard Time (IST).
+### 3. Advanced User Features & Dashboard
+ * *Dynamic Time-Based Greetings:* The home and dashboard screen must feature a dynamic greeting text (e.g., "Good Morning", "Good Afternoon", or "Good Evening") adapted automatically based on the user's local Indian Standard Time (IST).
+ * *Advanced Product Filters:* Implement comprehensive sorting and filtering mechanics on the shop and home screens, including Price (Low to High and High to Low), Alphabetical (A to Z and Z to A), and a designated "Pro Product Filter" tier for specific items.
+ * *In-App Inbox & Notifications:* Mobile push notifications must not clutter the device's main system tray. Instead, they should be routed exclusively to a dedicated *Notifications Inbox* inside the Profile dropdown menu, featuring clean 3D interface elements.
+ * *App Updates Check:* Add an "App Update" feature inside the User Profile settings, allowing users to manually check for updates. The underlying system must verify the current app version against the mandatory version set by the admin.
