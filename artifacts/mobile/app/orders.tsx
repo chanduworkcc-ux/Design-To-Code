@@ -582,6 +582,7 @@ export default function OrdersScreen() {
                         </Pressable>
                       )}
 
+                      {["confirmed","packed","shipped","delivered"].includes(order.status) && (
                       <Pressable
                         style={[styles.invoiceBtn, { opacity: downloadingId === order.id ? 0.6 : 1 }]}
                         onPress={() => handleDownloadInvoice(order.id)}
@@ -595,6 +596,7 @@ export default function OrdersScreen() {
                           {downloadingId === order.id ? "Generating PDF…" : "Download Invoice"}
                         </Text>
                       </Pressable>
+                      )}
                     </View>
                   )}
                 </Animated.View>
