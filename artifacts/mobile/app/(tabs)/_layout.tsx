@@ -1,90 +1,327 @@
 import { Feather } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
-import { Tabs } from "expo-router";
-import React from "react";
-import { Platform, StyleSheet, View, useColorScheme } from "react-native";
+import { Tabs, useSegments } from "expo-router";
+import React, { useEffect, useRef } from "react";
+import {
+  Animated,
+  Dimensions,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useColorScheme,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useNotifications } from "@/context/NotificationContext";
 import { useColors } from "@/hooks/useColors";
 
-export default function TabLayout() {
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+
+const TABS = [
+  { name: "index",    label: "Shop",     icon: "home"          },
+  { name: "search",   label: "Search",   icon: "search"        },
+  { name: "wishlist", label: "Wishlist",  icon: "heart"         },
+  { name: "cart",     label: "Cart",      icon: "shopping-cart" },
+  { name: "profile",  label: "Profile",   icon: "user"          },
+] as const;
+
+const TAB_COUNT = TABS.length;
+
+interface TabItemProps {
+  tab: (typeof TABS)[number];
+  isActive: boolean;
+  onPress: () => void;
+  badge?: number;
+}
+
+function TabItem({ tab, isActive, onPress, badge }: TabItemProps) {
+  const colors = useColors();
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const translateYAnim = useRef(new Animated.Value(0)).current;
+  const colorAnim = useRef(new Animated.Value(isActive ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(colorAnim, {
+        toValue: isActive ? 1 : 0,
+        damping: 14,
+        stiffness: 200,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  }, [isActive]);
+
+  function handlePressIn() {
+    Animated.parallel([
+      Animated.spring(scaleAnim, { toValue: 0.85, damping: 18, stiffness: 400, useNativeDriver: true }),
+      Animated.timing(translateYAnim, { toValue: -2, duration: 120, useNativeDriver: true }),
+    ]).start();
+  }
+
+  function handlePressOut() {
+    Animated.parallel([
+      Animated.spring(scaleAnim, { toValue: 1, damping: 12, stiffness: 250, useNativeDriver: true }),
+      Animated.spring(translateYAnim, { toValue: 0, damping: 10, stiffness: 180, useNativeDriver: true }),
+    ]).start();
+  }
+
+  const iconColor = colorAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [colors.mutedForeground, colors.primary],
+  });
+
+  const labelOpacity = colorAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.55, 1],
+  });
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      style={styles.tabItem}
+      hitSlop={4}
+    >
+      <Animated.View
+        style={[
+          styles.tabItemInner,
+          {
+            transform: [
+              { scale: scaleAnim },
+              { translateY: translateYAnim },
+            ],
+          },
+        ]}
+      >
+        {/* Active pill behind icon */}
+        {isActive && (
+          <Animated.View
+            style={[
+              styles.activePill,
+              { backgroundColor: colors.primary + "18" },
+            ]}
+          />
+        )}
+
+        <View style={{ position: "relative" }}>
+          <Animated.Text style={{ color: iconColor }}>
+            <Feather name={tab.icon as any} size={22} />
+          </Animated.Text>
+          {badge !== undefined && badge > 0 && (
+            <View style={styles.badgeDot}>
+              <Text style={styles.badgeDotText}>{badge > 9 ? "9+" : badge}</Text>
+            </View>
+          )}
+        </View>
+
+        <Animated.Text
+          style={[
+            styles.tabLabel,
+            { color: iconColor, opacity: labelOpacity },
+          ]}
+        >
+          {tab.label}
+        </Animated.Text>
+      </Animated.View>
+    </Pressable>
+  );
+}
+
+function CustomTabBar({ state, descriptors, navigation }: any) {
   const colors = useColors();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
+  const insets = useSafeAreaInsets();
   const { cartCount, wishlistCount } = useApp();
   const { unreadCount } = useNotifications();
 
+  const tabWidth = SCREEN_WIDTH / TAB_COUNT;
+  const pillarAnim = useRef(new Animated.Value(state.index * tabWidth)).current;
+
+  useEffect(() => {
+    Animated.spring(pillarAnim, {
+      toValue: state.index * tabWidth,
+      damping: 18,
+      stiffness: 260,
+      useNativeDriver: true,
+    }).start();
+  }, [state.index]);
+
+  const tabHeight = isWeb ? 84 : 62 + insets.bottom;
+
+  function getBadge(name: string) {
+    if (name === "cart") return cartCount > 0 ? cartCount : undefined;
+    if (name === "wishlist") return wishlistCount > 0 ? wishlistCount : undefined;
+    if (name === "profile") return unreadCount > 0 ? unreadCount : undefined;
+    return undefined;
+  }
+
+  return (
+    <View
+      style={[
+        styles.tabBar,
+        {
+          height: tabHeight,
+          borderTopColor: colors.border,
+          shadowColor: isDark ? "#000" : colors.primary,
+        },
+      ]}
+    >
+      {/* Background */}
+      {isIOS ? (
+        <BlurView
+          intensity={90}
+          tint={isDark ? "dark" : "light"}
+          style={StyleSheet.absoluteFill}
+        />
+      ) : (
+        <View
+          style={[StyleSheet.absoluteFill, { backgroundColor: colors.card }]}
+        />
+      )}
+
+      {/* Animated sliding top accent line */}
+      <Animated.View
+        style={[
+          styles.slideAccent,
+          {
+            width: tabWidth * 0.45,
+            backgroundColor: colors.primary,
+            transform: [
+              {
+                translateX: Animated.add(
+                  pillarAnim,
+                  new Animated.Value(tabWidth * 0.275)
+                ),
+              },
+            ],
+          },
+        ]}
+      />
+
+      {/* Tab items */}
+      <View style={styles.tabRow}>
+        {TABS.map((tab, i) => {
+          const isFocused = state.index === i;
+          const route = state.routes[i];
+
+          function onPress() {
+            const event = navigation.emit({
+              type: "tabPress",
+              target: route.key,
+              canPreventDefault: true,
+            });
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name);
+            }
+          }
+
+          return (
+            <TabItem
+              key={tab.name}
+              tab={tab}
+              isActive={isFocused}
+              onPress={onPress}
+              badge={getBadge(tab.name)}
+            />
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+export default function TabLayout() {
   return (
     <Tabs
+      tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.mutedForeground,
         headerShown: false,
-        tabBarStyle: {
-          position: "absolute",
-          backgroundColor: isIOS ? "transparent" : colors.card,
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
-          elevation: 0,
-          height: isWeb ? 84 : 64,
-        },
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontFamily: "Inter_500Medium",
-          marginBottom: 4,
-        },
-        tabBarBackground: () =>
-          isIOS ? (
-            <BlurView
-              intensity={100}
-              tint={isDark ? "dark" : "light"}
-              style={StyleSheet.absoluteFill}
-            />
-          ) : (
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.card }]} />
-          ),
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Shop",
-          tabBarIcon: ({ color }) => <Feather name="home" size={22} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="search"
-        options={{
-          title: "Search",
-          tabBarIcon: ({ color }) => <Feather name="search" size={22} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="wishlist"
-        options={{
-          title: "Wishlist",
-          tabBarIcon: ({ color }) => <Feather name="heart" size={22} color={color} />,
-          tabBarBadge: wishlistCount > 0 ? wishlistCount : undefined,
-        }}
-      />
-      <Tabs.Screen
-        name="cart"
-        options={{
-          title: "Cart",
-          tabBarIcon: ({ color }) => <Feather name="shopping-cart" size={22} color={color} />,
-          tabBarBadge: cartCount > 0 ? cartCount : undefined,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: "Profile",
-          tabBarIcon: ({ color }) => <Feather name="user" size={22} color={color} />,
-          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
-        }}
-      />
+      <Tabs.Screen name="index" />
+      <Tabs.Screen name="search" />
+      <Tabs.Screen name="wishlist" />
+      <Tabs.Screen name="cart" />
+      <Tabs.Screen name="profile" />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBar: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderTopWidth: 1,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 12,
+  },
+  slideAccent: {
+    position: "absolute",
+    top: 0,
+    height: 3,
+    borderBottomLeftRadius: 2,
+    borderBottomRightRadius: 2,
+  },
+  tabRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 10,
+    paddingBottom: 4,
+  },
+  tabItemInner: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 3,
+    position: "relative",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  activePill: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 12,
+  },
+  tabLabel: {
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: 0.2,
+  },
+  badgeDot: {
+    position: "absolute",
+    top: -4,
+    right: -8,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "#EF4444",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 3,
+    borderWidth: 1.5,
+    borderColor: "#fff",
+  },
+  badgeDotText: {
+    color: "#fff",
+    fontSize: 8,
+    fontFamily: "Inter_700Bold",
+  },
+});

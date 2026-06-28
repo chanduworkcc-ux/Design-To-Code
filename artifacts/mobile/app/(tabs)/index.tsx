@@ -2,7 +2,6 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Dimensions,
   Image,
   Platform,
@@ -11,7 +10,7 @@ import {
   StyleSheet,
   Text,
   View,
-  Animated,
+  Animated as RNAnimated,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ProductCard } from "@/components/ProductCard";
@@ -23,12 +22,15 @@ import { useNotifications } from "@/context/NotificationContext";
 import { Product } from "@/data/products";
 import LoadingScreen from "@/components/LoadingScreen";
 import { GlobalFooter } from "@/components/GlobalFooter";
-import Animated2, {
+import { FloatingOrb, FloatIn, PulsingRing } from "@/components/ThreeD";
+import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withRepeat,
   withSequence,
   withTiming,
+  withSpring,
+  withDelay,
   Easing,
 } from "react-native-reanimated";
 
@@ -55,87 +57,175 @@ interface ApiBanner {
   isActive: boolean; sortOrder: number;
 }
 
-// 3D notification badge
 function NotifBadge({ count }: { count: number }) {
   const scale = useSharedValue(1);
   useEffect(() => {
     if (count === 0) return;
     scale.value = withSequence(
-      withTiming(1.4, { duration: 160, easing: Easing.out(Easing.back()) }),
-      withTiming(1,   { duration: 200, easing: Easing.out(Easing.cubic) }),
+      withTiming(1.5, { duration: 150, easing: Easing.out(Easing.back()) }),
+      withSpring(1, { damping: 10 }),
     );
   }, [count]);
   const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   if (count === 0) return null;
   return (
-    <Animated2.View style={[styles.notifBadge, style]}>
-      <Text style={styles.notifBadgeText}>{count > 9 ? "9+" : count}</Text>
-    </Animated2.View>
+    <Animated.View style={[styles.badge, style]}>
+      <Text style={styles.badgeText}>{count > 9 ? "9+" : count}</Text>
+    </Animated.View>
   );
 }
 
-// 3D pulsing cart badge
 function CartBadge({ count }: { count: number }) {
   const scale = useSharedValue(1);
   useEffect(() => {
     if (count === 0) return;
     scale.value = withSequence(
-      withTiming(1.4, { duration: 160, easing: Easing.out(Easing.back()) }),
-      withTiming(1,   { duration: 200, easing: Easing.out(Easing.cubic) }),
+      withTiming(1.5, { duration: 150, easing: Easing.out(Easing.back()) }),
+      withSpring(1, { damping: 10 }),
     );
   }, [count]);
   const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   if (count === 0) return null;
   return (
-    <Animated2.View style={[styles.cartBadge, style]}>
-      <Text style={styles.cartBadgeText}>{count}</Text>
-    </Animated2.View>
+    <Animated.View style={[styles.badge, { backgroundColor: "#2563EB" }, style]}>
+      <Text style={styles.badgeText}>{count}</Text>
+    </Animated.View>
   );
 }
 
-// 3D floating "NEW" label for sections
-function FloatingLabel({ label, color }: { label: string; color: string }) {
+function AnimatedBanner({ banner, width }: { banner: ApiBanner; width: number }) {
+  const scale = useSharedValue(0.92);
+  const opacity = useSharedValue(0);
+  const iconBob = useSharedValue(0);
+
+  useEffect(() => {
+    scale.value = withSpring(1, { damping: 16, stiffness: 200 });
+    opacity.value = withTiming(1, { duration: 450 });
+    iconBob.value = withRepeat(
+      withSequence(
+        withTiming(-8, { duration: 1400, easing: Easing.inOut(Easing.sin) }),
+        withTiming(8, { duration: 1400, easing: Easing.inOut(Easing.sin) }),
+      ), -1, false
+    );
+  }, []);
+
+  const containerStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ scale: scale.value }],
+  }));
+  const iconStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: iconBob.value }],
+  }));
+
+  return (
+    <Animated.View
+      style={[
+        styles.apiBanner,
+        { backgroundColor: banner.bgColor, width },
+        containerStyle,
+      ]}
+    >
+      <View style={{ flex: 1 }}>
+        <View style={[styles.bannerTag, { backgroundColor: banner.textColor + "22" }]}>
+          <Text style={[styles.bannerTagText, { color: banner.textColor }]}>FEATURED</Text>
+        </View>
+        <Text style={[styles.bannerTitle, { color: banner.textColor }]}>{banner.title}</Text>
+        {banner.subtitle && (
+          <Text style={[styles.bannerSubtitle, { color: banner.textColor + "BB" }]}>
+            {banner.subtitle}
+          </Text>
+        )}
+        <Pressable style={[styles.bannerCta, { backgroundColor: banner.textColor + "22", borderColor: banner.textColor + "55" }]}>
+          <Text style={[styles.bannerCtaText, { color: banner.textColor }]}>{banner.ctaText}</Text>
+          <Feather name="arrow-right" size={12} color={banner.textColor} />
+        </Pressable>
+      </View>
+      <View style={styles.bannerIconArea}>
+        <PulsingRing color={banner.textColor} size={72} duration={2000} thickness={1.5} />
+        <Animated.View
+          style={[
+            styles.bannerIconBox,
+            { backgroundColor: banner.textColor + "25" },
+            iconStyle,
+          ]}
+        >
+          <Feather name="shopping-bag" size={28} color={banner.textColor} />
+        </Animated.View>
+      </View>
+    </Animated.View>
+  );
+}
+
+function SectionHeader({ title, onAction, actionLabel }: { title: string; onAction?: () => void; actionLabel?: string }) {
+  const colors = useColors();
+  const scaleX = useSharedValue(0);
+  const opacity = useSharedValue(0);
+
+  useEffect(() => {
+    opacity.value = withTiming(1, { duration: 400 });
+    scaleX.value = withTiming(1, { duration: 500, easing: Easing.out(Easing.cubic) });
+  }, []);
+
+  const underlineStyle = useAnimatedStyle(() => ({
+    transform: [{ scaleX: scaleX.value }],
+    opacity: opacity.value,
+  }));
+  const headerOpacity = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
+  return (
+    <Animated.View style={[styles.sectionHeader, headerOpacity]}>
+      <View>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{title}</Text>
+        <Animated.View
+          style={[
+            styles.sectionUnderline,
+            { backgroundColor: colors.primary },
+            underlineStyle,
+          ]}
+        />
+      </View>
+      {onAction && actionLabel && (
+        <Pressable
+          style={[styles.seeAllBtn, { backgroundColor: colors.accent, borderColor: colors.border }]}
+          onPress={onAction}
+        >
+          <Text style={[styles.seeAllText, { color: colors.primary }]}>{actionLabel}</Text>
+          <Feather name="chevron-right" size={12} color={colors.primary} />
+        </Pressable>
+      )}
+    </Animated.View>
+  );
+}
+
+function HotLabel() {
   const y = useSharedValue(0);
+  const rotate = useSharedValue(0);
   useEffect(() => {
     y.value = withRepeat(
       withSequence(
+        withTiming(-5, { duration: 1000, easing: Easing.inOut(Easing.sin) }),
+        withTiming(5, { duration: 1000, easing: Easing.inOut(Easing.sin) }),
+      ), -1, false
+    );
+    rotate.value = withRepeat(
+      withSequence(
         withTiming(-4, { duration: 1200, easing: Easing.inOut(Easing.sin) }),
-        withTiming(4,  { duration: 1200, easing: Easing.inOut(Easing.sin) }),
+        withTiming(4, { duration: 1200, easing: Easing.inOut(Easing.sin) }),
       ), -1, false
     );
   }, []);
   const style = useAnimatedStyle(() => ({
-    transform: [{ translateY: y.value }, { perspective: 400 }, { rotateX: "8deg" }],
+    transform: [
+      { translateY: y.value },
+      { rotate: `${rotate.value}deg` },
+      { perspective: 400 },
+      { rotateX: "10deg" },
+    ],
   }));
   return (
-    <Animated2.View style={[styles.floatingLabel, { backgroundColor: color }, style]}>
-      <Text style={styles.floatingLabelText}>{label}</Text>
-    </Animated2.View>
-  );
-}
-
-// Animated section header that tilts in
-function SectionHeader3D({ title, action, actionLabel }: { title: string; action?: () => void; actionLabel?: string }) {
-  const colors = useColors();
-  const tilt = useSharedValue(-6);
-  const op = useSharedValue(0);
-  useEffect(() => {
-    tilt.value = withTiming(0, { duration: 600, easing: Easing.out(Easing.cubic) });
-    op.value = withTiming(1, { duration: 400 });
-  }, []);
-  const style = useAnimatedStyle(() => ({
-    opacity: op.value,
-    transform: [{ perspective: 600 }, { rotateX: `${tilt.value}deg` }],
-  }));
-  return (
-    <Animated2.View style={[styles.sectionHeader, style]}>
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>{title}</Text>
-      {action && actionLabel && (
-        <Pressable onPress={action}>
-          <Text style={[styles.seeAll, { color: colors.primary }]}>{actionLabel}</Text>
-        </Pressable>
-      )}
-    </Animated2.View>
+    <Animated.View style={[styles.hotLabel, style]}>
+      <Text style={styles.hotLabelText}>🔥 HOT</Text>
+    </Animated.View>
   );
 }
 
@@ -155,8 +245,10 @@ export default function ShopScreen() {
   const [sortBy, setSortBy] = useState<string>("default");
   const bannerScrollRef = useRef<ScrollView>(null);
   const bannerTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const marqueeAnim = useRef(new Animated.Value(SCREEN_WIDTH)).current;
+  const marqueeAnim = useRef(new RNAnimated.Value(SCREEN_WIDTH)).current;
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
+
+  const searchPressScale = useSharedValue(1);
 
   useEffect(() => { fetchData(); }, []);
 
@@ -206,12 +298,12 @@ export default function ShopScreen() {
   const featured = products.filter((p) => (p as any).featured ?? false).slice(0, 6);
 
   const SORT_OPTIONS = [
-    { key: "default",    label: "Default"     },
+    { key: "default",    label: "All"         },
     { key: "price_asc",  label: "Price ↑"     },
     { key: "price_desc", label: "Price ↓"     },
     { key: "name_asc",   label: "A → Z"       },
     { key: "name_desc",  label: "Z → A"       },
-    { key: "pro",        label: "⚡ Pro Only"  },
+    { key: "pro",        label: "⚡ Pro"       },
   ];
 
   const sortedProducts = (() => {
@@ -224,84 +316,147 @@ export default function ShopScreen() {
     return list;
   })();
 
+  const searchAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: searchPressScale.value }],
+  }));
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      {/* 3D loading overlay — covers screen while products are fetching */}
       <LoadingScreen visible={loadingProducts} message="Loading products" />
 
-      {/* Subtle 3D background orbs — only in top area so they don't cover products */}
-
-      {/* Announcement Bar */}
+      {/* Announcement bar */}
       {announcement?.enabled && !!announcement.text && (
-        <View style={[styles.announcementBar, { backgroundColor: announcement.color || "#2563EB", paddingTop: topPadding }]}>
-          <Text style={styles.announcementText} numberOfLines={1}>{announcement.text}</Text>
+        <View
+          style={[
+            styles.announcementBar,
+            { backgroundColor: announcement.color || "#2563EB", paddingTop: topPadding },
+          ]}
+        >
+          <Feather name="zap" size={12} color="rgba(255,255,255,0.85)" />
+          <Text style={styles.announcementText} numberOfLines={1}>
+            {announcement.text}
+          </Text>
         </View>
       )}
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scroll, { paddingTop: (announcement?.enabled && announcement.text ? 0 : topPadding) + 12, paddingBottom: 100 }]}
+        contentContainerStyle={[
+          styles.scroll,
+          {
+            paddingTop:
+              (announcement?.enabled && announcement.text ? 0 : topPadding) + 16,
+            paddingBottom: 110,
+          },
+        ]}
       >
-        {/* Header — float-in from top */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Image source={require("@/assets/logo-transparent.png")} style={styles.headerLogo} resizeMode="contain" />
-            <View>
-              <Text style={[styles.welcomeText, { color: colors.mutedForeground }]}>{getISTGreeting()} 👋</Text>
-              <Text style={[styles.brandName, { color: colors.text }]}>{user?.name?.split(" ")[0] ?? "XyloCart"}</Text>
+        {/* ── Header ── */}
+        <FloatIn delay={0} distance={30}>
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              {/* Logo with glow ring */}
+              <View style={styles.logoWrapper}>
+                <FloatingOrb color={colors.primary} size={44} style={styles.logoGlow} delay={0} amplitude={6} duration={2800} />
+                <Image
+                  source={require("@/assets/logo-transparent.png")}
+                  style={styles.headerLogo}
+                  resizeMode="contain"
+                />
+              </View>
+              <View>
+                <Text style={[styles.greetingText, { color: colors.mutedForeground }]}>
+                  {getISTGreeting()} 👋
+                </Text>
+                <Text style={[styles.brandName, { color: colors.text }]}>
+                  {user?.name?.split(" ")[0] ?? "XyloCart"}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.headerActions}>
+              <Pressable
+                style={[styles.iconBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={() => router.push("/notifications-user" as any)}
+              >
+                <Feather name="bell" size={19} color={colors.text} />
+                <NotifBadge count={unreadCount} />
+              </Pressable>
+              <Pressable
+                style={[styles.iconBtn, styles.iconBtnCart, { backgroundColor: colors.primary }]}
+                onPress={() => router.push("/(tabs)/cart")}
+              >
+                <Feather name="shopping-cart" size={19} color="#fff" />
+                <CartBadge count={cartCount} />
+              </Pressable>
             </View>
           </View>
-          <View style={styles.headerActions}>
-            <Pressable
-              style={[styles.headerIconBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => router.push("/notifications-user" as any)}
-            >
-              <Feather name="bell" size={20} color={colors.text} />
-              <NotifBadge count={unreadCount} />
-            </Pressable>
-            <Pressable
-              style={[styles.cartBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => router.push("/(tabs)/cart")}
-            >
-              <Feather name="shopping-cart" size={20} color={colors.text} />
-              <CartBadge count={cartCount} />
-            </Pressable>
-          </View>
-        </View>
+        </FloatIn>
 
-        {/* Search Bar — float-in */}
-        <View>
-          <Pressable
-            style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => router.push("/(tabs)/search")}
+        {/* ── Search Bar ── */}
+        <FloatIn delay={80} distance={24}>
+          <Animated.View style={searchAnimStyle}>
+            <Pressable
+              style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => router.push("/(tabs)/search")}
+              onPressIn={() => { searchPressScale.value = withSpring(0.97, { damping: 18 }); }}
+              onPressOut={() => { searchPressScale.value = withSpring(1, { damping: 14 }); }}
+            >
+              <View style={[styles.searchIcon, { backgroundColor: colors.primary + "18" }]}>
+                <Feather name="search" size={15} color={colors.primary} />
+              </View>
+              <Text style={[styles.searchPlaceholder, { color: colors.mutedForeground }]}>
+                Search products...
+              </Text>
+              <View style={[styles.searchBadge, { backgroundColor: colors.secondary }]}>
+                <Text style={[styles.searchBadgeText, { color: colors.mutedForeground }]}>
+                  ⌘ K
+                </Text>
+              </View>
+            </Pressable>
+          </Animated.View>
+        </FloatIn>
+
+        {/* ── Sort Filter chips ── */}
+        <FloatIn delay={140} distance={20}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterRow}
+            style={{ marginBottom: 20 }}
           >
-            <Feather name="search" size={18} color={colors.mutedForeground} />
-            <Text style={[styles.searchPlaceholder, { color: colors.mutedForeground }]}>Search products...</Text>
-          </Pressable>
-        </View>
-
-        {/* Filter Bar */}
-        <View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow} style={{ marginBottom: 16 }}>
-            {SORT_OPTIONS.map((opt) => {
+            {SORT_OPTIONS.map((opt, i) => {
               const active = sortBy === opt.key;
               return (
                 <Pressable
                   key={opt.key}
-                  style={[styles.filterChip, active && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                  style={[
+                    styles.filterChip,
+                    {
+                      backgroundColor: active ? colors.primary : colors.card,
+                      borderColor: active ? colors.primary : colors.border,
+                      shadowColor: active ? colors.primary : "transparent",
+                    },
+                  ]}
                   onPress={() => setSortBy(opt.key)}
                 >
-                  <Text style={[styles.filterChipText, { color: active ? "#fff" : colors.mutedForeground }]}>{opt.label}</Text>
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      { color: active ? "#fff" : colors.mutedForeground },
+                    ]}
+                  >
+                    {opt.label}
+                  </Text>
                 </Pressable>
               );
             })}
           </ScrollView>
-        </View>
+        </FloatIn>
 
-        {/* Banners */}
-        <View>
+        {/* ── Banners ── */}
+        <FloatIn delay={200} distance={28}>
           {banners.length > 0 ? (
-            <View style={[styles.bannerWrapper, { marginBottom: 20 }]}>
+            <View style={[styles.bannerWrapper, { marginBottom: 24 }]}>
               <ScrollView
                 ref={bannerScrollRef}
                 horizontal
@@ -313,24 +468,9 @@ export default function ShopScreen() {
                   const newIdx = Math.round(e.nativeEvent.contentOffset.x / BANNER_WIDTH);
                   setBannerIdx(newIdx);
                 }}
-                contentContainerStyle={{ gap: 0 }}
               >
                 {banners.map((banner) => (
-                  <View key={banner.id} style={[styles.apiBanner, { backgroundColor: banner.bgColor, width: BANNER_WIDTH }]}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.bannerTitle, { color: banner.textColor }]}>{banner.title}</Text>
-                      {banner.subtitle && (
-                        <Text style={[styles.bannerSubtitle, { color: banner.textColor + "CC" }]}>{banner.subtitle}</Text>
-                      )}
-                      <Pressable style={[styles.shopNowBtn, { borderColor: banner.textColor + "60" }]}>
-                        <Text style={[styles.shopNowText, { color: banner.textColor }]}>{banner.ctaText}</Text>
-                      </Pressable>
-                    </View>
-                    {/* 3D pulsing ring around banner icon */}
-                    <View style={[styles.bannerIconBox, { backgroundColor: banner.textColor + "20" }]}>
-                      <Feather name="shopping-bag" size={32} color={banner.textColor} />
-                    </View>
-                  </View>
+                  <AnimatedBanner key={banner.id} banner={banner} width={BANNER_WIDTH} />
                 ))}
               </ScrollView>
               {banners.length > 1 && (
@@ -338,90 +478,105 @@ export default function ShopScreen() {
                   {banners.map((_, i) => (
                     <View
                       key={i}
-                      style={[styles.dot, { backgroundColor: i === bannerIdx ? colors.primary : colors.border, width: i === bannerIdx ? 16 : 6 }]}
+                      style={[
+                        styles.dot,
+                        {
+                          backgroundColor: i === bannerIdx ? colors.primary : colors.border,
+                          width: i === bannerIdx ? 20 : 6,
+                        },
+                      ]}
                     />
                   ))}
                 </View>
               )}
             </View>
           ) : (
-            <View style={styles.bannerContainer}>
-              <View style={[styles.bannerLeft, { backgroundColor: "#2563EB" }]}>
-                <Text style={styles.bannerTag}>NEW ARRIVALS</Text>
-                <Text style={styles.bannerTitle2}>Summer Collection{"\n"}2026</Text>
-                <Pressable style={styles.shopNowBtnStatic}>
-                  <Text style={styles.shopNowTextStatic}>Shop Now</Text>
-                </Pressable>
-              </View>
-              <View style={[styles.bannerRight, { backgroundColor: "#FEF9EC" }]}>
-                <View style={styles.categoryGrid}>
+            <View style={[styles.heroBanner, { marginBottom: 24 }]}>
+              {/* Decorative orbs */}
+              <FloatingOrb color="#60A5FA" size={120} style={{ top: -20, right: -20 }} delay={0} amplitude={10} />
+              <FloatingOrb color="#818CF8" size={80} style={{ bottom: -10, left: 20 }} delay={600} amplitude={8} />
+
+              <View style={styles.heroBannerContent}>
+                <View style={[styles.heroBannerLeft, { backgroundColor: "#1E3A8A" }]}>
+                  <View style={styles.newBadge}>
+                    <Text style={styles.newBadgeText}>NEW 2026</Text>
+                  </View>
+                  <Text style={styles.heroBannerTitle}>Summer{"\n"}Collection</Text>
+                  <Pressable style={styles.heroShopBtn}>
+                    <Text style={styles.heroShopBtnText}>Shop Now</Text>
+                    <Feather name="arrow-right" size={13} color="#1E3A8A" />
+                  </Pressable>
+                </View>
+                <View style={[styles.heroBannerRight, { backgroundColor: colors.secondary }]}>
                   {[
-                    { icon: "monitor", color: "#2563EB", bg: "#E8F5E9", label: "Electronics" },
-                    { icon: "home",    color: "#7C3AED", bg: "#F3F0FF", label: "Home Goods"  },
-                    { icon: "tag",     color: "#3B82F6", bg: "#EFF6FF", label: "Offers"      },
+                    { icon: "monitor", color: "#2563EB", bg: "#DBEAFE", label: "Electronics" },
+                    { icon: "home",    color: "#7C3AED", bg: "#EDE9FE", label: "Home"        },
+                    { icon: "tag",     color: "#059669", bg: "#D1FAE5", label: "Offers"      },
                   ].map((item) => (
-                    <View key={item.icon} style={[styles.categoryItem, { backgroundColor: item.bg }]}>
-                      <Feather name={item.icon as any} size={22} color={item.color} />
-                      <Text style={styles.categoryItemText}>{item.label}</Text>
+                    <View key={item.icon} style={[styles.categoryChip, { backgroundColor: item.bg }]}>
+                      <Feather name={item.icon as any} size={18} color={item.color} />
+                      <Text style={[styles.categoryChipLabel, { color: item.color }]}>{item.label}</Text>
                     </View>
                   ))}
                 </View>
               </View>
             </View>
           )}
-        </View>
+        </FloatIn>
 
-        {/* Featured Section */}
+        {/* ── Featured ── */}
         {featured.length > 0 && (
-          <>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
-              <SectionHeader3D title="Featured" />
-              <FloatingLabel label="✦ HOT" color="#EF4444" />
-            </View>
-            <View>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredList}>
-                {featured.map((product) => (
-                  <ProductCard key={product.id} product={product} />
+          <FloatIn delay={260} distance={24}>
+            <View style={{ marginBottom: 24 }}>
+              <View style={[styles.sectionHeader, { marginBottom: 14 }]}>
+                <View>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>Featured</Text>
+                  <View style={[styles.sectionUnderline, { backgroundColor: colors.primary }]} />
+                </View>
+                <HotLabel />
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 12, paddingRight: 16 }}
+              >
+                {featured.map((product, i) => (
+                  <ProductCard key={product.id} product={product} index={i} />
                 ))}
               </ScrollView>
             </View>
-          </>
+          </FloatIn>
         )}
 
-        {/* All Products */}
-        <View style={{ marginTop: featured.length > 0 ? 20 : 0 }}>
-          <SectionHeader3D
-            title="All Products"
-            action={undefined}
-          />
-          {loadingProducts && (
-            <View style={{ alignItems: "center", paddingVertical: 8 }}>
-              <ActivityIndicator size="small" color={colors.primary} />
-            </View>
-          )}
-        </View>
+        {/* ── All Products ── */}
+        <FloatIn delay={320} distance={20}>
+          <SectionHeader title="All Products" />
+        </FloatIn>
 
         {sortedProducts.length === 0 ? (
-          <View style={{ alignItems: "center", paddingVertical: 40, gap: 0 }}>
-            <View style={{ width: 120, height: 120, alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
-              <Animated2.View style={[styles.emptyIconCircle, { backgroundColor: colors.card }]}>
+          <FloatIn delay={360} distance={30}>
+            <View style={styles.emptyState}>
+              <View style={[styles.emptyCircle, { backgroundColor: colors.card }]}>
                 <Feather name="package" size={38} color={colors.primary} />
-              </Animated2.View>
+              </View>
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>
+                {sortBy === "pro" ? "No Pro products" : "No products yet"}
+              </Text>
+              <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
+                {sortBy === "pro" ? "Pro-tier products will appear here" : "Check back soon for new arrivals"}
+              </Text>
             </View>
-            <Text style={[{ color: colors.text, fontFamily: "Inter_700Bold", fontSize: 18, marginBottom: 6 }]}>
-              {sortBy === "pro" ? "No Pro products found" : "No products yet"}
-            </Text>
-            <Text style={[{ color: colors.mutedForeground, fontFamily: "Inter_400Regular", fontSize: 13, textAlign: "center" }]}>
-              {sortBy === "pro" ? "Pro-tier products will appear here" : "Check back soon for new arrivals"}
-            </Text>
-          </View>
+          </FloatIn>
         ) : (
-          <View>
-            <View style={styles.grid}>
-              {sortedProducts.map((product) => (
-                <ProductCard key={product.id} product={product} style={{ width: "47%" }} />
-              ))}
-            </View>
+          <View style={styles.grid}>
+            {sortedProducts.map((product, i) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                index={i}
+                style={{ width: "47%" }}
+              />
+            ))}
           </View>
         )}
 
@@ -433,51 +588,176 @@ export default function ShopScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  announcementBar: { paddingHorizontal: 16, paddingBottom: 10, alignItems: "center" },
-  announcementText: { color: "#fff", fontSize: 13, fontFamily: "Inter_600SemiBold", textAlign: "center" },
+
+  announcementBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+  },
+  announcementText: {
+    color: "#fff",
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: 0.3,
+  },
+
   scroll: { paddingHorizontal: 16 },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
-  headerLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
-  headerLogo: { width: 40, height: 40 },
-  welcomeText: { fontSize: 13, fontFamily: "Inter_400Regular" },
-  brandName: { fontSize: 26, fontFamily: "Inter_700Bold" },
+
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  headerLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
+  logoWrapper: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
+  logoGlow: { top: 0, left: 0 },
+  headerLogo: { width: 42, height: 42, zIndex: 1 },
+  greetingText: { fontSize: 12, fontFamily: "Inter_400Regular", marginBottom: 1 },
+  brandName: { fontSize: 24, fontFamily: "Inter_700Bold", letterSpacing: -0.5 },
   headerActions: { flexDirection: "row", gap: 8 },
-  headerIconBtn: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", borderWidth: 1, position: "relative" },
-  notifBadge: { position: "absolute", top: -4, right: -4, minWidth: 18, height: 18, borderRadius: 9, alignItems: "center", justifyContent: "center", backgroundColor: "#EF4444", paddingHorizontal: 3 },
-  notifBadgeText: { color: "#fff", fontSize: 9, fontFamily: "Inter_700Bold" },
-  emptyIconCircle: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 8, elevation: 3 },
-  cartBtn: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", borderWidth: 1, position: "relative" },
-  cartBadge: { position: "absolute", top: -4, right: -4, width: 18, height: 18, borderRadius: 9, alignItems: "center", justifyContent: "center", backgroundColor: "#2563EB" },
-  cartBadgeText: { color: "#fff", fontSize: 10, fontFamily: "Inter_700Bold" },
-  searchBar: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 24, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 16 },
-  searchPlaceholder: { fontSize: 14, fontFamily: "Inter_400Regular" },
-  bannerWrapper: { borderRadius: 16, overflow: "hidden" },
-  apiBanner: { height: 140, flexDirection: "row", alignItems: "center", padding: 18, gap: 12, borderRadius: 16 },
-  bannerTitle: { fontSize: 18, fontFamily: "Inter_700Bold", marginBottom: 4 },
-  bannerSubtitle: { fontSize: 12, fontFamily: "Inter_400Regular", marginBottom: 10 },
-  shopNowBtn: { alignSelf: "flex-start", paddingHorizontal: 14, paddingVertical: 6, borderWidth: 1, borderRadius: 20 },
-  shopNowText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
-  bannerIconBox: { width: 70, height: 70, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  bannerDots: { flexDirection: "row", justifyContent: "center", gap: 6, marginTop: 10 },
-  dot: { height: 6, borderRadius: 3, backgroundColor: "#E5EAF8" },
-  bannerContainer: { flexDirection: "row", borderRadius: 16, overflow: "hidden", marginBottom: 20, height: 150 },
-  bannerLeft: { flex: 1.2, padding: 16, justifyContent: "space-between" },
-  bannerTag: { color: "rgba(255,255,255,0.8)", fontSize: 10, fontFamily: "Inter_600SemiBold", letterSpacing: 1 },
-  bannerTitle2: { color: "#fff", fontSize: 18, fontFamily: "Inter_700Bold", lineHeight: 24 },
-  shopNowBtnStatic: { backgroundColor: "#fff", borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6, alignSelf: "flex-start" },
-  shopNowTextStatic: { color: "#2563EB", fontSize: 12, fontFamily: "Inter_600SemiBold" },
-  bannerRight: { flex: 0.8, padding: 8, justifyContent: "center" },
-  categoryGrid: { flexWrap: "wrap", flexDirection: "row", gap: 6, justifyContent: "center" },
-  categoryItem: { width: 64, height: 64, borderRadius: 10, alignItems: "center", justifyContent: "center", gap: 4 },
-  categoryItemText: { fontSize: 8, fontFamily: "Inter_500Medium", color: "#374151", textAlign: "center" },
-  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  sectionTitle: { fontSize: 20, fontFamily: "Inter_700Bold" },
-  seeAll: { fontSize: 14, fontFamily: "Inter_500Medium" },
-  featuredList: { gap: 12, paddingRight: 16 },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 12, justifyContent: "space-between" },
-  floatingLabel: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  floatingLabelText: { color: "#fff", fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 0.5 },
+  iconBtn: {
+    width: 44, height: 44, borderRadius: 14,
+    alignItems: "center", justifyContent: "center",
+    borderWidth: 1, position: "relative",
+    shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07, shadowRadius: 6, elevation: 2,
+  },
+  iconBtnCart: { borderWidth: 0, shadowOpacity: 0.25, shadowColor: "#2563EB" },
+  badge: {
+    position: "absolute", top: -5, right: -5,
+    minWidth: 18, height: 18, borderRadius: 9,
+    alignItems: "center", justifyContent: "center",
+    backgroundColor: "#EF4444", paddingHorizontal: 3,
+    borderWidth: 2, borderColor: "#fff",
+  },
+  badgeText: { color: "#fff", fontSize: 9, fontFamily: "Inter_700Bold" },
+
+  searchBar: {
+    flexDirection: "row", alignItems: "center", gap: 10,
+    borderRadius: 16, borderWidth: 1,
+    paddingHorizontal: 12, paddingVertical: 12,
+    marginBottom: 16,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05, shadowRadius: 8, elevation: 2,
+  },
+  searchIcon: {
+    width: 30, height: 30, borderRadius: 10,
+    alignItems: "center", justifyContent: "center",
+  },
+  searchPlaceholder: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular" },
+  searchBadge: {
+    paddingHorizontal: 8, paddingVertical: 3,
+    borderRadius: 8,
+  },
+  searchBadgeText: { fontSize: 11, fontFamily: "Inter_500Medium" },
+
   filterRow: { gap: 8, paddingRight: 4 },
-  filterChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1, borderColor: "#E5EAF8" },
-  filterChipText: { fontSize: 12, fontFamily: "Inter_500Medium" },
+  filterChip: {
+    paddingHorizontal: 16, paddingVertical: 8,
+    borderRadius: 12, borderWidth: 1,
+    shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4, elevation: 2,
+  },
+  filterChipText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+
+  bannerWrapper: { borderRadius: 20, overflow: "hidden" },
+  apiBanner: {
+    height: 148, flexDirection: "row", alignItems: "center",
+    padding: 20, gap: 12, borderRadius: 20, overflow: "hidden",
+  },
+  bannerTag: {
+    alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 3,
+    borderRadius: 6, marginBottom: 8,
+  },
+  bannerTagText: { fontSize: 9, fontFamily: "Inter_700Bold", letterSpacing: 1 },
+  bannerTitle: { fontSize: 19, fontFamily: "Inter_700Bold", marginBottom: 4, lineHeight: 24 },
+  bannerSubtitle: { fontSize: 12, fontFamily: "Inter_400Regular", marginBottom: 12 },
+  bannerCta: {
+    flexDirection: "row", alignItems: "center", gap: 4,
+    alignSelf: "flex-start", paddingHorizontal: 12, paddingVertical: 6,
+    borderWidth: 1, borderRadius: 20,
+  },
+  bannerCtaText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  bannerIconArea: { width: 80, height: 80, alignItems: "center", justifyContent: "center" },
+  bannerIconBox: {
+    width: 62, height: 62, borderRadius: 16,
+    alignItems: "center", justifyContent: "center",
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.15)",
+  },
+  bannerDots: {
+    flexDirection: "row", justifyContent: "center",
+    gap: 6, marginTop: 10,
+  },
+  dot: { height: 6, borderRadius: 3 },
+
+  heroBanner: { borderRadius: 20, overflow: "hidden" },
+  heroBannerContent: { flexDirection: "row", height: 156 },
+  heroBannerLeft: {
+    flex: 1.3, padding: 18, justifyContent: "space-between", overflow: "hidden",
+  },
+  newBadge: {
+    alignSelf: "flex-start", backgroundColor: "rgba(255,255,255,0.2)",
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, marginBottom: 8,
+  },
+  newBadgeText: { color: "#fff", fontSize: 9, fontFamily: "Inter_700Bold", letterSpacing: 1 },
+  heroBannerTitle: {
+    color: "#fff", fontSize: 22, fontFamily: "Inter_700Bold", lineHeight: 28,
+  },
+  heroShopBtn: {
+    flexDirection: "row", alignItems: "center", gap: 5,
+    backgroundColor: "#fff", borderRadius: 20,
+    paddingHorizontal: 14, paddingVertical: 7,
+    alignSelf: "flex-start",
+  },
+  heroShopBtnText: { color: "#1E3A8A", fontSize: 12, fontFamily: "Inter_700Bold" },
+  heroBannerRight: {
+    flex: 0.7, padding: 10, gap: 8, justifyContent: "center",
+  },
+  categoryChip: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10,
+  },
+  categoryChipLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
+
+  sectionHeader: {
+    flexDirection: "row", justifyContent: "space-between",
+    alignItems: "center", marginBottom: 14,
+  },
+  sectionTitle: { fontSize: 20, fontFamily: "Inter_700Bold", letterSpacing: -0.3 },
+  sectionUnderline: {
+    height: 3, width: 32, borderRadius: 2, marginTop: 4,
+    transformOrigin: "left",
+  },
+  seeAllBtn: {
+    flexDirection: "row", alignItems: "center", gap: 3,
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, borderWidth: 1,
+  },
+  seeAllText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+
+  hotLabel: {
+    paddingHorizontal: 10, paddingVertical: 5,
+    backgroundColor: "#EF4444", borderRadius: 10,
+    shadowColor: "#EF4444", shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35, shadowRadius: 6, elevation: 4,
+  },
+  hotLabelText: { color: "#fff", fontSize: 11, fontFamily: "Inter_700Bold", letterSpacing: 0.3 },
+
+  grid: {
+    flexDirection: "row", flexWrap: "wrap",
+    gap: 12, justifyContent: "space-between",
+  },
+
+  emptyState: { alignItems: "center", paddingVertical: 48, gap: 0 },
+  emptyCircle: {
+    width: 88, height: 88, borderRadius: 44,
+    alignItems: "center", justifyContent: "center",
+    marginBottom: 18,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1, shadowRadius: 12, elevation: 4,
+  },
+  emptyTitle: { fontSize: 18, fontFamily: "Inter_700Bold", marginBottom: 8 },
+  emptySub: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center", paddingHorizontal: 24 },
 });
