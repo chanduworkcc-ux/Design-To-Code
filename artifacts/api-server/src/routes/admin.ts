@@ -479,6 +479,7 @@ router.get("/config/public", async (_req, res) => {
     active_payment_gateway,
     no_returns, no_refunds, no_exchanges,
     delivery_info, product_disclaimer,
+    delivery_charge, tax_percent, service_charge, maintenance_charge,
   ] = await Promise.all([
     getConfig("maintenance_mode"),
     getConfig("maintenance_message"),
@@ -496,6 +497,10 @@ router.get("/config/public", async (_req, res) => {
     getConfig("no_exchanges"),
     getConfig("delivery_info"),
     getConfig("product_disclaimer"),
+    getConfig("delivery_charge"),
+    getConfig("tax_percent"),
+    getConfig("service_charge"),
+    getConfig("maintenance_charge"),
   ]);
   res.json({
     maintenance_mode,
@@ -514,6 +519,10 @@ router.get("/config/public", async (_req, res) => {
     no_exchanges,
     delivery_info,
     product_disclaimer,
+    delivery_charge,
+    tax_percent,
+    service_charge,
+    maintenance_charge,
   });
 });
 

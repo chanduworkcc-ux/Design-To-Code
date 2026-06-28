@@ -38,11 +38,11 @@ const BOOLEAN_CONFIGS: Record<string, { label: string; description: string }> = 
 
 const NUMERIC_CONFIGS: Record<string, { label: string; description: string }> = {
   coins_per_inr: { label: "Coins per ₹1", description: "How many coins equal 1 INR" },
-  referral_bonus_coins: { label: "Referral Bonus Coins", description: "Coins rewarded for successful referral" },
-  delivery_charge: { label: "Delivery Charge (₹)", description: "Standard delivery fee" },
-  free_delivery_threshold: { label: "Free Delivery Above (₹)", description: "Order value for free delivery" },
-  tax_rate: { label: "Tax Rate (%)", description: "Percentage tax applied to orders" },
-  service_charge_rate: { label: "Service Charge (%)", description: "Platform service fee" },
+  referral_coins: { label: "Referral Bonus Coins", description: "Coins rewarded for successful referral" },
+  delivery_charge: { label: "Delivery Charge (₹)", description: "Standard delivery fee added to every order" },
+  tax_percent: { label: "Tax / GST (%)", description: "Percentage tax applied to the order subtotal" },
+  service_charge: { label: "Service Charge (₹)", description: "Fixed platform service fee per order" },
+  maintenance_charge: { label: "Maintenance Charge (₹)", description: "Fixed maintenance fee per order" },
 };
 
 const TEXT_CONFIGS: Record<string, { label: string; description: string; placeholder?: string; multiline?: boolean }> = {

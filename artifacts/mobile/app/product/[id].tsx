@@ -145,7 +145,7 @@ export default function ProductDetailScreen() {
   }
 
   const delivery = parseFloat(config["delivery_charge"]) || 0;
-  const taxPct = parseFloat(config["tax_percentage"]) || 0;
+  const taxPct = parseFloat(config["tax_percent"]) || 0;
   const service = parseFloat(config["service_charge"]) || 0;
   const maintenance = parseFloat(config["maintenance_charge"]) || 0;
   const subtotal = product?.price ?? 0;
