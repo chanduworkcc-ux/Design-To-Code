@@ -3,9 +3,13 @@ import { Readable } from "stream";
 import { z } from "zod";
 import multer from "multer";
 import { randomUUID } from "crypto";
+import path from "path";
+import fs from "fs";
 import { ObjectStorageService, ObjectNotFoundError, objectStorageClient } from "../lib/objectStorage";
 import { authMiddleware, adminMiddleware } from "../middleware/auth";
 import { setConfig } from "../lib/config";
+
+const LOCAL_UPLOADS_DIR = path.join(__dirname, "../../public/uploads");
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
@@ -24,24 +28,29 @@ router.post("/storage/uploads/image", authMiddleware, adminMiddleware, upload.si
     return;
   }
   try {
-    const privateDir = process.env.PRIVATE_OBJECT_DIR ?? "";
-    if (!privateDir) {
-      res.status(503).json({ error: "Object storage not configured." });
-      return;
-    }
-    const ext = req.file.mimetype.split("/")[1] ?? "jpg";
+    const ext = (req.file.mimetype.split("/")[1] ?? "jpg").replace("jpeg", "jpg");
     const objectId = randomUUID();
-    const objectPath = `${privateDir}/uploads/${objectId}.${ext}`;
-    const parts = objectPath.startsWith("/") ? objectPath.slice(1).split("/") : objectPath.split("/");
-    const bucketName = parts[0];
-    const objectName = parts.slice(1).join("/");
-    const bucket = objectStorageClient.bucket(bucketName);
-    const file = bucket.file(objectName);
-    await file.save(req.file.buffer, { contentType: req.file.mimetype });
-    const servingPath = `/objects/uploads/${objectId}.${ext}`;
     const baseUrl = process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : "";
-    const imageUrl = `${baseUrl}/api/storage${servingPath}`;
-    res.json({ imageUrl, objectPath: servingPath });
+    const privateDir = process.env.PRIVATE_OBJECT_DIR ?? "";
+
+    if (privateDir) {
+      const objectPath = `${privateDir}/uploads/${objectId}.${ext}`;
+      const parts = objectPath.startsWith("/") ? objectPath.slice(1).split("/") : objectPath.split("/");
+      const bucketName = parts[0];
+      const objectName = parts.slice(1).join("/");
+      const bucket = objectStorageClient.bucket(bucketName);
+      const file = bucket.file(objectName);
+      await file.save(req.file.buffer, { contentType: req.file.mimetype });
+      const servingPath = `/objects/uploads/${objectId}.${ext}`;
+      const imageUrl = `${baseUrl}/api/storage${servingPath}`;
+      res.json({ imageUrl, objectPath: servingPath });
+    } else {
+      fs.mkdirSync(LOCAL_UPLOADS_DIR, { recursive: true });
+      const filename = `${objectId}.${ext}`;
+      fs.writeFileSync(path.join(LOCAL_UPLOADS_DIR, filename), req.file.buffer);
+      const imageUrl = `${baseUrl}/api/uploads/${filename}`;
+      res.json({ imageUrl, objectPath: `/uploads/${filename}` });
+    }
   } catch (error) {
     console.error("Image upload error", error);
     res.status(500).json({ error: "Failed to upload image." });

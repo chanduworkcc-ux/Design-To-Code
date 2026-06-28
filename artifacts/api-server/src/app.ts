@@ -3,6 +3,7 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import rateLimit from "express-rate-limit";
 import http from "http";
+import path from "path";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { activityLogger } from "./middleware/auth";
@@ -115,6 +116,11 @@ app.get(/^\/(?!api\/|mobile|assets\/|_expo\/)(.+)$/, (req: Request, res: Respons
   const path = (req.params as any)[0] ?? "";
   res.redirect(302, `/mobile/${path}`);
 });
+
+app.use("/api/uploads", express.static(path.join(__dirname, "../public/uploads"), {
+  maxAge: "7d",
+  setHeaders: (res) => { res.setHeader("Access-Control-Allow-Origin", "*"); },
+}));
 
 app.use("/api/auth/login", authLimiter);
 app.use("/api/auth/forgot-password", authLimiter);
