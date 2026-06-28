@@ -554,6 +554,7 @@ router.get("/announcement", async (_req, res) => {
 // ─── Public config (safe keys only) ──────────────────────────────────────────
 
 router.get("/config/public", async (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
   const [
     maintenance_mode, maintenance_message,
     login_enabled, registration_enabled,

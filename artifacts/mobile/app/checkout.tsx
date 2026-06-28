@@ -192,18 +192,23 @@ export default function CheckoutScreen() {
 
   // Fetch config + billing charges
   useEffect(() => {
-    fetch(`${BASE_URL}/config/public`)
+    fetch(`${BASE_URL}/config/public`, { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => {
         const gw = (d.active_payment_gateway as PaymentMethod) || "cod";
         setActiveGateway(gw);
         setPaymentMethod(gw);
         setStoreOpen((d.store_status ?? "on") !== "off");
+        // Use isNaN-safe parse so that 0 is honoured (parseFloat("0") || 40 would wrongly return 40)
+        const parseCharge = (val: any, fallback: number): number => {
+          const n = parseFloat(val);
+          return isNaN(n) ? fallback : n;
+        };
         setBillingConfig({
-          deliveryCharge: parseFloat(d.delivery_charge) || 40,
-          taxPercent: parseFloat(d.tax_percent) || 18,
-          serviceCharge: parseFloat(d.service_charge) || 10,
-          maintenanceCharge: parseFloat(d.maintenance_charge) || 5,
+          deliveryCharge:    parseCharge(d.delivery_charge,    40),
+          taxPercent:        parseCharge(d.tax_percent,        18),
+          serviceCharge:     parseCharge(d.service_charge,     10),
+          maintenanceCharge: parseCharge(d.maintenance_charge,  5),
         });
       })
       .catch(() => {

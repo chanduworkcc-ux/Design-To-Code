@@ -502,8 +502,14 @@ export default function SettingsScreen() {
                     <TextInput
                       style={styles.configInput}
                       value={edited[key] ?? ""}
-                      onChangeText={(v) => setEdited((prev) => ({ ...prev, [key]: v }))}
+                      onChangeText={(v) => {
+                        // Allow digits and a single decimal point only; never silently discard "0"
+                        const sanitised = v.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1");
+                        setEdited((prev) => ({ ...prev, [key]: sanitised }));
+                      }}
                       keyboardType="numeric"
+                      placeholder="0"
+                      placeholderTextColor="#9CA3AF"
                     />
                   </View>
                   {i < arr.length - 1 && <View style={styles.divider} />}

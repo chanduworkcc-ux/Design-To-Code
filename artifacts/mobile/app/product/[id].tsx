@@ -120,7 +120,7 @@ export default function ProductDetailScreen() {
 
   async function fetchConfig() {
     try {
-      const res = await fetch(`https://${process.env.EXPO_PUBLIC_DOMAIN}/api/config/public`);
+      const res = await fetch(`https://${process.env.EXPO_PUBLIC_DOMAIN}/api/config/public`, { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         setConfig(data as Record<string, string>);
@@ -147,10 +147,11 @@ export default function ProductDetailScreen() {
     else addToWishlist(product as any);
   }
 
-  const delivery = parseFloat(config["delivery_charge"]) || 0;
-  const taxPct = parseFloat(config["tax_percent"]) || 0;
-  const service = parseFloat(config["service_charge"]) || 0;
-  const maintenance = parseFloat(config["maintenance_charge"]) || 0;
+  const parseCharge = (val: any): number => { const n = parseFloat(val); return isNaN(n) ? 0 : n; };
+  const delivery = parseCharge(config["delivery_charge"]);
+  const taxPct = parseCharge(config["tax_percent"]);
+  const service = parseCharge(config["service_charge"]);
+  const maintenance = parseCharge(config["maintenance_charge"]);
   const subtotal = product?.price ?? 0;
   const taxAmt = parseFloat(((subtotal * taxPct) / 100).toFixed(2));
   const total = subtotal + delivery + taxAmt + service + maintenance;
