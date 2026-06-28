@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { StyleSheet, View, ViewStyle } from "react-native";
+import { StyleSheet, View, ViewStyle, StyleProp } from "react-native";
 import Animated, {
   Easing,
   interpolate,
@@ -16,7 +16,7 @@ import Animated, {
 interface FloatingOrbProps {
   color: string;
   size: number;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   delay?: number;
   amplitude?: number;
   duration?: number;
@@ -116,7 +116,7 @@ interface FloatInProps {
   children: React.ReactNode;
   delay?: number;
   distance?: number;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 export function FloatIn({ children, delay = 0, distance = 40, style }: FloatInProps) {
   const y = useSharedValue(distance);
@@ -322,7 +322,7 @@ export function GlowPulse({ color, size, children }: GlowPulseProps) {
 // Wraps children in a card that gently tilts in 3D on mount then settles.
 interface TiltCard3DProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   delay?: number;
 }
 export function TiltCard3D({ children, style, delay = 0 }: TiltCard3DProps) {
@@ -335,7 +335,7 @@ export function TiltCard3D({ children, style, delay = 0 }: TiltCard3DProps) {
     const d = delay;
     tiltY.value = withDelay(d, withSequence(
       withTiming(-10, { duration: 600, easing: Easing.out(Easing.cubic) }),
-      withTiming(0,   { duration: 800, easing: Easing.out(Easing.back) }),
+      withTiming(0,   { duration: 800, easing: Easing.out(Easing.back()) }),
     ));
     tiltX.value = withDelay(d, withSequence(
       withTiming(5,  { duration: 600 }),
@@ -362,7 +362,7 @@ export function TiltCard3D({ children, style, delay = 0 }: TiltCard3DProps) {
 // A wallet card with a moving shimmer shine effect.
 interface ShimmerWalletProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 export function ShimmerWallet({ children, style }: ShimmerWalletProps) {
   const shimmerX = useSharedValue(-200);

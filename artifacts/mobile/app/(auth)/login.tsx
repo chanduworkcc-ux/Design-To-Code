@@ -37,7 +37,7 @@ function Btn3D({ onPress, loading, label }: { onPress: () => void; loading: bool
   function handlePress() {
     scale.value = withSequence(
       withTiming(0.95, { duration: 80, easing: Easing.out(Easing.cubic) }),
-      withTiming(1,    { duration: 200, easing: Easing.out(Easing.back) }),
+      withTiming(1,    { duration: 200, easing: Easing.out(Easing.back()) }),
     );
     onPress();
   }

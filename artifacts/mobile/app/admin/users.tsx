@@ -751,8 +751,8 @@ export default function UsersScreen() {
         return;
       }
 
-      const fileUri = `${FileSystem.documentDirectory}xyloscart-users.csv`;
-      await FileSystem.writeAsStringAsync(fileUri, csv, { encoding: FileSystem.EncodingType.UTF8 });
+      const fileUri = `${FileSystem.cacheDirectory}xyloscart-users.csv`;
+      await FileSystem.writeAsStringAsync(fileUri, csv, { encoding: "utf8" });
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
         await Sharing.shareAsync(fileUri, { mimeType: "text/csv", dialogTitle: "Export Users CSV", UTI: "public.comma-separated-values-text" });

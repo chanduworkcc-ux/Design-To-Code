@@ -152,6 +152,8 @@ export default function CheckoutScreen() {
     deliveryCharge: 40, taxPercent: 18, serviceCharge: 10, maintenanceCharge: 5,
   });
 
+  const product = cart[0];
+
   // Coupon state
   const [couponInfo, setCouponInfo] = useState<CouponInfo | null>(null);
   const [couponVerifying, setCouponVerifying] = useState(false);
@@ -174,8 +176,6 @@ export default function CheckoutScreen() {
   // Success animation state
   const [showSuccessAnim, setShowSuccessAnim] = useState(false);
   const [successOrder, setSuccessOrder] = useState<{ orderNumber: string; total: number } | null>(null);
-
-  const product = cart[0];
 
   // Computed billing breakdown
   const subtotal = product ? Number(product.price) : 0;

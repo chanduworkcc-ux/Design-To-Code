@@ -62,7 +62,7 @@ function NotifBadge({ count }: { count: number }) {
   useEffect(() => {
     if (count === 0) return;
     scale.value = withSequence(
-      withTiming(1.4, { duration: 160, easing: Easing.out(Easing.back) }),
+      withTiming(1.4, { duration: 160, easing: Easing.out(Easing.back()) }),
       withTiming(1,   { duration: 200, easing: Easing.out(Easing.cubic) }),
     );
   }, [count]);
@@ -81,7 +81,7 @@ function CartBadge({ count }: { count: number }) {
   useEffect(() => {
     if (count === 0) return;
     scale.value = withSequence(
-      withTiming(1.4, { duration: 160, easing: Easing.out(Easing.back) }),
+      withTiming(1.4, { duration: 160, easing: Easing.out(Easing.back()) }),
       withTiming(1,   { duration: 200, easing: Easing.out(Easing.cubic) }),
     );
   }, [count]);
