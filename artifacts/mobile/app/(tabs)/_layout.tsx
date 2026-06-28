@@ -65,12 +65,11 @@ function TabItem({ tab, isActive, onPress, badge }: TabItemProps) {
     ]).start();
   }
 
-  const iconColor = activeAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [colors.mutedForeground, colors.primary],
-  });
   const pillOpacity = activeAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
-  const pillScale = activeAnim.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] });
+  const pillScale  = activeAnim.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] });
+
+  const iconColor  = isActive ? colors.primary : colors.mutedForeground;
+  const labelColor = isActive ? colors.primary : colors.mutedForeground;
 
   return (
     <Pressable
@@ -102,9 +101,7 @@ function TabItem({ tab, isActive, onPress, badge }: TabItemProps) {
 
         {/* Icon with optional badge */}
         <View style={{ position: "relative" }}>
-          <Animated.Text style={{ color: iconColor }}>
-            <Feather name={tab.icon as any} size={22} />
-          </Animated.Text>
+          <Feather name={tab.icon as any} size={22} color={iconColor} />
           {badge !== undefined && badge > 0 && (
             <View style={styles.badgeDot}>
               <Text style={styles.badgeDotText}>{badge > 9 ? "9+" : badge}</Text>
@@ -112,9 +109,9 @@ function TabItem({ tab, isActive, onPress, badge }: TabItemProps) {
           )}
         </View>
 
-        <Animated.Text style={[styles.tabLabel, { color: iconColor }]}>
+        <Text style={[styles.tabLabel, { color: labelColor }]}>
           {tab.label}
-        </Animated.Text>
+        </Text>
       </Animated.View>
     </Pressable>
   );
