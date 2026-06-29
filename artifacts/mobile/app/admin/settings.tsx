@@ -106,6 +106,118 @@ const GATEWAY_ENABLED_KEYS: Record<string, string> = {
   razorpay: "razorpay_enabled",
 };
 
+const DANGER_ACTIONS = [
+  {
+    id: "orders",
+    label: "Clear All Orders",
+    description: "Permanently deletes every order from the database.",
+    icon: "trash-2" as const,
+    color: "#DC2626",
+    endpoint: "/admin/reset/orders",
+    confirm: "This will permanently delete ALL orders. This cannot be undone. Type DELETE to confirm.",
+  },
+  {
+    id: "activity",
+    label: "Clear Activity Logs",
+    description: "Wipes all page visit and activity logs.",
+    icon: "activity" as const,
+    color: "#D97706",
+    endpoint: "/admin/reset/activity",
+    confirm: "This will permanently clear all activity logs. Type DELETE to confirm.",
+  },
+  {
+    id: "wallets",
+    label: "Reset All Wallets",
+    description: "Sets every user's wallet balance to zero and removes all transactions.",
+    icon: "credit-card" as const,
+    color: "#7C3AED",
+    endpoint: "/admin/reset/wallets",
+    confirm: "This will zero out all wallet balances and delete all transactions. Type DELETE to confirm.",
+  },
+  {
+    id: "all",
+    label: "Full App Reset",
+    description: "Removes all users (except admin), orders, wallets, and logs. Products and settings are kept.",
+    icon: "alert-octagon" as const,
+    color: "#991B1B",
+    endpoint: "/admin/reset/all",
+    confirm: "FULL RESET: Removes all customer accounts, orders, wallets, and activity. Admin and products are kept.\n\nType DELETE to confirm.",
+  },
+];
+
+function DangerZone({ apiRequest }: { apiRequest: (path: string, opts?: any) => Promise<any> }) {
+  const [busy, setBusy] = useState<string | null>(null);
+
+  function triggerReset(action: typeof DANGER_ACTIONS[0]) {
+    Alert.prompt(
+      `⚠️ ${action.label}`,
+      action.confirm,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Confirm",
+          style: "destructive",
+          onPress: async (val) => {
+            if (val?.trim().toUpperCase() !== "DELETE") {
+              Alert.alert("Cancelled", "You must type DELETE to confirm.");
+              return;
+            }
+            setBusy(action.id);
+            try {
+              const res = await apiRequest(action.endpoint, { method: "POST" });
+              Alert.alert("Done", res?.message ?? "Reset complete.");
+            } catch {
+              Alert.alert("Error", "Reset failed. Please try again.");
+            } finally {
+              setBusy(null);
+            }
+          },
+        },
+      ],
+      "plain-text",
+    );
+  }
+
+  return (
+    <View style={{ marginTop: 28, marginBottom: 8 }}>
+      <Text style={[dangerStyles.heading]}>DANGER ZONE</Text>
+      <View style={dangerStyles.card}>
+        {DANGER_ACTIONS.map((action, i) => (
+          <View key={action.id}>
+            {i > 0 && <View style={dangerStyles.divider} />}
+            <Pressable
+              style={({ pressed }) => [dangerStyles.row, pressed && { opacity: 0.7 }]}
+              onPress={() => triggerReset(action)}
+              disabled={busy === action.id}
+            >
+              <View style={[dangerStyles.iconWrap, { backgroundColor: action.color + "18" }]}>
+                {busy === action.id
+                  ? <ActivityIndicator size="small" color={action.color} />
+                  : <Feather name={action.icon} size={18} color={action.color} />}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[dangerStyles.label, { color: action.color }]}>{action.label}</Text>
+                <Text style={dangerStyles.desc}>{action.description}</Text>
+              </View>
+              <Feather name="chevron-right" size={16} color="#9CA3AF" />
+            </Pressable>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+const dangerStyles = StyleSheet.create({
+  heading: { fontSize: 11, fontFamily: "DMSans_700Bold", color: "#DC2626", letterSpacing: 1.2, marginBottom: 8, marginLeft: 4 },
+  card: { backgroundColor: "#fff", borderRadius: 16, borderWidth: 1.5, borderColor: "#FECACA", overflow: "hidden" },
+  row: { flexDirection: "row", alignItems: "center", gap: 12, padding: 16 },
+  iconWrap: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  label: { fontSize: 14, fontFamily: "DMSans_600SemiBold" },
+  desc: { fontSize: 12, fontFamily: "DMSans_400Regular", color: "#9CA3AF", marginTop: 2 },
+  divider: { height: 1, backgroundColor: "#FEE2E2", marginLeft: 16 },
+});
+
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -808,6 +920,8 @@ export default function SettingsScreen() {
                 : <Text style={styles.saveBtnLargeText}>Save All Changes</Text>}
             </Pressable>
           )}
+
+          <DangerZone apiRequest={apiRequest} />
         </ScrollView>
       )}
     </View>

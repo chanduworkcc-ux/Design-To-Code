@@ -1,6 +1,6 @@
 import { pgTable, text, integer, real, timestamp, pgEnum } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod/v4";
+import { z } from "zod";
 
 export const txTypeEnum = pgEnum("tx_type", ["credit", "debit"]);
 export const withdrawalStatusEnum = pgEnum("withdrawal_status", ["pending", "approved", "rejected"]);

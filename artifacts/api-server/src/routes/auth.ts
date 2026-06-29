@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
 import { db } from "@workspace/db";
 import { usersTable, walletTransactionsTable, referralsTable, passwordResetTokensTable } from "@workspace/db/schema";
-import { eq, or } from "drizzle-orm";
+import { eq, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { signToken, authMiddleware, type AuthRequest } from "../middleware/auth";
 import { getConfig } from "../lib/config";
@@ -189,6 +189,37 @@ router.post("/auth/register", async (req, res) => {
   if (status === "pending") {
     res.status(202).json({ pendingApproval: true });
     return;
+  }
+
+  // Award referral coins to the referrer if a valid referral code was used
+  if (referredById) {
+    try {
+      const rawCoins = await getConfig("referral_coins");
+      const coinsToAward = parseInt(rawCoins ?? "0", 10) || 0;
+      if (coinsToAward > 0) {
+        await db.insert(referralsTable).values({
+          id: uuidv4(),
+          referrerId: referredById,
+          refereeId: userId,
+          coinsAwarded: coinsToAward,
+          rewardedAt: new Date(),
+        });
+        await db.insert(walletTransactionsTable).values({
+          id: uuidv4(),
+          userId: referredById,
+          type: "credit",
+          coins: coinsToAward,
+          description: `Referral bonus — ${name} joined using your code`,
+          referenceId: userId,
+        });
+        await db
+          .update(usersTable)
+          .set({ walletBalance: sql`wallet_balance + ${coinsToAward}` })
+          .where(eq(usersTable.id, referredById));
+      }
+    } catch (_e) {
+      // Non-fatal — don't fail registration if referral reward fails
+    }
   }
 
   const token = signToken(userId);

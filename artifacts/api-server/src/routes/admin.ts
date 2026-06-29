@@ -863,4 +863,36 @@ router.get("/admin/export/users", authMiddleware, adminMiddleware, async (_req, 
   res.send(csv);
 });
 
+// ─── Admin Data Reset ─────────────────────────────────────────────────────────
+
+import { userPageLogsTable } from "@workspace/db/schema";
+
+router.post("/admin/reset/orders", authMiddleware, adminMiddleware, async (_req, res) => {
+  await db.delete(ordersTable);
+  res.json({ ok: true, message: "All orders have been cleared." });
+});
+
+router.post("/admin/reset/activity", authMiddleware, adminMiddleware, async (_req, res) => {
+  await db.delete(userPageLogsTable);
+  await db.delete(activityLogsTable);
+  res.json({ ok: true, message: "Activity and page logs have been cleared." });
+});
+
+router.post("/admin/reset/wallets", authMiddleware, adminMiddleware, async (_req, res) => {
+  await db.delete(walletTransactionsTable);
+  await db.delete(referralsTable);
+  await db.update(usersTable).set({ walletBalance: 0 });
+  res.json({ ok: true, message: "All wallet balances and transactions have been reset to zero." });
+});
+
+router.post("/admin/reset/all", authMiddleware, adminMiddleware, async (_req, res) => {
+  await db.delete(ordersTable);
+  await db.delete(walletTransactionsTable);
+  await db.delete(referralsTable);
+  await db.delete(userPageLogsTable);
+  await db.delete(activityLogsTable);
+  await db.delete(usersTable).where(sql`role != 'admin'`);
+  res.json({ ok: true, message: "All app data has been reset. Admin accounts and products are preserved." });
+});
+
 export default router;
