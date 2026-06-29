@@ -149,32 +149,40 @@ function DangerZone({ apiRequest }: { apiRequest: (path: string, opts?: any) => 
   const [busy, setBusy] = useState<string | null>(null);
 
   function triggerReset(action: typeof DANGER_ACTIONS[0]) {
-    Alert.prompt(
+    Alert.alert(
       `⚠️ ${action.label}`,
-      action.confirm,
+      `${action.description}\n\nThis action cannot be undone. Are you sure?`,
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: "Confirm",
+          text: "Yes, Reset",
           style: "destructive",
-          onPress: async (val) => {
-            if (val?.trim().toUpperCase() !== "DELETE") {
-              Alert.alert("Cancelled", "You must type DELETE to confirm.");
-              return;
-            }
-            setBusy(action.id);
-            try {
-              const res = await apiRequest(action.endpoint, { method: "POST" });
-              Alert.alert("Done", res?.message ?? "Reset complete.");
-            } catch {
-              Alert.alert("Error", "Reset failed. Please try again.");
-            } finally {
-              setBusy(null);
-            }
+          onPress: () => {
+            Alert.alert(
+              "Final Confirmation",
+              "Tap CONFIRM to permanently execute this reset.",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "CONFIRM",
+                  style: "destructive",
+                  onPress: async () => {
+                    setBusy(action.id);
+                    try {
+                      const res = await apiRequest(action.endpoint, { method: "POST" });
+                      Alert.alert("Done", res?.message ?? "Reset complete.");
+                    } catch {
+                      Alert.alert("Error", "Reset failed. Please try again.");
+                    } finally {
+                      setBusy(null);
+                    }
+                  },
+                },
+              ],
+            );
           },
         },
       ],
-      "plain-text",
     );
   }
 
