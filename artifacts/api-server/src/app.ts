@@ -59,7 +59,7 @@ app.get("/health", (_req, res) => {
 // Forward /mobile/* to the mobile dev proxy (port 18115).
 // Replit routes all root paths through the API server (paths=["/api","/"]),
 // so we must explicitly proxy mobile traffic here.
-const MOBILE_PROXY_PORT = parseInt(process.env.MOBILE_PORT || "18115", 10);
+const MOBILE_PROXY_PORT = parseInt(process.env.MOBILE_PORT || "3000", 10);
 app.use("/mobile", (req: Request, res: Response) => {
   const targetPath = "/mobile" + (req.url || "/");
   const fwdHeaders: Record<string, any> = { ...req.headers, host: `localhost:${MOBILE_PROXY_PORT}` };

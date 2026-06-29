@@ -17,7 +17,7 @@ const { spawn } = require("child_process");
 const path = require("path");
 
 const PORT = parseInt(process.env.PORT || "3000", 10);
-const METRO_PORT = parseInt(process.env.METRO_PORT || "18100", 10);
+const METRO_PORT = parseInt(process.env.METRO_PORT || "18200", 10);
 const BASE_PATH = "/mobile";
 const projectRoot = path.resolve(__dirname, "..");
 
