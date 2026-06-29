@@ -75,14 +75,14 @@ export async function seedAdminUser(): Promise<void> {
   const existing = await db
     .select({ id: usersTable.id })
     .from(usersTable)
-    .where(eq(usersTable.email, "admin@xyloscart.com"));
+    .where(eq(usersTable.email, "admin@xylocart.com"));
 
   if (existing.length > 0) return;
 
   const passwordHash = await bcrypt.hash("admin123", 12);
   await db.insert(usersTable).values({
     id: uuidv4(),
-    email: "admin@xyloscart.com",
+    email: "admin@xylocart.com",
     passwordHash,
     name: "Admin",
     deviceUuid: "admin-device-seed",

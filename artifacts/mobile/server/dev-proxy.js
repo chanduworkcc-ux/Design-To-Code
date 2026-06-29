@@ -24,7 +24,33 @@ const projectRoot = path.resolve(__dirname, "..");
 function rewriteHtml(html) {
   return html
     .replace(/\ssrc="(\/[^"]+)"/g, (m, p) => ` src="${BASE_PATH}${p}"`)
-    .replace(/\shref="(\/[^"]+)"/g, (m, p) => ` href="${BASE_PATH}${p}"`);
+    .replace(/\shref="(\/[^"]+)"/g, (m, p) => ` href="${BASE_PATH}${p}"`)
+    .replace(/<script[^>]*replit[^>]*><\/script>/gi, "")
+    .replace(/<script[^>]*src="[^"]*replit[^"]*"[^>]*><\/script>/gi, "")
+    .replace('</head>', `<style>
+      iframe[src*="replit"],
+      div[class*="replit-badge"],div[id*="replit-badge"],
+      [data-replit-badge],a[href*="replit.com/badge"] { display:none!important; }
+    </style><script>
+      (function(){
+        function removeBadge(){
+          document.querySelectorAll('iframe,div,a').forEach(function(el){
+            var src = el.src||el.href||'';
+            var cls = el.className||'';
+            var id = el.id||'';
+            if(src.includes('replit')||cls.includes('replit')||id.includes('replit')||el.getAttribute('data-replit-badge')!=null){
+              el.remove();
+            }
+          });
+        }
+        var obs = new MutationObserver(removeBadge);
+        obs.observe(document.documentElement,{childList:true,subtree:true});
+        document.addEventListener('DOMContentLoaded', removeBadge);
+        setTimeout(removeBadge, 500);
+        setTimeout(removeBadge, 1500);
+        setTimeout(removeBadge, 3000);
+      })();
+    </script></head>`);
 }
 
 function startMetro() {
