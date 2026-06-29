@@ -57,15 +57,18 @@ SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
-function LandingInitializer() {
+function AuthGuard() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (loading) return;
+    if (user) return;
     AsyncStorage.getItem("has_seen_landing").then((seen) => {
-      if (!seen && !user) {
+      if (!seen) {
         router.replace("/landing" as any);
+      } else {
+        router.replace("/(auth)/login" as any);
       }
     });
   }, [loading, user]);
@@ -192,7 +195,7 @@ export default function RootLayout() {
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <LandingInitializer />
+            <AuthGuard />
             <PushNotificationInit />
             <AppProvider>
               <LanguageProvider>

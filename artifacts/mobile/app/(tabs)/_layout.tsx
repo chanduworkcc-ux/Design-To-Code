@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
-import { Tabs } from "expo-router";
+import { Tabs, useRouter } from "expo-router";
 import React, { useEffect, useRef } from "react";
 import {
   Animated,
@@ -234,8 +234,14 @@ function CustomTabBar({ state, navigation }: any) {
 }
 
 export default function TabLayout() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  const router = useRouter();
   usePresence(user?.id ?? null);
+
+  useEffect(() => {
+    if (loading) return;
+    if (!user) router.replace("/(auth)/login" as any);
+  }, [user, loading]);
 
   return (
     <Tabs
