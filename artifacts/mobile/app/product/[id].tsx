@@ -1,3 +1,4 @@
+import { BASE_URL } from "@/lib/api";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -120,7 +121,7 @@ export default function ProductDetailScreen() {
 
   async function fetchConfig() {
     try {
-      const res = await fetch(`https://${process.env.EXPO_PUBLIC_DOMAIN}/api/config/public`, { cache: "no-store" });
+      const res = await fetch(`${BASE_URL}/config/public`, { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         setConfig(data as Record<string, string>);

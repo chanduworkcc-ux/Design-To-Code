@@ -1,3 +1,4 @@
+import { BASE_URL } from "@/lib/api";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -25,7 +26,6 @@ import Animated, {
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 
-const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
 const { width: W, height: H } = Dimensions.get("window");
 

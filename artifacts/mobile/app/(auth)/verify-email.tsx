@@ -1,3 +1,4 @@
+import { BASE_URL } from "@/lib/api";
 import { Feather } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import React, { useRef, useState } from "react";
@@ -22,7 +23,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 
-const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
 function Btn3D({ onPress, loading, label }: { onPress: () => void; loading: boolean; label: string }) {
   const scale = useSharedValue(1);

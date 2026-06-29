@@ -1,9 +1,9 @@
+import { BASE_URL } from "@/lib/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Platform } from "react-native";
 import * as Application from "expo-application";
 
-const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
 export interface AuthUser {
   id: string;

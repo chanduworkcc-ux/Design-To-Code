@@ -1,7 +1,7 @@
+import { SOCKET_URL } from "@/lib/api";
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 
-const SOCKET_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
 interface SocketContextType {
   socket: Socket | null;

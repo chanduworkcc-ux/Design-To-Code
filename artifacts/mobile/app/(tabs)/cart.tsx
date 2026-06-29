@@ -1,3 +1,4 @@
+import { BASE_URL } from "@/lib/api";
 import { Feather } from "@expo/vector-icons";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -28,7 +29,6 @@ import { usePageTracker } from "@/hooks/usePageTracker";
 import { useLanguage } from "@/context/LanguageContext";
 import { FloatIn, FloatingOrb, FloatingParticle, ShimmerWallet, PulsingRing } from "@/components/ThreeD";
 
-const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
 function Empty3DCart() {
   const colors = useColors();

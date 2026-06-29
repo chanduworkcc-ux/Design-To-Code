@@ -1,3 +1,4 @@
+import { BASE_URL } from "@/lib/api";
 import {
   DMSans_400Regular,
   DMSans_500Medium,
@@ -34,7 +35,6 @@ import NetworkErrorScreen from "@/components/NetworkErrorScreen";
 import SuspendedScreen from "./suspended";
 import BannedScreen from "./banned";
 
-const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
 function PushNotificationInit() {
   const { token } = useAuth();

@@ -1,8 +1,8 @@
+import { SOCKET_URL } from "@/lib/api";
 import { useEffect, useRef } from "react";
 import { AppState, type AppStateStatus } from "react-native";
 import { io as socketIO, type Socket } from "socket.io-client";
 
-const SOCKET_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
 /**
  * Maintains a socket.io connection that tells the server this user is online.

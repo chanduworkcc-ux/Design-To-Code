@@ -8,7 +8,7 @@ async function seed() {
   const passwordHash = await bcrypt.hash("admin123", 12);
   await db.insert(usersTable).values({
     id: uuidv4(),
-    email: "admin@xyloscart.com",
+    email: "admin@xylocart.com",
     passwordHash,
     name: "XyloCart Admin",
     deviceUuid: "admin-device-" + Date.now(),

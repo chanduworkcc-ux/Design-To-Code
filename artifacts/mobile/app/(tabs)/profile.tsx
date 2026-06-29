@@ -1,3 +1,4 @@
+import { BASE_URL } from "@/lib/api";
 import { Feather } from "@expo/vector-icons";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -88,7 +89,7 @@ export default function ProfileScreen() {
   }, [user, loading]);
 
   useEffect(() => {
-    const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
+
     fetch(`${BASE_URL}/config/public`)
       .then((r) => r.json())
       .then((d) => {
@@ -102,7 +103,7 @@ export default function ProfileScreen() {
   const fetchRecentOrder = useCallback(async () => {
     if (!user) return;
     try {
-      const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
+  
       const token = await AsyncStorage.getItem("@xc_token");
       const res = await fetch(`${BASE_URL}/orders`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
       if (res.ok) {
@@ -152,7 +153,7 @@ export default function ProfileScreen() {
 
   async function handleCheckUpdates() {
     try {
-      const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
+  
       const res = await fetch(`${BASE_URL}/config/public`);
       if (!res.ok) { Alert.alert("Error", "Could not reach the server. Please try again."); return; }
       const d = await res.json();

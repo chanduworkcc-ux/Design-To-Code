@@ -1,3 +1,4 @@
+import { BASE_URL } from "@/lib/api";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
@@ -201,7 +202,6 @@ export default function ReferralsScreen() {
   useEffect(() => { fetchNetwork(); }, [fetchNetwork]);
 
   useEffect(() => {
-    const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
     fetch(`${BASE_URL}/config/public`)
       .then((r) => r.json())
       .then((d) => { if (d?.referral_base_url) setReferralBaseUrl(d.referral_base_url); })

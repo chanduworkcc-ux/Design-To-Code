@@ -1,3 +1,4 @@
+import { BASE_URL } from "@/lib/api";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -22,7 +23,6 @@ import { usePageTracker } from "@/hooks/usePageTracker";
 import PurchaseSuccessAnimation from "@/components/PurchaseSuccessAnimation";
 import PolicyBadges from "@/components/PolicyBadges";
 
-const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
 type PaymentMethod = "cod" | "razorpay" | "phonepe";
 

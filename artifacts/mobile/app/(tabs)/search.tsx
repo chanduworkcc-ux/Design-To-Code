@@ -1,3 +1,4 @@
+import { BASE_URL } from "@/lib/api";
 import { Feather } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -27,7 +28,6 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import { FloatIn, FloatingOrb, PulsingRing, FloatingParticle, SpinBox3D, GlowPulse } from "@/components/ThreeD";
 
-const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
 function SearchOrb({ colors }: { colors: any }) {
   return (

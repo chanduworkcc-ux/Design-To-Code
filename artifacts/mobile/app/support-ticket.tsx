@@ -1,3 +1,4 @@
+import { BASE_URL } from "@/lib/api";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
@@ -21,8 +22,7 @@ import { io, type Socket } from "socket.io-client";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 
-const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
-const SOCKET_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+import { SOCKET_URL } from "@/lib/api";
 
 type TicketCategory = "order_issue" | "payment" | "product" | "account" | "other";
 type TicketStatus = "open" | "in_progress" | "resolved" | "closed";

@@ -1,3 +1,4 @@
+import { BASE_URL } from "@/lib/api";
 import { Feather } from "@expo/vector-icons";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -38,7 +39,6 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 
-const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
 function getISTGreeting(): string {
   const istTime = new Date(Date.now() + 5.5 * 60 * 60 * 1000);

@@ -1,7 +1,7 @@
+import { BASE_URL } from "@/lib/api";
 import { useState, useEffect, useCallback } from "react";
 import { Platform } from "react-native";
 
-const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
 export function useNetworkStatus() {
   const [isOnline, setIsOnline] = useState(true);

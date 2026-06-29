@@ -1,3 +1,4 @@
+import { BASE_URL } from "@/lib/api";
 import { useEffect, useRef } from "react";
 import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
@@ -12,7 +13,6 @@ Notifications.setNotificationHandler({
   }),
 });
 
-const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
 async function registerPushToken(authToken: string): Promise<void> {
   if (Platform.OS === "web") return;

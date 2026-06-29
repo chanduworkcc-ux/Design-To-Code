@@ -1,7 +1,7 @@
+import { BASE_URL } from "@/lib/api";
 import { useEffect, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
 
 /**
  * Tracks how long the user spends on a screen and sends a page-visit event

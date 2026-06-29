@@ -56,9 +56,9 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 - Import `zod` as `"zod"`, never `"zod/v4"` — esbuild cannot resolve the package.json exports map
 - `@workspace/api-zod` is listed in api-server deps but may be unused; safe to remove if causing issues
-- Mobile workflow uses `EXPO_PUBLIC_DOMAIN` env var to construct API base URL
-- Admin credentials for mobile admin panel login: `admin@gmail.com` / `123456` (hardcoded in `app/admin/index.tsx`)
-- API admin user seeded via `scripts/src/seed.ts`: `admin@xyloscart.com` / `admin123`
+- API base URL is centralised in `artifacts/mobile/lib/api.ts` — uses relative `/api` on web (avoids CORS), absolute URL on native
+- Admin credentials: `admin@xylocart.com` / `admin123` (seeded via `scripts/src/seed.ts` and `artifacts/api-server/src/lib/config.ts`)
+- Splash screen duration is 12 seconds (by design in `SplashOverlay.tsx`)
 
 ## Pointers
 
