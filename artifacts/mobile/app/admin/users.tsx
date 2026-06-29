@@ -41,6 +41,23 @@ interface AdminUser {
   verifiedAt: string | null;
 }
 
+interface IpBannedAccount {
+  id: string;
+  email: string;
+  name: string;
+  status: string;
+  registrationIp: string | null;
+  banReason: string | null;
+  createdAt: string;
+  mobileNumber: string | null;
+}
+
+interface IpBannedGroup {
+  ip: string;
+  accounts: IpBannedAccount[];
+  count: number;
+}
+
 interface ActivityLog {
   id: string;
   path: string;
@@ -678,7 +695,7 @@ export default function UsersScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"all" | "active" | "banned" | "suspended" | "pending" | "online">("all");
+  const [filter, setFilter] = useState<"all" | "active" | "banned" | "suspended" | "pending" | "online" | "ip_banned">("all");
   const [logsUser, setLogsUser] = useState<AdminUser | null>(null);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
@@ -686,6 +703,9 @@ export default function UsersScreen() {
   const [suspendUser, setSuspendUser] = useState<AdminUser | null>(null);
   const [banUser, setBanUser] = useState<AdminUser | null>(null);
   const [realtimeOnline, setRealtimeOnline] = useState<Set<string>>(new Set());
+  const [ipBannedGroups, setIpBannedGroups] = useState<IpBannedGroup[]>([]);
+  const [ipBannedTotal, setIpBannedTotal] = useState(0);
+  const [ipBannedLoading, setIpBannedLoading] = useState(false);
   const topPadding = Platform.OS === "web" ? 0 : insets.top;
 
   // Poll real-time online users from socket.io every 10 seconds
@@ -724,7 +744,33 @@ export default function UsersScreen() {
     }
   }
 
-  useEffect(() => { fetchUsers(); }, []);
+  useEffect(() => { fetchUsers(); fetchIpBanned(); }, []);
+
+  async function fetchIpBanned() {
+    setIpBannedLoading(true);
+    try {
+      const res = await apiRequest("/admin/users/ip-banned");
+      if (res.ok) {
+        const d = await res.json();
+        setIpBannedGroups(d.groups ?? []);
+        setIpBannedTotal(d.total ?? 0);
+      }
+    } catch {}
+    setIpBannedLoading(false);
+  }
+
+  async function handleUnbanIpAccount(accountId: string) {
+    const res = await apiRequest(`/admin/users/${accountId}/unban`, { method: "POST" });
+    if (res.ok) {
+      setIpBannedGroups((prev) =>
+        prev.map((g) => ({
+          ...g,
+          accounts: g.accounts.filter((a) => a.id !== accountId),
+        })).filter((g) => g.accounts.length > 0)
+      );
+      setUsers((prev) => prev.map((u) => u.id === accountId ? { ...u, status: "active" as const, banReason: null } : u));
+    }
+  }
 
   async function fetchUsers() {
     try {
@@ -814,13 +860,14 @@ export default function UsersScreen() {
   });
 
   const pendingCount = users.filter((u) => u.status === "pending").length;
-  const filterTabs: { key: typeof filter; label: string }[] = [
+  const filterTabs: { key: typeof filter | "ip_banned"; label: string }[] = [
     { key: "all", label: `All (${users.length})` },
     { key: "pending", label: `Pending${pendingCount > 0 ? ` (${pendingCount})` : ""}` },
     { key: "online", label: `Online (${users.filter((u) => u.online).length})` },
     { key: "active", label: `Active (${users.filter((u) => u.status === "active").length})` },
     { key: "banned", label: `Banned (${users.filter((u) => u.status === "banned").length})` },
     { key: "suspended", label: `Suspended (${users.filter((u) => u.status === "suspended").length})` },
+    { key: "ip_banned", label: `🚨 IP Banned (${ipBannedTotal})` },
   ];
 
   return (
@@ -877,6 +924,82 @@ export default function UsersScreen() {
           <ActivityIndicator size="large" color="#2563EB" />
           <Text style={styles.loadingText}>Loading users...</Text>
         </View>
+      ) : filter === "ip_banned" ? (
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await Promise.all([fetchUsers(), fetchIpBanned()]); setRefreshing(false); }} />}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={{ backgroundColor: "#FEF2F2", borderRadius: 12, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: "#FECACA", flexDirection: "row", gap: 10, alignItems: "flex-start" }}>
+            <Feather name="shield-off" size={18} color="#DC2626" style={{ marginTop: 1 }} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontFamily: "DMSans_700Bold", fontSize: 13, color: "#991B1B", marginBottom: 3 }}>
+                Auto-Banned: Multiple Accounts (Same IP)
+              </Text>
+              <Text style={{ fontFamily: "DMSans_400Regular", fontSize: 12, color: "#7F1D1D", lineHeight: 18 }}>
+                These accounts were automatically banned because they share the same IP address. You can unban individual accounts after reviewing.
+              </Text>
+            </View>
+          </View>
+
+          {ipBannedLoading ? (
+            <View style={styles.center}>
+              <ActivityIndicator size="large" color="#DC2626" />
+            </View>
+          ) : ipBannedGroups.length === 0 ? (
+            <View style={styles.center}>
+              <Feather name="check-circle" size={40} color="#10B981" />
+              <Text style={[styles.emptyText, { color: "#10B981" }]}>No IP bans detected</Text>
+            </View>
+          ) : (
+            ipBannedGroups.map((group) => (
+              <View key={group.ip} style={{ backgroundColor: "#fff", borderRadius: 14, borderWidth: 1, borderColor: "#FECACA", marginBottom: 14, overflow: "hidden" }}>
+                <View style={{ backgroundColor: "#FEF2F2", paddingHorizontal: 16, paddingVertical: 10, flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Feather name="wifi" size={15} color="#DC2626" />
+                  <Text style={{ fontFamily: "DMSans_700Bold", fontSize: 13, color: "#DC2626", flex: 1 }}>IP: {group.ip}</Text>
+                  <View style={{ backgroundColor: "#DC2626", borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 }}>
+                    <Text style={{ fontFamily: "DMSans_700Bold", fontSize: 11, color: "#fff" }}>{group.count} accounts</Text>
+                  </View>
+                </View>
+                {group.accounts.map((acc, idx) => (
+                  <View key={acc.id} style={[{ paddingHorizontal: 16, paddingVertical: 12 }, idx < group.accounts.length - 1 && { borderBottomWidth: 1, borderBottomColor: "#FEE2E2" }]}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                      <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#FEE2E2", alignItems: "center", justifyContent: "center" }}>
+                        <Text style={{ fontFamily: "DMSans_700Bold", fontSize: 14, color: "#DC2626" }}>{acc.name.charAt(0).toUpperCase()}</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontFamily: "DMSans_600SemiBold", fontSize: 13, color: "#111827" }}>{acc.name}</Text>
+                        <Text style={{ fontFamily: "DMSans_400Regular", fontSize: 12, color: "#6B7280" }}>{acc.email}</Text>
+                        {acc.mobileNumber && (
+                          <Text style={{ fontFamily: "DMSans_400Regular", fontSize: 11, color: "#9CA3AF" }}>{acc.mobileNumber}</Text>
+                        )}
+                        <Text style={{ fontFamily: "DMSans_400Regular", fontSize: 11, color: "#9CA3AF", marginTop: 2 }}>
+                          Joined {new Date(acc.createdAt).toLocaleDateString("en-IN")}
+                        </Text>
+                      </View>
+                      <Pressable
+                        style={{ backgroundColor: "#ECFDF5", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: "#10B981", flexDirection: "row", alignItems: "center", gap: 5 }}
+                        onPress={() => {
+                          Alert.alert(
+                            "Unban Account",
+                            `Unban ${acc.name} (${acc.email})? Their account will be restored to active.`,
+                            [
+                              { text: "Cancel", style: "cancel" },
+                              { text: "Unban", style: "default", onPress: () => handleUnbanIpAccount(acc.id) },
+                            ]
+                          );
+                        }}
+                      >
+                        <Feather name="unlock" size={13} color="#10B981" />
+                        <Text style={{ fontFamily: "DMSans_600SemiBold", fontSize: 12, color: "#10B981" }}>Unban</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            ))
+          )}
+        </ScrollView>
       ) : (
         <ScrollView
           contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]}

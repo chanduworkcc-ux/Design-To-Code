@@ -68,6 +68,7 @@ export default function LoginScreen() {
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const [suspended, setSuspended] = useState<{ until: string | null; reason: string } | null>(null);
   const [rejected, setRejected] = useState(false);
+  const [multiAccountBanned, setMultiAccountBanned] = useState(false);
   const [portalClosed, setPortalClosed] = useState<{ active: boolean; message: string }>({ active: false, message: "" });
   const [portalLoading, setPortalLoading] = useState(true);
 
@@ -99,6 +100,8 @@ export default function LoginScreen() {
       else if (e.message?.startsWith("suspended:")) {
         const [, until, ...rest] = e.message.split(":");
         setSuspended({ until: until || null, reason: rest.join(":").trim() || "Suspended by administrator" });
+      } else if (e.message?.startsWith("Account banned:") && e.message?.includes("Multiple accounts")) {
+        setMultiAccountBanned(true);
       } else { setError(e.message ?? "Login failed"); }
     } finally { setLoading(false); }
   }
@@ -192,6 +195,55 @@ export default function LoginScreen() {
               <Text style={{ fontSize: 14, fontFamily: "DMSans_600SemiBold", color: colors.text }}>Back</Text>
             </Pressable>
           </View>
+        </View>
+      </View>
+    );
+  }
+
+  if (multiAccountBanned) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 32, backgroundColor: colors.background }}>
+        <View style={{ alignItems: "center", gap: 20, width: "100%" }}>
+          <View style={{ width: 90, height: 90, borderRadius: 45, backgroundColor: "#FEE2E2", alignItems: "center", justifyContent: "center" }}>
+            <Feather name="shield-off" size={40} color="#DC2626" />
+          </View>
+          <Text style={{ fontSize: 24, fontFamily: "DMSans_700Bold", color: colors.text, textAlign: "center" }}>
+            Account Permanently Banned
+          </Text>
+          <View style={{ backgroundColor: "#FEF2F2", borderRadius: 16, padding: 20, borderWidth: 1, borderColor: "#FECACA", width: "100%", gap: 12 }}>
+            <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
+              <Feather name="alert-triangle" size={18} color="#DC2626" style={{ marginTop: 2 }} />
+              <Text style={{ flex: 1, fontSize: 14, fontFamily: "DMSans_600SemiBold", color: "#991B1B", lineHeight: 22 }}>
+                Multiple Accounts Detected
+              </Text>
+            </View>
+            <Text style={{ fontSize: 14, fontFamily: "DMSans_400Regular", color: "#7F1D1D", lineHeight: 22 }}>
+              You have been creating multiple accounts using the same IP address. This violates our Terms of Service.
+            </Text>
+            <Text style={{ fontSize: 14, fontFamily: "DMSans_400Regular", color: "#7F1D1D", lineHeight: 22 }}>
+              All accounts associated with your IP address have been permanently banned.
+            </Text>
+          </View>
+          <View style={{ backgroundColor: colors.card, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: colors.border, width: "100%", gap: 8 }}>
+            <Text style={{ fontSize: 13, fontFamily: "DMSans_700Bold", color: colors.text }}>
+              Want to appeal this ban?
+            </Text>
+            <Text style={{ fontSize: 13, fontFamily: "DMSans_400Regular", color: colors.mutedForeground, lineHeight: 20 }}>
+              Contact our support team and we will review your case.
+            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 }}>
+              <Feather name="mail" size={15} color="#2563EB" />
+              <Text style={{ fontSize: 14, fontFamily: "DMSans_600SemiBold", color: "#2563EB" }}>
+                support@xylocart.com
+              </Text>
+            </View>
+          </View>
+          <Pressable
+            style={{ borderRadius: 14, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 24, paddingVertical: 12, width: "100%", alignItems: "center" }}
+            onPress={() => setMultiAccountBanned(false)}
+          >
+            <Text style={{ fontSize: 14, fontFamily: "DMSans_600SemiBold", color: colors.text }}>Go Back</Text>
+          </Pressable>
         </View>
       </View>
     );

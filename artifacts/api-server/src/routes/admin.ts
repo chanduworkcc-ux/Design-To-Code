@@ -193,6 +193,35 @@ router.get("/admin/users/:id/logs", authMiddleware, adminMiddleware, async (req,
   res.json({ logs });
 });
 
+router.get("/admin/users/ip-banned", authMiddleware, adminMiddleware, async (req, res) => {
+  const bannedUsers = await db
+    .select({
+      id: usersTable.id,
+      email: usersTable.email,
+      name: usersTable.name,
+      status: usersTable.status,
+      registrationIp: usersTable.registrationIp,
+      banReason: usersTable.banReason,
+      createdAt: usersTable.createdAt,
+      mobileNumber: usersTable.mobileNumber,
+    })
+    .from(usersTable)
+    .where(and(eq(usersTable.status, "banned"), sql`${usersTable.banReason} LIKE '%Multiple accounts%'`))
+    .orderBy(desc(usersTable.createdAt));
+
+  const groups: Record<string, typeof bannedUsers> = {};
+  for (const u of bannedUsers) {
+    const ip = u.registrationIp ?? "unknown";
+    if (!groups[ip]) groups[ip] = [];
+    groups[ip].push(u);
+  }
+
+  const result = Object.entries(groups).map(([ip, accounts]) => ({ ip, accounts, count: accounts.length }))
+    .sort((a, b) => b.count - a.count);
+
+  res.json({ groups: result, total: bannedUsers.length });
+});
+
 router.post("/admin/users/:id/ban", authMiddleware, adminMiddleware, async (req, res) => {
   const id = req.params.id as string;
   const { reason } = req.body;

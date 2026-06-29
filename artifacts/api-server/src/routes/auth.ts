@@ -69,31 +69,49 @@ router.post("/auth/register", async (req, res) => {
     }
   }
 
-  // ── IP-based fraud detection ──────────────────────────────────────────────
+  // ── IP-based multi-account detection → auto-ban ALL accounts on this IP ──
   if (clientIp && clientIp !== "unknown") {
     try {
       const sameIpUsers = await db
-        .select({ id: usersTable.id, email: usersTable.email, name: usersTable.name })
+        .select({ id: usersTable.id, email: usersTable.email, name: usersTable.name, status: usersTable.status })
         .from(usersTable)
         .where(eq(usersTable.registrationIp, clientIp));
 
       if (sameIpUsers.length > 0) {
         const existingUser = sameIpUsers[0];
+        const multiAccountReason = `Multiple accounts detected: IP address ${clientIp} was used to register multiple accounts. All associated accounts have been automatically suspended.`;
+
+        // Ban ALL existing accounts on this IP
+        for (const su of sameIpUsers) {
+          if (su.status !== "banned") {
+            try {
+              await db.update(usersTable)
+                .set({ status: "banned", banReason: multiAccountReason })
+                .where(eq(usersTable.id, su.id));
+              await insertAutoNotification(
+                su.id,
+                "🚫 Account Banned: Multiple Accounts",
+                "Your account has been permanently banned because multiple accounts were registered from the same IP address. Contact support to appeal.",
+                "alert-circle",
+              );
+            } catch {}
+          }
+        }
+
+        // Alert all admins in real-time and via notification
         const alertPayload = {
           type: "fraud_alert",
-          message: `Multi-account detected: new registration from IP ${clientIp} already used by ${existingUser.email}`,
+          message: `🚨 Auto-ban: Multi-account from IP ${clientIp} — ${sameIpUsers.length + 1} accounts (${sameIpUsers.map((u) => u.email).join(", ")} + new: ${email})`,
           suspiciousEmail: email,
           suspiciousName: name,
           existingEmail: existingUser.email,
           ip: clientIp,
           deviceUuid,
+          accountCount: sameIpUsers.length + 1,
           timestamp: new Date().toISOString(),
         };
-
-        // Emit real-time alert to all connected admins
         try { getIO().to("admins").emit("fraud_alert", alertPayload); } catch {}
 
-        // Notify all admin users in-app
         const admins = await db
           .select({ id: usersTable.id, email: usersTable.email })
           .from(usersTable)
@@ -103,18 +121,15 @@ router.post("/auth/register", async (req, res) => {
           try {
             await insertAutoNotification(
               admin.id,
-              "🚨 Fraud Alert: Multi-Account Registration",
-              `New account "${name}" (${email}) registered from IP ${clientIp} — same IP as existing account ${existingUser.email}.`,
+              "🚨 Auto-Ban: Multi-Account IP Detected",
+              `IP ${clientIp} used to register ${sameIpUsers.length + 1} accounts. All existing accounts banned automatically. New attempt by "${name}" (${email}) blocked.`,
               "alert-triangle",
             );
           } catch {}
-
-          // Send email alert
           try {
-            const adminEmail = await getConfig("smtp_from") || admin.email;
             await sendEmail({
               to: admin.email,
-              subject: "🚨 XyloCart Fraud Alert: Multi-Account Registration Detected",
+              subject: "🚨 XyloCart Auto-Ban: Multi-Account Registration Blocked",
               html: fraudAlertEmailHtml({
                 suspiciousEmail: email,
                 suspiciousName: name,
@@ -126,6 +141,14 @@ router.post("/auth/register", async (req, res) => {
             });
           } catch {}
         }
+
+        // Block the new registration attempt
+        res.status(403).json({
+          error: "multi_account",
+          message: "Your account has been blocked because multiple accounts were detected from the same IP address. Please contact support.",
+          supportEmail: "support@xylocart.com",
+        });
+        return;
       }
     } catch {}
   }
