@@ -167,7 +167,7 @@ export default function RegisterScreen() {
           {/* Full Name */}
           <View style={styles.field}>
             <Text style={[styles.label, { color: colors.text }]}>Full Name</Text>
-            <View style={[styles.inputRow, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+            <View style={[styles.inputRow, { backgroundColor: "transparent", borderColor: colors.border }]}>
               <Feather name="user" size={18} color={colors.mutedForeground} />
               <TextInput
                 style={[styles.input, { color: colors.text }]}
@@ -184,7 +184,7 @@ export default function RegisterScreen() {
           {/* Email */}
           <View style={styles.field}>
             <Text style={[styles.label, { color: colors.text }]}>Email</Text>
-            <View style={[styles.inputRow, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+            <View style={[styles.inputRow, { backgroundColor: "transparent", borderColor: colors.border }]}>
               <Feather name="mail" size={18} color={colors.mutedForeground} />
               <TextInput
                 style={[styles.input, { color: colors.text }]}
@@ -202,7 +202,7 @@ export default function RegisterScreen() {
           {/* Mobile Number */}
           <View style={styles.field}>
             <Text style={[styles.label, { color: colors.text }]}>Mobile Number</Text>
-            <View style={[styles.inputRow, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+            <View style={[styles.inputRow, { backgroundColor: "transparent", borderColor: colors.border }]}>
               <Feather name="phone" size={18} color={colors.mutedForeground} />
               <TextInput
                 style={[styles.input, { color: colors.text }]}
@@ -225,7 +225,7 @@ export default function RegisterScreen() {
           {/* Password */}
           <View style={styles.field}>
             <Text style={[styles.label, { color: colors.text }]}>Password</Text>
-            <View style={[styles.inputRow, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+            <View style={[styles.inputRow, { backgroundColor: "transparent", borderColor: colors.border }]}>
               <Feather name="lock" size={18} color={colors.mutedForeground} />
               <TextInput
                 style={[styles.input, { color: colors.text }]}

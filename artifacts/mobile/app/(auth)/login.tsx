@@ -286,7 +286,7 @@ export default function LoginScreen() {
 
           <View style={styles.field}>
             <Text style={[styles.label, { color: colors.text }]}>Email</Text>
-            <View style={[styles.inputRow, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+            <View style={[styles.inputRow, { backgroundColor: "transparent", borderColor: colors.border }]}>
               <Feather name="mail" size={18} color={colors.mutedForeground} />
               <TextInput
                 style={[styles.input, { color: colors.text }]}
@@ -303,7 +303,7 @@ export default function LoginScreen() {
 
           <View style={styles.field}>
             <Text style={[styles.label, { color: colors.text }]}>Password</Text>
-            <View style={[styles.inputRow, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+            <View style={[styles.inputRow, { backgroundColor: "transparent", borderColor: colors.border }]}>
               <Feather name="lock" size={18} color={colors.mutedForeground} />
               <TextInput
                 style={[styles.input, { color: colors.text }]}
