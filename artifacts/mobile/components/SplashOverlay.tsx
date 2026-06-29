@@ -11,8 +11,8 @@ import {
 
 const { width, height } = Dimensions.get("window");
 
-const SPLASH_DURATION = 2500;
-const FADE_OUT_DURATION = 500;
+const SPLASH_DURATION = 1200;
+const FADE_OUT_DURATION = 300;
 
 interface Props {
   onDone: () => void;
