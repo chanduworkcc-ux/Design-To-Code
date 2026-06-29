@@ -147,6 +147,7 @@ export default function CheckoutScreen() {
   const [errors, setErrors] = useState<Partial<Record<keyof ShippingForm, boolean>>>({});
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [showAddressPicker, setShowAddressPicker] = useState(false);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
   const [couponCode, setCouponCode] = useState("");
   const [placing, setPlacing] = useState(false);
@@ -262,6 +263,7 @@ export default function CheckoutScreen() {
   }, [user]);
 
   function applySavedAddress(a: SavedAddress) {
+    setSelectedAddressId(a.id);
     setForm((f) => ({
       ...f,
       fullName: a.fullName,
@@ -554,19 +556,99 @@ export default function CheckoutScreen() {
             </View>
 
             {/* Shipping Address */}
-            <View style={styles.sectionHeaderRow}>
-              <Text style={[styles.sectionLabel, { color: colors.mutedForeground, marginBottom: 0 }]}>SHIPPING DETAILS</Text>
-              {savedAddresses.length > 0 && (
-                <Pressable
-                  style={[styles.useSavedBtn, { backgroundColor: colors.accent }]}
-                  onPress={() => setShowAddressPicker(true)}
-                >
-                  <Feather name="map-pin" size={12} color={colors.primary} />
-                  <Text style={[styles.useSavedText, { color: colors.primary }]}>Use Saved</Text>
-                </Pressable>
-              )}
-            </View>
+            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>SHIPPING DETAILS</Text>
+
+            {/* Saved address cards */}
+            {savedAddresses.length > 0 && (
+              <View style={{ marginBottom: 12 }}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: 0, paddingBottom: 4 }}>
+                  {savedAddresses.map((a) => {
+                    const isSelected = selectedAddressId === a.id;
+                    const labelIcon = a.label === "Home" ? "home" : a.label === "Work" ? "briefcase" : "map-pin";
+                    return (
+                      <Pressable
+                        key={a.id}
+                        onPress={() => applySavedAddress(a)}
+                        style={[
+                          styles.addrCard,
+                          {
+                            borderColor: isSelected ? colors.primary : colors.border,
+                            backgroundColor: isSelected ? colors.primary + "12" : colors.card,
+                          },
+                        ]}
+                      >
+                        <View style={[styles.addrCardIconWrap, { backgroundColor: isSelected ? colors.primary : colors.accent }]}>
+                          <Feather name={labelIcon as any} size={14} color={isSelected ? "#fff" : colors.primary} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                            <Text style={[styles.addrCardLabel, { color: isSelected ? colors.primary : colors.text }]}>{a.label}</Text>
+                            {a.isDefault && (
+                              <View style={[styles.defaultPill, { backgroundColor: isSelected ? colors.primary : colors.accent }]}>
+                                <Text style={[styles.defaultPillText, { color: isSelected ? "#fff" : colors.primary }]}>Default</Text>
+                              </View>
+                            )}
+                            {isSelected && (
+                              <Feather name="check-circle" size={13} color={colors.primary} />
+                            )}
+                          </View>
+                          <Text style={[styles.addrCardName, { color: colors.mutedForeground }]} numberOfLines={1}>{a.fullName}</Text>
+                          <Text style={[styles.addrCardLine, { color: colors.mutedForeground }]} numberOfLines={1}>
+                            {[a.line1, a.city].filter(Boolean).join(", ")}
+                          </Text>
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                  <Pressable
+                    style={[styles.addrCard, styles.addrCardNew, { borderColor: colors.border, backgroundColor: colors.card }]}
+                    onPress={() => { router.push("/addresses" as any); }}
+                  >
+                    <View style={[styles.addrCardIconWrap, { backgroundColor: colors.accent }]}>
+                      <Feather name="plus" size={14} color={colors.primary} />
+                    </View>
+                    <Text style={[styles.addrCardLabel, { color: colors.primary }]}>Add New</Text>
+                  </Pressable>
+                </ScrollView>
+
+                {selectedAddressId && (() => {
+                  const sel = savedAddresses.find((a) => a.id === selectedAddressId);
+                  if (!sel) return null;
+                  const labelIcon = sel.label === "Home" ? "home" : sel.label === "Work" ? "briefcase" : "map-pin";
+                  return (
+                    <View style={[styles.selectedAddrBanner, { backgroundColor: colors.primary + "10", borderColor: colors.primary }]}>
+                      <Feather name={labelIcon as any} size={15} color={colors.primary} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.selectedAddrTitle, { color: colors.primary }]}>Delivering to {sel.label}</Text>
+                        <Text style={[styles.selectedAddrDetail, { color: colors.text }]} numberOfLines={2}>
+                          {[sel.line1, sel.line2, sel.city, sel.state, sel.pincode].filter(Boolean).join(", ")}
+                        </Text>
+                      </View>
+                      <Pressable onPress={() => setShowAddressPicker(true)} style={[styles.changeAddrBtn, { borderColor: colors.primary }]}>
+                        <Text style={[styles.changeAddrText, { color: colors.primary }]}>Change</Text>
+                      </Pressable>
+                    </View>
+                  );
+                })()}
+              </View>
+            )}
+
+            {savedAddresses.length === 0 && (
+              <Pressable
+                style={[styles.noAddrHint, { backgroundColor: colors.accent, borderColor: colors.border }]}
+                onPress={() => router.push("/addresses" as any)}
+              >
+                <Feather name="map-pin" size={15} color={colors.primary} />
+                <Text style={[styles.noAddrHintText, { color: colors.primary }]}>Save an address for faster checkout →</Text>
+              </Pressable>
+            )}
+
             <View style={[styles.card, { backgroundColor: colors.background, borderColor: colors.border, padding: 14 }]}>
+              {selectedAddressId && (
+                <Text style={[{ fontSize: 11, fontFamily: "DMSans_500Medium", color: colors.mutedForeground, marginBottom: 10 }]}>
+                  ✏️ You can still edit the fields below before placing your order.
+                </Text>
+              )}
               <View style={styles.row2}>
                 <View style={{ flex: 1 }}>
                   <FormField
@@ -710,32 +792,57 @@ export default function CheckoutScreen() {
           {/* Saved Address Picker */}
           <Modal visible={showAddressPicker} animationType="slide" presentationStyle="pageSheet" transparent>
             <View style={styles.pickerOverlay}>
-              <View style={[styles.pickerSheet, { backgroundColor: colors.card }]}>
-                <View style={styles.pickerHeader}>
-                  <Text style={[styles.pickerTitle, { color: colors.text }]}>Choose Address</Text>
-                  <Pressable onPress={() => setShowAddressPicker(false)}>
+              <View style={[styles.pickerSheet, { backgroundColor: colors.background }]}>
+                <View style={[styles.pickerHeader, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+                  <Feather name="map-pin" size={18} color={colors.primary} />
+                  <Text style={[styles.pickerTitle, { color: colors.text }]}>Choose Delivery Address</Text>
+                  <Pressable onPress={() => setShowAddressPicker(false)} style={{ padding: 4 }}>
                     <Feather name="x" size={22} color={colors.mutedForeground} />
                   </Pressable>
                 </View>
                 <ScrollView contentContainerStyle={{ padding: 16, gap: 10 }}>
-                  {savedAddresses.map((a) => (
-                    <Pressable
-                      key={a.id}
-                      style={[styles.addrOption, { borderColor: colors.border }]}
-                      onPress={() => { applySavedAddress(a); setShowAddressPicker(false); }}
-                    >
-                      <View style={[styles.addrLabelBadge, { backgroundColor: colors.accent }]}>
-                        <Text style={[styles.addrLabelText, { color: colors.primary }]}>{a.label}</Text>
-                        {a.isDefault && <Text style={[styles.addrDefault, { color: colors.primary }]}> · Default</Text>}
-                      </View>
-                      <Text style={[styles.addrName, { color: colors.text }]}>{a.fullName} · {a.phone}</Text>
-                      <Text style={[styles.addrLine, { color: colors.mutedForeground }]}>
-                        {[a.line1, a.line2, a.city, a.state, a.pincode].filter(Boolean).join(", ")}
-                      </Text>
-                    </Pressable>
-                  ))}
+                  {savedAddresses.map((a) => {
+                    const isSelected = selectedAddressId === a.id;
+                    const labelIcon = a.label === "Home" ? "home" : a.label === "Work" ? "briefcase" : "map-pin";
+                    return (
+                      <Pressable
+                        key={a.id}
+                        style={[
+                          styles.addrOption,
+                          {
+                            borderColor: isSelected ? colors.primary : colors.border,
+                            backgroundColor: isSelected ? colors.primary + "08" : colors.card,
+                          },
+                        ]}
+                        onPress={() => { applySavedAddress(a); setShowAddressPicker(false); }}
+                      >
+                        <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 12 }}>
+                          <View style={[styles.addrPickerIcon, { backgroundColor: isSelected ? colors.primary : colors.accent }]}>
+                            <Feather name={labelIcon as any} size={16} color={isSelected ? "#fff" : colors.primary} />
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                              <Text style={[styles.addrPickerLabel, { color: isSelected ? colors.primary : colors.text }]}>{a.label}</Text>
+                              {a.isDefault && (
+                                <View style={[styles.defaultPill, { backgroundColor: isSelected ? colors.primary : colors.accent }]}>
+                                  <Text style={[styles.defaultPillText, { color: isSelected ? "#fff" : colors.primary }]}>Default</Text>
+                                </View>
+                              )}
+                            </View>
+                            <Text style={[styles.addrPickerName, { color: colors.text }]}>{a.fullName} · {a.phone}</Text>
+                            <Text style={[styles.addrPickerAddr, { color: colors.mutedForeground }]}>
+                              {[a.line1, a.line2, a.city, a.state, a.pincode].filter(Boolean).join(", ")}
+                            </Text>
+                          </View>
+                          {isSelected && (
+                            <Feather name="check-circle" size={20} color={colors.primary} style={{ marginTop: 2 }} />
+                          )}
+                        </View>
+                      </Pressable>
+                    );
+                  })}
                   <Pressable
-                    style={[styles.addNewAddrBtn, { borderColor: colors.primary }]}
+                    style={[styles.addNewAddrBtn, { borderColor: colors.primary, backgroundColor: colors.accent }]}
                     onPress={() => { setShowAddressPicker(false); router.push("/addresses" as any); }}
                   >
                     <Feather name="plus" size={16} color={colors.primary} />
@@ -861,9 +968,9 @@ const styles = StyleSheet.create({
   policyBoxText: { fontSize: 12, fontFamily: "DMSans_400Regular", color: "#92400E", lineHeight: 18 },
   pickerOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
   pickerSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: "70%", paddingTop: 8 },
-  pickerHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 14 },
-  pickerTitle: { fontSize: 17, fontFamily: "DMSans_700Bold" },
-  addrOption: { borderWidth: 1, borderRadius: 12, padding: 12, gap: 4 },
+  pickerHeader: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
+  pickerTitle: { flex: 1, fontSize: 17, fontFamily: "DMSans_700Bold" },
+  addrOption: { borderWidth: 1.5, borderRadius: 14, padding: 14 },
   addrLabelBadge: { flexDirection: "row", alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, marginBottom: 2 },
   addrLabelText: { fontSize: 11, fontFamily: "DMSans_700Bold" },
   addrDefault: { fontSize: 11, fontFamily: "DMSans_500Medium" },
@@ -871,6 +978,29 @@ const styles = StyleSheet.create({
   addrLine: { fontSize: 12, fontFamily: "DMSans_400Regular" },
   addNewAddrBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderWidth: 1.5, borderStyle: "dashed", borderRadius: 12, paddingVertical: 14 },
   addNewAddrText: { fontSize: 14, fontFamily: "DMSans_600SemiBold" },
+  // Address picker modal
+  addrPickerIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  addrPickerLabel: { fontSize: 14, fontFamily: "DMSans_700Bold" },
+  addrPickerName: { fontSize: 13, fontFamily: "DMSans_500Medium", marginBottom: 2 },
+  addrPickerAddr: { fontSize: 12, fontFamily: "DMSans_400Regular", lineHeight: 18 },
+  // Saved address cards (horizontal scroll)
+  addrCard: { flexDirection: "row", alignItems: "flex-start", gap: 10, borderWidth: 1.5, borderRadius: 14, padding: 12, width: 200 },
+  addrCardNew: { alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 6, width: 90 },
+  addrCardIconWrap: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  addrCardLabel: { fontSize: 13, fontFamily: "DMSans_700Bold" },
+  addrCardName: { fontSize: 11, fontFamily: "DMSans_400Regular", marginTop: 2 },
+  addrCardLine: { fontSize: 11, fontFamily: "DMSans_400Regular" },
+  defaultPill: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 20 },
+  defaultPillText: { fontSize: 9, fontFamily: "DMSans_700Bold" },
+  // Selected address banner
+  selectedAddrBanner: { flexDirection: "row", alignItems: "flex-start", gap: 10, borderWidth: 1.5, borderRadius: 12, padding: 12, marginTop: 10 },
+  selectedAddrTitle: { fontSize: 12, fontFamily: "DMSans_700Bold", marginBottom: 2 },
+  selectedAddrDetail: { fontSize: 12, fontFamily: "DMSans_400Regular", lineHeight: 18 },
+  changeAddrBtn: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
+  changeAddrText: { fontSize: 11, fontFamily: "DMSans_600SemiBold" },
+  // No saved address hint
+  noAddrHint: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11, marginBottom: 12 },
+  noAddrHintText: { fontSize: 13, fontFamily: "DMSans_500Medium" },
   // Already purchased banner
   alreadyBanner: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#EF4444", borderRadius: 12, padding: 12, marginBottom: 4 },
   alreadyBannerText: { flex: 1, color: "#fff", fontSize: 13, fontFamily: "DMSans_500Medium" },
