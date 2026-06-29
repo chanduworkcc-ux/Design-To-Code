@@ -85,6 +85,7 @@ const productSchema = z.object({
   rating: z.number().min(0).max(5).optional(),
   description: z.string().optional(),
   imageUrl: z.string().optional(),
+  imageUrls: z.array(z.string()).optional(),
   stock: z.number().int().min(0).optional(),
   isActive: z.boolean().optional(),
   tags: z.array(z.string()).optional(),

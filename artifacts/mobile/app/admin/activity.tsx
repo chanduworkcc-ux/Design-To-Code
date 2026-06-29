@@ -291,11 +291,22 @@ export default function ActivityScreen() {
                     </Text>
 
                     {/* Action label */}
-                    {log.action && log.action !== "visit" && (
-                      <Text style={styles.logAction} numberOfLines={1}>
-                        ↳ {log.action}
-                      </Text>
-                    )}
+                    {log.action && log.action !== "visit" && (() => {
+                      const a = log.action;
+                      if (a.startsWith("search:")) {
+                        const q = a.slice(7);
+                        return (
+                          <Text style={[styles.logAction, { color: "#7C3AED" }]} numberOfLines={1}>
+                            🔍 searched for: "{q}"
+                          </Text>
+                        );
+                      }
+                      return (
+                        <Text style={styles.logAction} numberOfLines={1}>
+                          ↳ {a}
+                        </Text>
+                      );
+                    })()}
                   </View>
 
                   {/* Timestamp */}

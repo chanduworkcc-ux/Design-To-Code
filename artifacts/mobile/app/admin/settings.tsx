@@ -29,6 +29,7 @@ interface ConfigItem {
 const BOOLEAN_CONFIGS: Record<string, { label: string; description: string }> = {
   registration_open: { label: "Registration Open", description: "Allow new user sign-ups" },
   maintenance_mode: { label: "Maintenance Mode", description: "Take the app offline for maintenance" },
+  auth_required: { label: "Login Required to Browse", description: "Force users to log in before browsing the shop (guest mode off)" },
   cod_enabled: { label: "Cash on Delivery", description: "Allow COD payment method" },
   announcement_enabled: { label: "Announcement Bar", description: "Show announcement banner on home screen" },
   no_returns: { label: "No Returns", description: "Show 'No Returns' policy badge on product pages" },

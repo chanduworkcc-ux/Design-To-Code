@@ -108,11 +108,8 @@ export default function ProfileScreen() {
       if (res.ok) {
         const d = await res.json();
         const orders = d.orders ?? [];
-        const active = orders.filter((o: any) =>
-          o.status === "confirmed" || o.status === "shipped" || o.status === "delivered"
-        );
-        setOrderCount(active.length);
-        setRecentOrder(active.length > 0 ? active[0] : null);
+        setOrderCount(orders.length);
+        setRecentOrder(orders.length > 0 ? orders[0] : null);
       } else {
         setRecentOrder(null);
       }

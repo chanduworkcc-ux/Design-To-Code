@@ -31,6 +31,7 @@ interface Product {
   rating: number;
   description: string | null;
   imageUrl: string | null;
+  imageUrls: string[];
   stock: number;
   isActive: boolean;
   tags: string[];
@@ -42,7 +43,7 @@ const CATEGORIES = ["Clothing", "Electronics", "Books", "Home", "Beauty", "Sport
 const emptyForm = {
   name: "", category: "Electronics", price: "", originalPrice: "",
   discount: "", rating: "4.5", description: "", imageUrl: "", stock: "100",
-  isActive: true, tags: [] as string[],
+  isActive: true, tags: [] as string[], imageUrls: [] as string[],
 };
 
 export default function ProductsScreen() {
@@ -100,6 +101,7 @@ export default function ProductsScreen() {
       stock: String(p.stock),
       isActive: p.isActive,
       tags: p.tags ?? [],
+      imageUrls: p.imageUrls ?? [],
     });
     setShowModal(true);
   }
@@ -126,6 +128,7 @@ export default function ProductsScreen() {
       rating: parseFloat(form.rating) || 4.5,
       description: form.description || undefined,
       imageUrl: form.imageUrl || undefined,
+      imageUrls: form.imageUrls.length > 0 ? form.imageUrls : undefined,
       stock: parseInt(form.stock) || 100,
       isActive: form.isActive,
       tags: form.tags,
@@ -166,6 +169,23 @@ export default function ProductsScreen() {
     }
   }
 
+  async function uploadImageAsset(asset: ImagePicker.ImagePickerAsset): Promise<string | null> {
+    const formData = new FormData();
+    if (Platform.OS === "web") {
+      const resp = await fetch(asset.uri);
+      const blob = await resp.blob();
+      formData.append("image", blob, "product.jpg");
+    } else {
+      formData.append("image", { uri: asset.uri, name: "product.jpg", type: asset.mimeType ?? "image/jpeg" } as any);
+    }
+    const res = await apiRequest("/storage/uploads/image", { method: "POST", body: formData });
+    if (res.ok) {
+      const d = await res.json();
+      return d.imageUrl as string;
+    }
+    return null;
+  }
+
   async function pickImageFromGallery() {
     if (Platform.OS !== "web") {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -181,32 +201,58 @@ export default function ProductsScreen() {
       quality: 0.8,
     });
     if (result.canceled || !result.assets?.[0]) return;
-    const asset = result.assets[0];
     setUploadingImage(true);
     try {
-      const formData = new FormData();
-      if (Platform.OS === "web") {
-        const resp = await fetch(asset.uri);
-        const blob = await resp.blob();
-        formData.append("image", blob, "product.jpg");
+      const url = await uploadImageAsset(result.assets[0]);
+      if (url) {
+        setForm((f) => ({ ...f, imageUrl: f.imageUrl || url, imageUrls: f.imageUrls.includes(url) ? f.imageUrls : [...f.imageUrls, url] }));
       } else {
-        formData.append("image", { uri: asset.uri, name: "product.jpg", type: asset.mimeType ?? "image/jpeg" } as any);
-      }
-      const res = await apiRequest("/storage/uploads/image", {
-        method: "POST",
-        body: formData,
-      });
-      if (res.ok) {
-        const d = await res.json();
-        setForm((f) => ({ ...f, imageUrl: d.imageUrl }));
-      } else {
-        const err = await res.json();
-        Alert.alert("Upload Failed", err.error ?? "Could not upload image. You can still paste an image URL manually.");
+        Alert.alert("Upload Failed", "Could not upload image. You can still paste an image URL manually.");
       }
     } catch {
       Alert.alert("Upload Failed", "Could not upload image. You can still paste an image URL manually.");
     }
     setUploadingImage(false);
+  }
+
+  async function pickAdditionalImage() {
+    if (Platform.OS !== "web") {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission Required", "Please allow access to your photo library.");
+        return;
+      }
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets?.[0]) return;
+    setUploadingImage(true);
+    try {
+      const url = await uploadImageAsset(result.assets[0]);
+      if (url) {
+        setForm((f) => ({
+          ...f,
+          imageUrls: f.imageUrls.includes(url) ? f.imageUrls : [...f.imageUrls, url],
+          imageUrl: f.imageUrl || url,
+        }));
+      } else {
+        Alert.alert("Upload Failed", "Could not upload the image.");
+      }
+    } catch {
+      Alert.alert("Upload Failed", "Could not upload image.");
+    }
+    setUploadingImage(false);
+  }
+
+  function removeImageUrl(url: string) {
+    setForm((f) => {
+      const next = f.imageUrls.filter((u) => u !== url);
+      return { ...f, imageUrls: next, imageUrl: f.imageUrl === url ? (next[0] ?? "") : f.imageUrl };
+    });
   }
 
   async function handleAddStock(p: Product) {
@@ -436,36 +482,73 @@ export default function ProductsScreen() {
             <FormField label="Discount (%)" value={form.discount} onChangeText={(v) => setForm({ ...form, discount: v })} placeholder="20 (optional)" keyboardType="numeric" />
             <FormField label="Rating (0–5)" value={form.rating} onChangeText={(v) => setForm({ ...form, rating: v })} placeholder="4.5" keyboardType="numeric" />
             <FormField label="Stock" value={form.stock} onChangeText={(v) => setForm({ ...form, stock: v })} placeholder="100" keyboardType="numeric" />
-            {/* Image Picker */}
+            {/* Product Images (multi-upload) */}
             <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>Product Image</Text>
-              <Pressable
-                style={styles.imagePicker}
-                onPress={pickImageFromGallery}
-                disabled={uploadingImage}
-              >
-                {uploadingImage ? (
-                  <ActivityIndicator color="#2563EB" />
-                ) : form.imageUrl ? (
-                  <Image source={{ uri: form.imageUrl }} style={styles.imagePreview} />
-                ) : (
-                  <View style={styles.imagePlaceholder}>
-                    <Feather name="image" size={28} color="#9CA3AF" />
-                    <Text style={styles.imagePlaceholderText}>Tap to pick from Gallery</Text>
-                  </View>
-                )}
-              </Pressable>
-              {form.imageUrl ? (
-                <Pressable style={styles.changeImageBtn} onPress={pickImageFromGallery} disabled={uploadingImage}>
-                  <Feather name="camera" size={14} color="#2563EB" />
-                  <Text style={styles.changeImageText}>Change Image</Text>
+              <Text style={styles.fieldLabel}>Product Images ({form.imageUrls.length})</Text>
+
+              {/* Gallery of uploaded images */}
+              {form.imageUrls.length > 0 && (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
+                  {form.imageUrls.map((url) => (
+                    <View key={url} style={styles.multiImgWrap}>
+                      <Image source={{ uri: url }} style={styles.multiImgThumb} />
+                      {form.imageUrl === url && (
+                        <View style={styles.primaryBadge}>
+                          <Text style={styles.primaryBadgeText}>Primary</Text>
+                        </View>
+                      )}
+                      <View style={styles.multiImgActions}>
+                        {form.imageUrl !== url && (
+                          <Pressable style={styles.setMainBtn} onPress={() => setForm((f) => ({ ...f, imageUrl: url }))}>
+                            <Text style={styles.setMainText}>Set Main</Text>
+                          </Pressable>
+                        )}
+                        <Pressable style={styles.removeImgBtn} onPress={() => removeImageUrl(url)}>
+                          <Feather name="x" size={12} color="#EF4444" />
+                        </Pressable>
+                      </View>
+                    </View>
+                  ))}
+                  {/* Add more button */}
+                  <Pressable style={styles.addImgTile} onPress={pickAdditionalImage} disabled={uploadingImage}>
+                    {uploadingImage ? (
+                      <ActivityIndicator color="#2563EB" size="small" />
+                    ) : (
+                      <>
+                        <Feather name="plus" size={22} color="#2563EB" />
+                        <Text style={styles.addImgText}>Add</Text>
+                      </>
+                    )}
+                  </Pressable>
+                </ScrollView>
+              )}
+
+              {/* Empty state picker */}
+              {form.imageUrls.length === 0 && (
+                <Pressable style={styles.imagePicker} onPress={pickImageFromGallery} disabled={uploadingImage}>
+                  {uploadingImage ? (
+                    <ActivityIndicator color="#2563EB" />
+                  ) : (
+                    <View style={styles.imagePlaceholder}>
+                      <Feather name="image" size={28} color="#9CA3AF" />
+                      <Text style={styles.imagePlaceholderText}>Tap to pick from Gallery</Text>
+                      <Text style={{ fontSize: 11, color: "#C4C4C4", fontFamily: "DMSans_400Regular" }}>You can add multiple images</Text>
+                    </View>
+                  )}
                 </Pressable>
-              ) : null}
-              <Text style={styles.imageUrlHint}>Or paste URL:</Text>
+              )}
+
+              <Text style={styles.imageUrlHint}>Or paste primary image URL:</Text>
               <TextInput
                 style={styles.fieldInput}
                 value={form.imageUrl}
-                onChangeText={(v) => setForm({ ...form, imageUrl: v })}
+                onChangeText={(v) => {
+                  setForm((f) => ({
+                    ...f,
+                    imageUrl: v,
+                    imageUrls: v && !f.imageUrls.includes(v) ? [...f.imageUrls, v] : f.imageUrls,
+                  }));
+                }}
                 placeholder="https://..."
                 placeholderTextColor="#9CA3AF"
                 keyboardType="url"
@@ -603,6 +686,16 @@ const styles = StyleSheet.create({
   changeImageBtn: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8 },
   changeImageText: { fontSize: 13, fontFamily: "DMSans_600SemiBold", color: "#2563EB" },
   imageUrlHint: { fontSize: 11, fontFamily: "DMSans_500Medium", color: "#9CA3AF", marginTop: 10, marginBottom: 4 },
+  multiImgWrap: { width: 90, alignItems: "center", gap: 4 },
+  multiImgThumb: { width: 90, height: 90, borderRadius: 10, borderWidth: 1, borderColor: "#E5EAF8" },
+  primaryBadge: { backgroundColor: "#2563EB", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
+  primaryBadgeText: { fontSize: 9, fontFamily: "DMSans_700Bold", color: "#fff" },
+  multiImgActions: { flexDirection: "row", gap: 4, alignItems: "center" },
+  setMainBtn: { backgroundColor: "#EFF6FF", paddingHorizontal: 6, paddingVertical: 3, borderRadius: 6 },
+  setMainText: { fontSize: 9, fontFamily: "DMSans_600SemiBold", color: "#2563EB" },
+  removeImgBtn: { backgroundColor: "#FEF2F2", width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center" },
+  addImgTile: { width: 90, height: 90, borderRadius: 10, borderWidth: 1.5, borderColor: "#2563EB", borderStyle: "dashed", alignItems: "center", justifyContent: "center", gap: 4, backgroundColor: "#EFF6FF" },
+  addImgText: { fontSize: 11, fontFamily: "DMSans_600SemiBold", color: "#2563EB" },
   tagsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   tagChip: {
     flexDirection: "row", alignItems: "center", gap: 5,

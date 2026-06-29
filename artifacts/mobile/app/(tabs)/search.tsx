@@ -77,7 +77,7 @@ function IdleSearchScene({ colors }: { colors: any }) {
 }
 
 export default function SearchScreen() {
-  usePageTracker("search", "Search");
+  const { logAction } = usePageTracker("search", "Search");
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t } = useLanguage();
@@ -87,6 +87,15 @@ export default function SearchScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef<TextInput>(null);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function trackSearch(q: string) {
+    if (!q.trim() || q.trim().length < 2) return;
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
+      logAction(`search:${q.trim().toLowerCase()}`);
+    }, 1200);
+  }
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
 
   const searchBarScale = useSharedValue(1);
@@ -181,6 +190,7 @@ export default function SearchScreen() {
                 onChangeText={(text) => {
                   setQuery(text);
                   setShowSuggestions(true);
+                  trackSearch(text);
                 }}
                 returnKeyType="search"
                 autoCorrect={false}

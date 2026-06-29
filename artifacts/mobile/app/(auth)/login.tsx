@@ -71,6 +71,7 @@ export default function LoginScreen() {
   const [multiAccountBanned, setMultiAccountBanned] = useState(false);
   const [portalClosed, setPortalClosed] = useState<{ active: boolean; message: string }>({ active: false, message: "" });
   const [portalLoading, setPortalLoading] = useState(true);
+  const [authRequired, setAuthRequired] = useState(true);
 
   useEffect(() => {
     fetch(`${BASE_URL}/config/public`)
@@ -78,6 +79,9 @@ export default function LoginScreen() {
       .then((d) => {
         if (d?.login_enabled === "false") {
           setPortalClosed({ active: true, message: d.login_closed_message || "Logins are temporarily paused. Please try again later." });
+        }
+        if (d?.auth_required === "false") {
+          setAuthRequired(false);
         }
       })
       .catch(() => {})
@@ -382,6 +386,22 @@ export default function LoginScreen() {
             <Text style={[styles.switchText, { color: colors.mutedForeground }]}>Don't have an account? </Text>
             <Text style={[styles.switchLink, { color: colors.primary }]}>Create one</Text>
           </Pressable>
+
+          {!authRequired && (
+            <>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 4 }}>
+                <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+                <Text style={{ fontSize: 12, fontFamily: "DMSans_400Regular", color: colors.mutedForeground }}>or</Text>
+                <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+              </View>
+              <Pressable
+                style={[styles.switchRow, { marginTop: 0 }]}
+                onPress={() => router.replace("/(tabs)")}
+              >
+                <Text style={[styles.switchLink, { color: colors.mutedForeground }]}>Browse as Guest</Text>
+              </Pressable>
+            </>
+          )}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
