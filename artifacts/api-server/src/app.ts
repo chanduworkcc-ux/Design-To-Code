@@ -49,7 +49,11 @@ const registerLimiter = rateLimit({
 });
 
 app.get("/", (_req, res) => {
-  res.redirect(301, "/mobile/");
+  res.json({ status: "ok", message: "API server is running" });
+});
+
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok" });
 });
 
 // Forward /mobile/* to the mobile dev proxy (port 18115).
