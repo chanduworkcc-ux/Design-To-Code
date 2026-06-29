@@ -7,6 +7,7 @@ import {
   Image,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -246,6 +247,7 @@ export default function ShopScreen() {
   const [banners, setBanners] = useState<ApiBanner[]>([]);
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [bannerIdx, setBannerIdx] = useState(0);
   const [sortBy, setSortBy] = useState<string>("default");
   const bannerScrollRef = useRef<ScrollView>(null);
@@ -266,6 +268,12 @@ export default function ShopScreen() {
 
   async function fetchData() {
     await Promise.all([fetchProducts(), fetchBanners(), fetchAnnouncement()]);
+  }
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await Promise.all([fetchProducts(), fetchBanners(), fetchAnnouncement(), fetchTrending()]);
+    setRefreshing(false);
   }
 
   async function fetchAnnouncement() {
@@ -385,6 +393,14 @@ export default function ShopScreen() {
             paddingBottom: 110,
           },
         ]}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
       >
         {/* ── Header ── */}
         <FloatIn delay={0} distance={30}>

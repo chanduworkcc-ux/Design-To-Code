@@ -1,8 +1,10 @@
 import { Feather } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  FlatList,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,6 +15,8 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
+  FadeIn,
+  FadeOut,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ProductCard } from "@/components/ProductCard";
@@ -80,6 +84,9 @@ export default function SearchScreen() {
   const { token } = useAuth();
   const [query, setQuery] = useState("");
   const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const inputRef = useRef<TextInput>(null);
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
 
   const searchBarScale = useSharedValue(1);
@@ -103,17 +110,38 @@ export default function SearchScreen() {
     } catch {}
   }
 
+  async function onRefresh() {
+    setRefreshing(true);
+    await fetchProducts();
+    setRefreshing(false);
+  }
+
   const filtered = query.trim()
     ? allProducts.filter(
         (p) =>
           p.name.toLowerCase().includes(query.toLowerCase()) ||
-          p.category.toLowerCase().includes(query.toLowerCase())
+          p.category.toLowerCase().includes(query.toLowerCase()) ||
+          (p.description ?? "").toLowerCase().includes(query.toLowerCase())
       )
     : [];
 
+  const suggestions = query.trim().length >= 1
+    ? allProducts
+        .filter((p) =>
+          p.name.toLowerCase().includes(query.toLowerCase()) ||
+          p.category.toLowerCase().includes(query.toLowerCase())
+        )
+        .slice(0, 6)
+    : [];
+
+  const handleSelectSuggestion = useCallback((product: Product) => {
+    setQuery(product.name);
+    setShowSuggestions(false);
+    inputRef.current?.blur();
+  }, []);
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      {/* Background 3D ambient orbs */}
       <FloatingOrb color={colors.primary} size={260} style={{ top: -90, right: -90, opacity: 0.08 } as any} delay={0}    amplitude={18} duration={3600} />
       <FloatingOrb color="#818CF8"        size={180} style={{ top: 200, left: -80, opacity: 0.07 } as any} delay={800}  amplitude={12} duration={4200} />
       <FloatingOrb color={colors.primary} size={120} style={{ bottom: 160, right: -40, opacity: 0.05 } as any} delay={400} amplitude={10} duration={3000} />
@@ -127,6 +155,14 @@ export default function SearchScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scroll, { paddingTop: topPadding + 16, paddingBottom: 100 }]}
         keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
       >
         <FloatIn delay={0} distance={28}>
           <Text style={[styles.title, { color: colors.text }]}>{t("search")}</Text>
@@ -134,25 +170,69 @@ export default function SearchScreen() {
 
         <FloatIn delay={80} distance={22}>
           <Animated.View style={searchBarStyle}>
-            <View style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Feather name="search" size={18} color={colors.mutedForeground} />
+            <View style={[styles.searchBar, { backgroundColor: colors.card, borderColor: showSuggestions && suggestions.length > 0 ? colors.primary : colors.border }]}>
+              <Feather name="search" size={18} color={showSuggestions ? colors.primary : colors.mutedForeground} />
               <TextInput
+                ref={inputRef}
                 style={[styles.input, { color: colors.text }]}
                 placeholder={t("searchPlaceholder")}
                 placeholderTextColor={colors.mutedForeground}
                 value={query}
-                onChangeText={setQuery}
+                onChangeText={(text) => {
+                  setQuery(text);
+                  setShowSuggestions(true);
+                }}
                 returnKeyType="search"
                 autoCorrect={false}
-                onFocus={() => { searchBarScale.value = withSpring(1.02, { damping: 14 }); }}
-                onBlur={() => { searchBarScale.value = withSpring(1, { damping: 14 }); }}
+                onFocus={() => {
+                  searchBarScale.value = withSpring(1.02, { damping: 14 });
+                  setShowSuggestions(true);
+                }}
+                onBlur={() => {
+                  searchBarScale.value = withSpring(1, { damping: 14 });
+                  setTimeout(() => setShowSuggestions(false), 150);
+                }}
+                onSubmitEditing={() => setShowSuggestions(false)}
               />
               {query.length > 0 && (
-                <Pressable onPress={() => setQuery("")}>
+                <Pressable onPress={() => { setQuery(""); setShowSuggestions(false); }}>
                   <Feather name="x" size={18} color={colors.mutedForeground} />
                 </Pressable>
               )}
             </View>
+
+            {showSuggestions && suggestions.length > 0 && (
+              <Animated.View
+                entering={FadeIn.duration(150)}
+                exiting={FadeOut.duration(100)}
+                style={[styles.suggestionsBox, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.text }]}
+              >
+                {suggestions.map((item, index) => (
+                  <Pressable
+                    key={item.id}
+                    style={({ pressed }) => [
+                      styles.suggestionRow,
+                      index < suggestions.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
+                      pressed && { backgroundColor: colors.secondary },
+                    ]}
+                    onPress={() => handleSelectSuggestion(item)}
+                  >
+                    <View style={[styles.suggestionIcon, { backgroundColor: colors.primary + "15" }]}>
+                      <Feather name="search" size={13} color={colors.primary} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.suggestionName, { color: colors.text }]} numberOfLines={1}>
+                        {item.name}
+                      </Text>
+                      <Text style={[styles.suggestionCategory, { color: colors.mutedForeground }]}>
+                        {item.category}
+                      </Text>
+                    </View>
+                    <Feather name="arrow-up-left" size={14} color={colors.mutedForeground} />
+                  </Pressable>
+                ))}
+              </Animated.View>
+            )}
           </Animated.View>
         </FloatIn>
 
@@ -200,10 +280,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     borderRadius: 16,
-    borderWidth: 1,
+    borderWidth: 1.5,
     paddingHorizontal: 16,
     paddingVertical: 13,
-    marginBottom: 14,
+    marginBottom: 4,
   },
   input: {
     flex: 1,
@@ -211,7 +291,40 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans_400Regular",
     padding: 0,
   },
-  sectionTitle: { fontSize: 18, fontFamily: "DMSans_700Bold", marginBottom: 14 },
+  suggestionsBox: {
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 14,
+    overflow: "hidden",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  suggestionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    gap: 12,
+  },
+  suggestionIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  suggestionName: {
+    fontSize: 13,
+    fontFamily: "DMSans_600SemiBold",
+  },
+  suggestionCategory: {
+    fontSize: 11,
+    fontFamily: "DMSans_400Regular",
+    marginTop: 1,
+  },
+  sectionTitle: { fontSize: 18, fontFamily: "DMSans_700Bold", marginBottom: 14, marginTop: 10 },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
