@@ -322,6 +322,7 @@ router.get("/orders/:id/invoice", authMiddleware, async (req: AuthRequest, res) 
   const [order] = await db
     .select({
       id: ordersTable.id,
+      userId: ordersTable.userId,
       orderNumber: ordersTable.orderNumber,
       status: ordersTable.status,
       paymentMethod: ordersTable.paymentMethod,

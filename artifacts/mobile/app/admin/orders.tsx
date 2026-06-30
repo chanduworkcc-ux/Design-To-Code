@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Linking,
   Platform,
   Pressable,
@@ -131,12 +132,29 @@ export default function OrdersScreen() {
   async function handleDownloadInvoice(orderId: string) {
     setDownloadingId(orderId);
     try {
-      const res = await apiRequest(`/admin/orders/${orderId}/invoice`);
-      if (!res.ok) { setDownloadingId(null); return; }
+      const res = await apiRequest(`/orders/${orderId}/invoice`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        Alert.alert("Invoice Error", data.error ?? "Failed to fetch invoice. Please try again.");
+        setDownloadingId(null);
+        return;
+      }
       const html = await res.text();
-      const { uri } = await Print.printToFileAsync({ html, base64: false });
-      await Sharing.shareAsync(uri, { mimeType: "application/pdf", dialogTitle: "Save Invoice" });
-    } catch {}
+
+      if (Platform.OS === "web") {
+        // Web: open HTML in a new tab so the user can print/save as PDF
+        const blob = new Blob([html], { type: "text/html" });
+        const url = URL.createObjectURL(blob);
+        window.open(url, "_blank");
+        setTimeout(() => URL.revokeObjectURL(url), 15000);
+      } else {
+        // Native: render to PDF then share/save
+        const { uri } = await Print.printToFileAsync({ html, base64: false });
+        await Sharing.shareAsync(uri, { mimeType: "application/pdf", dialogTitle: "Save Invoice" });
+      }
+    } catch (err) {
+      Alert.alert("Invoice Error", "Could not generate the invoice. Please try again.");
+    }
     setDownloadingId(null);
   }
 
