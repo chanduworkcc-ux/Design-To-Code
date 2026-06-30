@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import React from "react";
 import {
+  Image,
   Linking,
   Platform,
   Pressable,
@@ -29,6 +30,7 @@ export default function ForceUpdateScreen({ version, url, notes }: ForceUpdateSc
   return (
     <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.center}>
+        <Image source={require("@/assets/logo-nobg.png")} style={styles.topLogo} resizeMode="contain" />
         <View style={styles.iconWrap}>
           <Feather name="arrow-up-circle" size={64} color="#2563EB" />
         </View>
@@ -74,6 +76,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#EEF2FF",
   },
+  topLogo: { width: 100, height: 56, marginBottom: 16, alignSelf: "center" },
   center: {
     flex: 1,
     alignItems: "center",

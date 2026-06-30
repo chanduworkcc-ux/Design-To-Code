@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
+  Image,
   Linking,
   Platform,
   Pressable,
@@ -327,6 +328,7 @@ export default function OrdersScreen() {
         <Text style={[styles.headerTitle, { color: colors.text }]}>My Orders</Text>
 
         {/* Live badge */}
+
         <View style={styles.liveBadge}>
           <Animated.View style={[styles.liveDot, { opacity: pulseAnim }]} />
           <Text style={styles.liveText}>LIVE</Text>
@@ -648,6 +650,7 @@ const styles = StyleSheet.create({
   },
   backBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   headerTitle: { flex: 1, fontSize: 18, fontFamily: "DMSans_700Bold" },
+  headerLogo: { width: 32, height: 32 },
   liveBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#ECFDF5", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10 },
   liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#10B981" },
   liveText: { fontSize: 10, fontFamily: "DMSans_700Bold", color: "#10B981", letterSpacing: 0.5 },

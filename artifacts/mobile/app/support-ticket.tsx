@@ -455,6 +455,7 @@ export default function SupportTicketScreen() {
             <Feather name="arrow-left" size={20} color={colors.text} />
           </Pressable>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Help Center</Text>
+          <Image source={require("@/assets/logo-nobg.png")} style={styles.headerLogo} resizeMode="contain" />
         </View>
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -471,6 +472,7 @@ export default function SupportTicketScreen() {
             <Feather name="arrow-left" size={20} color={colors.text} />
           </Pressable>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Help Center</Text>
+          <Image source={require("@/assets/logo-nobg.png")} style={styles.headerLogo} resizeMode="contain" />
         </View>
         <View style={styles.center}>
           <Feather name="lock" size={40} color={colors.mutedForeground} />
@@ -491,6 +493,7 @@ export default function SupportTicketScreen() {
             <Feather name="arrow-left" size={20} color={colors.text} />
           </Pressable>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Help Center</Text>
+          <Image source={require("@/assets/logo-nobg.png")} style={styles.headerLogo} resizeMode="contain" />
           <Pressable
             style={[styles.newBtn, { backgroundColor: showForm ? colors.secondary : colors.primary }]}
             onPress={() => { setShowForm((v) => !v); setExpandedId(null); setFormError(null); }}
@@ -706,6 +709,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1, gap: 12 },
   backBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   headerTitle: { flex: 1, fontSize: 18, fontFamily: "DMSans_700Bold" },
+  headerLogo: { width: 32, height: 32 },
   newBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 },
   newBtnText: { fontSize: 13, fontFamily: "DMSans_600SemiBold" },
   liveToast: { flexDirection: "row", alignItems: "center", gap: 6, marginHorizontal: 16, marginTop: 8, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10 },

@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import {
   Dimensions,
+  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -150,6 +151,7 @@ export default function MaintenanceScreen({ message, onRetry }: Props) {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24 }]}>
+      <Image source={require("@/assets/logo-nobg.png")} style={styles.topLogo} resizeMode="contain" />
       <View style={styles.center}>
         {/* 3D Gear Stage */}
         <View style={styles.gearStage}>
@@ -220,6 +222,7 @@ export default function MaintenanceScreen({ message, onRetry }: Props) {
 }
 
 const styles = StyleSheet.create({
+  topLogo: { width: 90, height: 50, alignSelf: "center", marginBottom: 4 },
   root: {
     flex: 1, backgroundColor: "#030712",
     alignItems: "center", justifyContent: "space-between",

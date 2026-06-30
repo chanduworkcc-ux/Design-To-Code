@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   Dimensions,
+  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -187,6 +188,7 @@ export default function SuspendedScreen() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 20 }]}>
+      <Image source={require("@/assets/logo-nobg.png")} style={styles.topLogo} resizeMode="contain" />
       <View style={styles.center}>
         {/* 3D Lock */}
         <View style={styles.lockStage}>
@@ -262,6 +264,7 @@ export default function SuspendedScreen() {
 }
 
 const styles = StyleSheet.create({
+  topLogo: { width: 90, height: 50, alignSelf: "center", marginBottom: 4, marginTop: 8 },
   root: { flex: 1, backgroundColor: "#0A0000", alignItems: "center" },
   center: { flex: 1, width: "100%", alignItems: "center", justifyContent: "center", paddingHorizontal: 28, gap: 16 },
   lockStage: { width: 200, height: 200, alignItems: "center", justifyContent: "center" },

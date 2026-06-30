@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -76,6 +77,7 @@ export default function AccountSecurityScreen() {
             <Feather name="arrow-left" size={20} color={colors.text} />
           </Pressable>
           <Text style={[styles.title, { color: colors.text }]}>Account Security</Text>
+          <Image source={require("@/assets/logo-nobg.png")} style={styles.headerLogo} resizeMode="contain" />
         </View>
 
         {/* Score Card */}
@@ -170,7 +172,8 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 16 },
   headerRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 24 },
   backBtn: { width: 40, height: 40, borderRadius: 12, borderWidth: 1, alignItems: "center", justifyContent: "center" },
-  title: { fontSize: 22, fontFamily: "DMSans_700Bold" },
+  title: { fontSize: 22, fontFamily: "DMSans_700Bold", flex: 1 },
+  headerLogo: { width: 32, height: 32 },
   scoreCard: { borderRadius: 18, padding: 20, flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 },
   scoreLabel: { color: "rgba(255,255,255,0.8)", fontSize: 12, fontFamily: "DMSans_500Medium", marginBottom: 4 },
   scoreValue: { color: "#fff", fontSize: 28, fontFamily: "DMSans_700Bold" },

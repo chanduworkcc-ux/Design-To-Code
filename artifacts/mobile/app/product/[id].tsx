@@ -204,6 +204,7 @@ export default function ProductDetailScreen() {
         <Pressable style={[styles.iconBtn, { backgroundColor: "rgba(255,255,255,0.88)" }]} onPress={() => router.back()}>
           <Feather name="arrow-left" size={20} color="#0F1740" />
         </Pressable>
+        <Image source={require("@/assets/logo-nobg.png")} style={styles.topLogo} resizeMode="contain" />
         <Pressable
           style={[styles.iconBtn, { backgroundColor: inWishlist ? "#FEE2E2" : "rgba(255,255,255,0.88)" }]}
           onPress={handleWishlist}
@@ -456,8 +457,10 @@ const styles = StyleSheet.create({
     zIndex: 20,
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16,
   },
+  topLogo: { width: 80, height: 40 },
   iconBtn: {
     width: 40,
     height: 40,

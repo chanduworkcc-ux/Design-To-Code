@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import {
   Dimensions,
+  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -180,12 +181,14 @@ export default function BannedScreen() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 20 }]}>
+      <Image source={require("@/assets/logo-nobg.png")} style={styles.topLogo} resizeMode="contain" />
       <BannedContent banReason={user?.banReason ?? undefined} onLogout={handleLogout} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  topLogo: { width: 90, height: 50, alignSelf: "center", marginBottom: 4, marginTop: 8 },
   root: { flex: 1, backgroundColor: "#030000", alignItems: "center" },
   center: { flex: 1, width: "100%", alignItems: "center", justifyContent: "center", paddingHorizontal: 28, gap: 16 },
   symbolStage: { width: 220, height: 220, alignItems: "center", justifyContent: "center" },

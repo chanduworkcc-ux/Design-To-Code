@@ -3,6 +3,7 @@ import { Feather } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   FlatList,
+  Image,
   Platform,
   Pressable,
   RefreshControl,
@@ -174,7 +175,10 @@ export default function SearchScreen() {
         }
       >
         <FloatIn delay={0} distance={28}>
-          <Text style={[styles.title, { color: colors.text }]}>{t("search")}</Text>
+          <View style={styles.pageHeader}>
+            <Image source={require("@/assets/logo-nobg.png")} style={styles.headerLogo} resizeMode="contain" />
+            <Text style={[styles.title, { color: colors.text, marginBottom: 0 }]}>{t("search")}</Text>
+          </View>
         </FloatIn>
 
         <FloatIn delay={80} distance={22}>
@@ -285,6 +289,8 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { paddingHorizontal: 16 },
   title: { fontSize: 28, fontFamily: "DMSans_700Bold", marginBottom: 16 },
+  pageHeader: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 16 },
+  headerLogo: { width: 36, height: 36 },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",

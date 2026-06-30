@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -72,6 +73,7 @@ export default function LoginDevicesScreen() {
             <Feather name="arrow-left" size={20} color={colors.text} />
           </Pressable>
           <Text style={[styles.title, { color: colors.text }]}>Login Devices</Text>
+          <Image source={require("@/assets/logo-nobg.png")} style={styles.headerLogo} resizeMode="contain" />
         </View>
 
         {/* Current Device Card */}
@@ -122,7 +124,8 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 16 },
   headerRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 24 },
   backBtn: { width: 40, height: 40, borderRadius: 12, borderWidth: 1, alignItems: "center", justifyContent: "center" },
-  title: { fontSize: 22, fontFamily: "DMSans_700Bold" },
+  title: { fontSize: 22, fontFamily: "DMSans_700Bold", flex: 1 },
+  headerLogo: { width: 32, height: 32 },
   deviceCard: { borderRadius: 18, padding: 20, marginBottom: 20 },
   deviceCardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 },
   deviceIconBig: { width: 52, height: 52, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },

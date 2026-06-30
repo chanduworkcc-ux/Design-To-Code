@@ -199,7 +199,10 @@ export default function ProfileScreen() {
         contentContainerStyle={[styles.scroll, { paddingTop: topPadding + 16, paddingBottom: 100 }]}
       >
         <FloatIn delay={0} distance={24}>
-          <Text style={[styles.title, { color: colors.text }]}>{t("profile")}</Text>
+          <View style={styles.pageHeader}>
+            <Image source={require("@/assets/logo-nobg.png")} style={styles.headerLogo} resizeMode="contain" />
+            <Text style={[styles.title, { color: colors.text, marginBottom: 0 }]}>{t("profile")}</Text>
+          </View>
         </FloatIn>
 
         {/* User Card — avatar wrapped in GlowPulse */}
@@ -439,6 +442,8 @@ const styles = StyleSheet.create({
   center: { alignItems: "center", justifyContent: "center" },
   scroll: { paddingHorizontal: 16 },
   title: { fontSize: 28, fontFamily: "DMSans_700Bold", marginBottom: 16 },
+  pageHeader: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 16 },
+  headerLogo: { width: 36, height: 36 },
   userCard: { flexDirection: "row", alignItems: "center", padding: 16, borderRadius: 14, borderWidth: 1, gap: 12, marginBottom: 12 },
   avatar: { width: 54, height: 54, borderRadius: 27, alignItems: "center", justifyContent: "center" },
   avatarImage: { width: 54, height: 54, borderRadius: 27 },

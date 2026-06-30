@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -182,6 +183,7 @@ export default function FaqScreen() {
           <Text style={[styles.headerTitle, { color: colors.text }]}>Q&A / Help</Text>
           <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>Frequently asked questions</Text>
         </View>
+        <Image source={require("@/assets/logo-nobg.png")} style={styles.headerLogo} resizeMode="contain" />
         <Pressable style={[styles.askHeaderBtn, { backgroundColor: colors.primary + "18", borderColor: colors.primary + "40" }]} onPress={openAskModal}>
           <Feather name="send" size={14} color={colors.primary} />
           <Text style={[styles.askHeaderText, { color: colors.primary }]}>Ask</Text>
@@ -379,6 +381,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1, gap: 12 },
   backBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   headerTitle: { fontSize: 18, fontFamily: "DMSans_700Bold" },
+  headerLogo: { width: 32, height: 32 },
   headerSub: { fontSize: 12, fontFamily: "DMSans_400Regular" },
   askHeaderBtn: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, borderWidth: 1 },
   askHeaderText: { fontSize: 13, fontFamily: "DMSans_600SemiBold" },

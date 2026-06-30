@@ -2,6 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -114,6 +115,7 @@ export default function PoliciesScreen() {
           <Feather name="arrow-left" size={20} color={colors.text} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Policies & Terms</Text>
+        <Image source={require("@/assets/logo-nobg.png")} style={styles.headerLogo} resizeMode="contain" />
       </View>
 
       <ScrollView
@@ -180,6 +182,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1, gap: 12 },
   backBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   headerTitle: { fontSize: 18, fontFamily: "DMSans_700Bold" },
+  headerLogo: { width: 32, height: 32 },
   scroll: { padding: 16, gap: 12 },
   intro: { fontSize: 13, fontFamily: "DMSans_400Regular", lineHeight: 20, marginBottom: 4 },
   sectionCard: { borderRadius: 14, borderWidth: 1, overflow: "hidden" },

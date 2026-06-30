@@ -152,7 +152,10 @@ export default function CartScreen() {
         <FloatingParticle x={150} startY={360} color={colors.primary} delay={600}  size={3} duration={5100} />
         <View style={[styles.emptyWrap, { paddingTop: topPadding + 24 }]}>
           <FloatIn delay={0} distance={24}>
-            <Text style={[styles.title, { color: colors.text }]}>{t("yourCart")}</Text>
+            <View style={styles.pageHeader}>
+              <Image source={require("@/assets/logo-nobg.png")} style={styles.headerLogo} resizeMode="contain" />
+              <Text style={[styles.title, { color: colors.text, marginBottom: 0 }]}>{t("yourCart")}</Text>
+            </View>
           </FloatIn>
           <Empty3DCart />
         </View>
@@ -171,7 +174,10 @@ export default function CartScreen() {
         contentContainerStyle={[styles.scroll, { paddingTop: topPadding + 24, paddingBottom: 260 + bottomInset }]}
       >
         <FloatIn delay={0} distance={24}>
-          <Text style={[styles.title, { color: colors.text }]}>{t("yourCart")}</Text>
+          <View style={styles.pageHeader}>
+            <Image source={require("@/assets/logo-nobg.png")} style={styles.headerLogo} resizeMode="contain" />
+            <Text style={[styles.title, { color: colors.text, marginBottom: 0 }]}>{t("yourCart")}</Text>
+          </View>
         </FloatIn>
 
         {/* Out-of-stock removal banner */}
@@ -394,6 +400,8 @@ const styles = StyleSheet.create({
 
   /* Header */
   title: { fontSize: 30, fontFamily: "DMSans_700Bold", marginBottom: 16 },
+  pageHeader: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 16 },
+  headerLogo: { width: 38, height: 38 },
 
   /* Removal banner */
   removalBanner: {

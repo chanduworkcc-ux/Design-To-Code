@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert,
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -75,6 +76,7 @@ export default function ChangePasswordScreen() {
             <Feather name="arrow-left" size={20} color={colors.text} />
           </Pressable>
           <Text style={[styles.title, { color: colors.text }]}>Change Password</Text>
+          <Image source={require("@/assets/logo-nobg.png")} style={styles.headerLogo} resizeMode="contain" />
         </View>
 
         {/* Icon */}
@@ -187,7 +189,8 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 16 },
   headerRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 24 },
   backBtn: { width: 40, height: 40, borderRadius: 12, borderWidth: 1, alignItems: "center", justifyContent: "center" },
-  title: { fontSize: 22, fontFamily: "DMSans_700Bold" },
+  title: { fontSize: 22, fontFamily: "DMSans_700Bold", flex: 1 },
+  headerLogo: { width: 32, height: 32 },
   iconWrap: { width: 64, height: 64, borderRadius: 20, alignItems: "center", justifyContent: "center", alignSelf: "center", marginBottom: 12 },
   subtitle: { fontSize: 14, fontFamily: "DMSans_400Regular", textAlign: "center", marginBottom: 24, paddingHorizontal: 16 },
   card: { borderRadius: 16, borderWidth: 1, padding: 20, gap: 16 },

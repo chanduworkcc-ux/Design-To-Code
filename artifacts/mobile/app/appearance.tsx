@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useApp } from "@/context/AppContext";
@@ -28,6 +28,7 @@ export default function AppearanceScreen() {
           <Feather name="arrow-left" size={20} color={colors.text} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Appearance</Text>
+        <Image source={require("@/assets/logo-nobg.png")} style={styles.headerLogo} resizeMode="contain" />
       </View>
 
       <View style={styles.content}>
@@ -67,6 +68,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1, gap: 12 },
   backBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   headerTitle: { flex: 1, fontSize: 18, fontFamily: "DMSans_700Bold" },
+  headerLogo: { width: 32, height: 32 },
   content: { padding: 20, gap: 10 },
   sectionLabel: { fontSize: 11, fontFamily: "DMSans_600SemiBold", letterSpacing: 0.8, marginBottom: 4 },
   optionsCard: { borderRadius: 14, borderWidth: 1, overflow: "hidden" },

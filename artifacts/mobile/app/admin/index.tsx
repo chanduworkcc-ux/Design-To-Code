@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -94,9 +95,7 @@ export default function AdminLoginScreen() {
 
         {/* Logo / Header */}
         <View style={styles.logoArea}>
-          <View style={[styles.logoCircle, { backgroundColor: colors.primary }]}>
-            <Feather name="shield" size={32} color="#fff" />
-          </View>
+          <Image source={require("@/assets/logo-nobg.png")} style={styles.logoImg} resizeMode="contain" />
           <Text style={[styles.appName, { color: colors.text }]}>XyloCart</Text>
           <Text style={[styles.adminLabel, { color: colors.mutedForeground }]}>Admin Console</Text>
         </View>
@@ -198,6 +197,7 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 20, flexGrow: 1 },
   backBtn: { width: 42, height: 42, borderRadius: 12, borderWidth: 1, alignItems: "center", justifyContent: "center", marginBottom: 32 },
   logoArea: { alignItems: "center", marginBottom: 28, gap: 8 },
+  logoImg: { width: 120, height: 120 },
   logoCircle: { width: 72, height: 72, borderRadius: 20, alignItems: "center", justifyContent: "center", marginBottom: 4 },
   appName: { fontSize: 26, fontFamily: "DMSans_700Bold" },
   adminLabel: { fontSize: 14, fontFamily: "DMSans_500Medium" },

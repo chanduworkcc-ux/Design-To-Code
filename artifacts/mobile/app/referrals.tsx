@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   Platform,
   Pressable,
   RefreshControl,
@@ -235,6 +236,7 @@ export default function ReferralsScreen() {
           <Feather name="arrow-left" size={20} color={colors.text} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Referral Network</Text>
+        <Image source={require("@/assets/logo-nobg.png")} style={styles.headerLogo} resizeMode="contain" />
         <View style={[styles.livePill, { backgroundColor: "#ECFDF5" }]}>
           <View style={styles.liveDot} />
           <Text style={styles.liveText}>LIVE</Text>
@@ -418,6 +420,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingBottom: 14, borderBottomWidth: 1, gap: 12 },
   backBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   headerTitle: { flex: 1, fontSize: 18, fontFamily: "DMSans_700Bold" },
+  headerLogo: { width: 32, height: 32 },
   livePill: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
   liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#059669" },
   liveText: { fontSize: 10, fontFamily: "DMSans_700Bold", color: "#059669" },

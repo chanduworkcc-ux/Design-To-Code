@@ -229,7 +229,10 @@ export default function WishlistScreen() {
         <FloatingParticle x={150} startY={320} color="#EF4444" delay={500}  size={3} duration={5200} />
         <View style={[styles.emptyContainer, { paddingTop: topPadding + 20 }]}>
           <FloatIn delay={0} distance={24}>
-            <Text style={[styles.title, { color: colors.text }]}>{t("yourWishlist")}</Text>
+            <View style={styles.pageHeader}>
+              <Image source={require("@/assets/logo-nobg.png")} style={styles.headerLogo} resizeMode="contain" />
+              <Text style={[styles.title, { color: colors.text, marginBottom: 0 }]}>{t("yourWishlist")}</Text>
+            </View>
           </FloatIn>
           <View style={styles.emptyState}>
             <FloatIn delay={100} distance={40}>
@@ -276,12 +279,15 @@ export default function WishlistScreen() {
         ListHeaderComponent={
           <View>
             <FloatIn delay={0} distance={24}>
-              <Text style={[styles.title, { color: colors.text }]}>
-                {t("yourWishlist")}{" "}
-                <Text style={{ color: colors.mutedForeground, fontSize: 16, fontFamily: "DMSans_400Regular" }}>
-                  {wishlist.length} items
+              <View style={styles.pageHeader}>
+                <Image source={require("@/assets/logo-nobg.png")} style={styles.headerLogo} resizeMode="contain" />
+                <Text style={[styles.title, { color: colors.text, marginBottom: 0 }]}>
+                  {t("yourWishlist")}{" "}
+                  <Text style={{ color: colors.mutedForeground, fontSize: 16, fontFamily: "DMSans_400Regular" }}>
+                    {wishlist.length} items
+                  </Text>
                 </Text>
-              </Text>
+              </View>
             </FloatIn>
             <FloatIn delay={80} distance={18}>
               <ScrollView
@@ -353,6 +359,8 @@ const styles = StyleSheet.create({
   shopBtn: { marginTop: 12, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 14 },
   shopBtnText: { fontSize: 15, fontFamily: "DMSans_600SemiBold" },
   title: { fontSize: 28, fontFamily: "DMSans_700Bold", marginBottom: 16 },
+  pageHeader: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 16 },
+  headerLogo: { width: 36, height: 36 },
   list: { paddingHorizontal: 16 },
   card: {
     flexDirection: "row",

@@ -2,6 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
 import {
+  Image,
   Linking,
   Pressable,
   StyleSheet,
@@ -23,6 +24,7 @@ export default function ForgotPasswordScreen() {
 
       <View style={styles.content}>
         <View style={{ alignItems: "center", marginBottom: 32, gap: 10 }}>
+          <Image source={require("@/assets/logo-nobg.png")} style={styles.logoImg} resizeMode="contain" />
           <View style={[styles.iconCircle, { backgroundColor: "#EFF6FF" }]}>
             <Feather name="shield" size={32} color="#2563EB" />
           </View>
@@ -69,6 +71,7 @@ export default function ForgotPasswordScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   content: { flex: 1, justifyContent: "center", paddingHorizontal: 20 },
+  logoImg: { width: 110, height: 110 },
   iconCircle: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center" },
   heading: { fontSize: 24, fontFamily: "DMSans_700Bold", textAlign: "center" },
   subheading: { fontSize: 14, fontFamily: "DMSans_400Regular", textAlign: "center" },
