@@ -288,6 +288,8 @@ export default function SupportTicketScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [showBlockedBanner, setShowBlockedBanner] = useState(false);
+  const [blockedTicketId, setBlockedTicketId] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [category, setCategory] = useState<TicketCategory>("order_issue");
   const [title, setTitle] = useState("");
@@ -496,7 +498,20 @@ export default function SupportTicketScreen() {
           <Image source={require("@/assets/logo-nobg.png")} style={styles.headerLogo} resizeMode="contain" />
           <Pressable
             style={[styles.newBtn, { backgroundColor: showForm ? colors.secondary : colors.primary }]}
-            onPress={() => { setShowForm((v) => !v); setExpandedId(null); setFormError(null); }}
+            onPress={() => {
+              const activeTicket = tickets.find((t) => t.status === "open" || t.status === "in_progress");
+              if (!showForm && activeTicket) {
+                setShowBlockedBanner(true);
+                setBlockedTicketId(activeTicket.id);
+                setExpandedId(null);
+                return;
+              }
+              setShowBlockedBanner(false);
+              setBlockedTicketId(null);
+              setShowForm((v) => !v);
+              setExpandedId(null);
+              setFormError(null);
+            }}
           >
             <Feather name={showForm ? "x" : "plus"} size={16} color={showForm ? colors.text : "#fff"} />
             <Text style={[styles.newBtnText, { color: showForm ? colors.text : "#fff" }]}>
@@ -509,6 +524,40 @@ export default function SupportTicketScreen() {
           <View style={[styles.liveToast, { backgroundColor: colors.primary }]}>
             <Feather name="zap" size={13} color="#fff" />
             <Text style={styles.liveToastText}>{liveUpdate}</Text>
+          </View>
+        )}
+
+        {showBlockedBanner && (
+          <View style={[styles.blockedBanner, { backgroundColor: colors.card, borderColor: "#F59E0B" }]}>
+            <View style={[styles.blockedIconWrap, { backgroundColor: "#FFFBEB" }]}>
+              <Feather name="alert-triangle" size={22} color="#F59E0B" />
+            </View>
+            <View style={{ flex: 1, gap: 4 }}>
+              <Text style={[styles.blockedTitle, { color: colors.text }]}>Action Required: Pending Ticket</Text>
+              <Text style={[styles.blockedBody, { color: colors.mutedForeground }]}>
+                You cannot create a new ticket at this time. Our system allows only one active ticket per user to ensure fast resolution times.
+              </Text>
+              <View style={[styles.blockedStatus, { backgroundColor: "#FFFBEB" }]}>
+                <Feather name="clock" size={11} color="#F59E0B" />
+                <Text style={styles.blockedStatusText}>Your open ticket is currently being reviewed by an admin.</Text>
+              </View>
+              <Text style={[styles.blockedHint, { color: colors.mutedForeground }]}>
+                Please wait for the admin to resolve your current ticket before submitting a new request.
+              </Text>
+              <Pressable
+                style={[styles.viewTicketBtn, { backgroundColor: colors.primary }]}
+                onPress={() => {
+                  setShowBlockedBanner(false);
+                  setExpandedId(blockedTicketId);
+                }}
+              >
+                <Feather name="eye" size={14} color="#fff" />
+                <Text style={styles.viewTicketBtnText}>View Open Ticket</Text>
+              </Pressable>
+            </View>
+            <Pressable onPress={() => setShowBlockedBanner(false)} style={{ alignSelf: "flex-start" }}>
+              <Feather name="x" size={16} color={colors.mutedForeground} />
+            </Pressable>
           </View>
         )}
 
@@ -755,4 +804,13 @@ const styles = StyleSheet.create({
   ticketMeta: { flexDirection: "row", alignItems: "center", gap: 4 },
   ticketId: { fontSize: 11, fontFamily: "DMSans_600SemiBold", marginRight: 6 },
   ticketDate: { fontSize: 11, fontFamily: "DMSans_400Regular" },
+  blockedBanner: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginHorizontal: 16, marginTop: 10, padding: 14, borderRadius: 14, borderWidth: 1.5 },
+  blockedIconWrap: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  blockedTitle: { fontSize: 14, fontFamily: "DMSans_700Bold", marginBottom: 2 },
+  blockedBody: { fontSize: 12, fontFamily: "DMSans_400Regular", lineHeight: 17 },
+  blockedStatus: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 8, paddingVertical: 5, borderRadius: 8, marginVertical: 2 },
+  blockedStatusText: { fontSize: 11, fontFamily: "DMSans_500Medium", color: "#92400E", flex: 1 },
+  blockedHint: { fontSize: 12, fontFamily: "DMSans_400Regular", lineHeight: 17 },
+  viewTicketBtn: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, marginTop: 4 },
+  viewTicketBtnText: { color: "#fff", fontSize: 13, fontFamily: "DMSans_600SemiBold" },
 });

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { supportTicketsTable, ticketNotesTable, orderSequencesTable, usersTable } from "@workspace/db/schema";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, sql, and, inArray } from "drizzle-orm";
 import { authMiddleware, adminMiddleware, type AuthRequest } from "../middleware/auth";
 import { getIO } from "../lib/socket";
 import { z } from "zod";
@@ -47,6 +47,29 @@ router.post("/tickets", authMiddleware, async (req: AuthRequest, res) => {
     res.status(400).json({ error: "Validation failed", details: parsed.error.issues });
     return;
   }
+
+  const [activeTicket] = await db
+    .select({ id: supportTicketsTable.id, ticketNumber: supportTicketsTable.ticketNumber, status: supportTicketsTable.status })
+    .from(supportTicketsTable)
+    .where(
+      and(
+        eq(supportTicketsTable.userId, req.userId!),
+        inArray(supportTicketsTable.status, ["open", "in_progress"])
+      )
+    )
+    .limit(1);
+
+  if (activeTicket) {
+    res.status(409).json({
+      error: "You already have an active ticket. Please wait for it to be resolved before opening a new one.",
+      code: "active_ticket_exists",
+      ticketId: activeTicket.id,
+      ticketNumber: activeTicket.ticketNumber,
+      status: activeTicket.status,
+    });
+    return;
+  }
+
   const ticketNumber = await generateTicketNumber();
   const [ticket] = await db.insert(supportTicketsTable).values({
     id: uuidv4(),
