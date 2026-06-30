@@ -6,6 +6,8 @@ import {
   DMSans_700Bold,
   useFonts,
 } from "@expo-google-fonts/dm-sans";
+import { Ionicons } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -132,6 +134,8 @@ function UserStatusGuard({ children }: { children: React.ReactNode }) {
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     DMSans_400Regular, DMSans_500Medium, DMSans_600SemiBold, DMSans_700Bold,
+    ...Ionicons.font,
+    ...Feather.font,
   });
   const [showSplash, setShowSplash] = useState(true);
   const [maintenance, setMaintenance] = useState<{ active: boolean; message?: string }>({ active: false });

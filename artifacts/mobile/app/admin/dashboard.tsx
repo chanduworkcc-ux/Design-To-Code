@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
+  Image,
   Platform,
   Pressable,
   RefreshControl,
@@ -188,9 +189,11 @@ export default function AdminDashboardScreen() {
           <Feather name="menu" size={22} color="#0F1740" />
         </Pressable>
         <View style={styles.headerTitle}>
-          <View style={[styles.headerLogo, { backgroundColor: "#2563EB" }]}>
-            <Feather name="zap" size={14} color="#fff" />
-          </View>
+          <Image
+            source={require("@/assets/logo-nobg.png")}
+            style={styles.headerLogo}
+            resizeMode="contain"
+          />
           <View>
             <Text style={styles.headerBrand}>XyloCart</Text>
             <Text style={styles.headerSub}>Admin Console</Text>
@@ -477,9 +480,11 @@ export default function AdminDashboardScreen() {
       >
         <View style={styles.drawerHeader}>
           <View style={styles.drawerLogoRow}>
-            <View style={[styles.drawerLogo, { backgroundColor: "#2563EB" }]}>
-              <Feather name="shopping-cart" size={16} color="#fff" />
-            </View>
+            <Image
+              source={require("@/assets/logo-nobg.png")}
+              style={styles.drawerLogo}
+              resizeMode="contain"
+            />
             <View>
               <Text style={styles.drawerBrand}>XyloCart</Text>
               <Text style={styles.drawerAdminSub}>Admin Console</Text>
@@ -531,7 +536,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#E5EAF8", gap: 10 },
   hamburger: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
   headerTitle: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10 },
-  headerLogo: { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  headerLogo: { width: 36, height: 36 },
   headerBrand: { fontSize: 15, fontFamily: "DMSans_700Bold", color: "#0F1740" },
   tsText: { fontSize: 9, fontFamily: "DMSans_400Regular", color: "#6B7280", letterSpacing: 0.2 },
   headerSub: { fontSize: 11, fontFamily: "DMSans_400Regular", color: "#6B7280" },
@@ -579,7 +584,7 @@ const styles = StyleSheet.create({
   drawer: { position: "absolute", left: 0, top: 0, bottom: 0, width: 280, backgroundColor: "#fff", zIndex: 20, shadowColor: "#000", shadowOffset: { width: 4, height: 0 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 20 },
   drawerHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: "#E5EAF8", marginBottom: 8 },
   drawerLogoRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  drawerLogo: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  drawerLogo: { width: 40, height: 40 },
   drawerBrand: { fontSize: 16, fontFamily: "DMSans_700Bold", color: "#0F1740" },
   drawerAdminSub: { fontSize: 11, fontFamily: "DMSans_400Regular", color: "#6B7280" },
   drawerClose: { width: 34, height: 34, alignItems: "center", justifyContent: "center" },
