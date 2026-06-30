@@ -12,13 +12,14 @@ const submitSchema = z.object({
   orderId: z.string(),
   rating: z.number().int().min(1).max(5),
   comment: z.string().max(1000).optional(),
+  imageUrl: z.string().url().optional(),
 });
 
 router.post("/reviews", authMiddleware as any, async (req: AuthRequest, res) => {
   const parse = submitSchema.safeParse(req.body);
   if (!parse.success) { res.status(400).json({ error: "Invalid input" }); return; }
 
-  const { orderId, rating, comment } = parse.data;
+  const { orderId, rating, comment, imageUrl } = parse.data;
   const userId = req.userId!;
 
   const [order] = await db
@@ -40,6 +41,7 @@ router.post("/reviews", authMiddleware as any, async (req: AuthRequest, res) => 
     orderId,
     rating,
     comment: comment ?? null,
+    imageUrl: imageUrl ?? null,
   }).returning();
 
   const [agg] = await db

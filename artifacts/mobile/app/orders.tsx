@@ -1,8 +1,11 @@
+import { BASE_URL } from "@/lib/api";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   Image,
   Linking,
@@ -12,6 +15,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -179,6 +183,229 @@ function StatusTracker({ status }: { status: string }) {
     </View>
   );
 }
+
+function StarPicker({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  return (
+    <View style={{ flexDirection: "row", gap: 8 }}>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Pressable key={i} onPress={() => onChange(i)} hitSlop={8}>
+          <Feather name="star" size={32} color={i <= value ? "#F59E0B" : "#D1D5DB"} />
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
+function ReviewSection({
+  orderId,
+  apiRequest,
+  colors,
+}: {
+  orderId: string;
+  apiRequest: (path: string, options?: RequestInit) => Promise<Response>;
+  colors: ReturnType<typeof import("@/hooks/useColors").useColors>;
+}) {
+  const [review, setReview] = useState<{ rating: number; comment: string | null; imageUrl: string | null } | null | undefined>(undefined);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    apiRequest(`/reviews/order/${orderId}`)
+      .then((r) => r.json())
+      .then((d) => setReview(d.review ?? null))
+      .catch(() => setReview(null));
+  }, [orderId]);
+
+  async function pickImage() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Permission Required", "Please allow access to your photo library.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.7 });
+    if (result.canceled || !result.assets[0]) return;
+    const asset = result.assets[0];
+    setImageUri(asset.uri);
+    setUploadingImage(true);
+    try {
+      const urlRes = await apiRequest("/storage/uploads/request-url", {
+        method: "POST",
+        body: JSON.stringify({
+          name: asset.fileName ?? `review-${Date.now()}.jpg`,
+          size: asset.fileSize ?? 500000,
+          contentType: asset.mimeType ?? "image/jpeg",
+        }),
+      });
+      if (!urlRes.ok) throw new Error("Upload URL failed");
+      const { uploadURL, objectPath, servingUrl } = await urlRes.json();
+      const blob = await (await fetch(asset.uri)).blob();
+      const uploadRes = await fetch(uploadURL, {
+        method: "PUT",
+        body: blob,
+        headers: { "Content-Type": asset.mimeType ?? "image/jpeg" },
+      });
+      if (!uploadRes.ok) throw new Error("Upload failed");
+      setImageUrl(servingUrl ?? `${BASE_URL}/storage/objects/${encodeURIComponent(objectPath)}`);
+    } catch (e: any) {
+      Alert.alert("Upload Failed", e.message ?? "Could not upload image.");
+      setImageUri(null);
+      setImageUrl(null);
+    }
+    setUploadingImage(false);
+  }
+
+  async function submitReview() {
+    if (uploadingImage) { setError("Please wait for the image to finish uploading."); return; }
+    setError(null);
+    setSubmitting(true);
+    try {
+      const body: Record<string, any> = { orderId, rating };
+      if (comment.trim()) body.comment = comment.trim();
+      if (imageUrl) body.imageUrl = imageUrl;
+      const res = await apiRequest("/reviews", { method: "POST", body: JSON.stringify(body) });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setReview(data.review);
+      } else {
+        setError(data.error ?? "Failed to submit review.");
+      }
+    } catch {
+      setError("Network error. Please try again.");
+    }
+    setSubmitting(false);
+  }
+
+  if (review === undefined) {
+    return (
+      <View style={rvStyles.wrap}>
+        <ActivityIndicator size="small" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (review !== null) {
+    return (
+      <View style={[rvStyles.wrap, { backgroundColor: "#FFFBEB", borderColor: "#FCD34D" }]}>
+        <View style={rvStyles.header}>
+          <Feather name="star" size={16} color="#F59E0B" />
+          <Text style={[rvStyles.headerText, { color: "#92400E" }]}>Your Review</Text>
+        </View>
+        <View style={{ flexDirection: "row", gap: 4, marginBottom: 6 }}>
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Feather key={i} name="star" size={20} color={i <= review.rating ? "#F59E0B" : "#D1D5DB"} />
+          ))}
+          <Text style={{ fontSize: 13, fontFamily: "DMSans_600SemiBold", color: "#92400E", marginLeft: 6 }}>
+            {review.rating}/5
+          </Text>
+        </View>
+        {!!review.comment && (
+          <Text style={{ fontSize: 13, fontFamily: "DMSans_400Regular", color: "#78350F", lineHeight: 18 }}>
+            {review.comment}
+          </Text>
+        )}
+        {!!review.imageUrl && (
+          <Pressable onPress={() => Linking.openURL(review.imageUrl!)} style={{ position: "relative", marginTop: 8 }}>
+            <Image source={{ uri: review.imageUrl }} style={rvStyles.reviewImage} resizeMode="cover" />
+            <View style={rvStyles.imageTapHint}>
+              <Feather name="external-link" size={10} color="#fff" />
+              <Text style={rvStyles.imageTapHintText}>Tap to open</Text>
+            </View>
+          </Pressable>
+        )}
+      </View>
+    );
+  }
+
+  return (
+    <View style={[rvStyles.wrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View style={rvStyles.header}>
+        <Feather name="star" size={16} color="#F59E0B" />
+        <Text style={[rvStyles.headerText, { color: colors.text }]}>Rate Your Order</Text>
+      </View>
+      <Text style={[rvStyles.label, { color: colors.mutedForeground }]}>Your Rating</Text>
+      <StarPicker value={rating} onChange={setRating} />
+      <Text style={[rvStyles.label, { color: colors.mutedForeground }]}>Comment <Text style={{ fontFamily: "DMSans_400Regular" }}>(optional)</Text></Text>
+      <TextInput
+        style={[rvStyles.input, { backgroundColor: colors.secondary, borderColor: colors.border, color: colors.text }]}
+        value={comment}
+        onChangeText={setComment}
+        placeholder="Share your experience..."
+        placeholderTextColor={colors.mutedForeground}
+        multiline
+        numberOfLines={3}
+        textAlignVertical="top"
+      />
+      <Text style={[rvStyles.label, { color: colors.mutedForeground }]}>Photo <Text style={{ fontFamily: "DMSans_400Regular" }}>(optional)</Text></Text>
+      {imageUri ? (
+        <View style={{ position: "relative" }}>
+          <Image source={{ uri: imageUri }} style={rvStyles.previewImage} resizeMode="cover" />
+          {uploadingImage && (
+            <View style={rvStyles.uploadOverlay}>
+              <ActivityIndicator color="#fff" />
+              <Text style={{ color: "#fff", fontSize: 12, fontFamily: "DMSans_500Medium" }}>Uploading…</Text>
+            </View>
+          )}
+          {!uploadingImage && (
+            <Pressable
+              style={rvStyles.removeBtn}
+              onPress={() => { setImageUri(null); setImageUrl(null); }}
+            >
+              <Feather name="x" size={14} color="#fff" />
+            </Pressable>
+          )}
+        </View>
+      ) : (
+        <Pressable
+          style={[rvStyles.imagePicker, { backgroundColor: colors.secondary, borderColor: colors.border }]}
+          onPress={pickImage}
+        >
+          <Feather name="camera" size={18} color={colors.mutedForeground} />
+          <Text style={{ fontSize: 13, fontFamily: "DMSans_400Regular", color: colors.mutedForeground }}>
+            Tap to attach a photo
+          </Text>
+        </Pressable>
+      )}
+      {!!error && (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 }}>
+          <Feather name="alert-circle" size={13} color="#EF4444" />
+          <Text style={{ fontSize: 12, fontFamily: "DMSans_400Regular", color: "#EF4444", flex: 1 }}>{error}</Text>
+        </View>
+      )}
+      <Pressable
+        style={[rvStyles.submitBtn, { backgroundColor: colors.primary, opacity: submitting || uploadingImage ? 0.6 : 1 }]}
+        onPress={submitReview}
+        disabled={submitting || uploadingImage}
+      >
+        {submitting
+          ? <ActivityIndicator size="small" color="#fff" />
+          : <><Feather name="send" size={15} color="#fff" /><Text style={rvStyles.submitBtnText}>Submit Review</Text></>
+        }
+      </Pressable>
+    </View>
+  );
+}
+
+const rvStyles = StyleSheet.create({
+  wrap: { borderRadius: 12, borderWidth: 1, padding: 14, gap: 10 },
+  header: { flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 2 },
+  headerText: { fontSize: 14, fontFamily: "DMSans_700Bold" },
+  label: { fontSize: 12, fontFamily: "DMSans_600SemiBold", marginBottom: -4 },
+  input: { borderRadius: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, fontFamily: "DMSans_400Regular", minHeight: 80 },
+  imagePicker: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 10, borderWidth: 1, borderStyle: "dashed", padding: 14, justifyContent: "center" },
+  previewImage: { width: "100%", height: 150, borderRadius: 10 },
+  uploadOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.45)", borderRadius: 10, alignItems: "center", justifyContent: "center", gap: 8 },
+  removeBtn: { position: "absolute", top: 8, right: 8, backgroundColor: "rgba(0,0,0,0.55)", borderRadius: 20, width: 28, height: 28, alignItems: "center", justifyContent: "center" },
+  reviewImage: { width: "100%", height: 150, borderRadius: 10 },
+  imageTapHint: { position: "absolute", bottom: 6, right: 6, flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "rgba(0,0,0,0.55)", paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8 },
+  imageTapHintText: { color: "#fff", fontSize: 10, fontFamily: "DMSans_500Medium" },
+  submitBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 12, borderRadius: 10, marginTop: 2 },
+  submitBtnText: { color: "#fff", fontSize: 14, fontFamily: "DMSans_600SemiBold" },
+});
 
 function PriceRow({ label, value, highlight }: { label: string; value: number; highlight?: boolean }) {
   const colors = useColors();
@@ -606,6 +833,14 @@ export default function OrdersScreen() {
                            belongs exclusively to the administration.
                            Active orders show "Contact Support" instead.
                       ──────────────────────────────────────────────────────── */}
+                      {order.status === "delivered" && (
+                        <ReviewSection
+                          orderId={order.id}
+                          apiRequest={apiRequest}
+                          colors={colors}
+                        />
+                      )}
+
                       {order.status !== "delivered" && order.status !== "cancelled" && (
                         <Pressable
                           style={styles.contactSupportBtn}

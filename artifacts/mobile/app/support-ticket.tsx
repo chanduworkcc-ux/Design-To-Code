@@ -8,6 +8,7 @@ import {
   Alert,
   Image,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   RefreshControl,
@@ -149,7 +150,7 @@ function TicketChat({
         }),
       });
       if (!urlRes.ok) throw new Error("Upload URL failed");
-      const { uploadURL, objectPath } = await urlRes.json();
+      const { uploadURL, objectPath, servingUrl } = await urlRes.json();
 
       const blob = await (await fetch(asset.uri)).blob();
       const uploadRes = await fetch(uploadURL, {
@@ -159,7 +160,7 @@ function TicketChat({
       });
       if (!uploadRes.ok) throw new Error("Upload failed");
 
-      const imageUrl = `${BASE_URL}/storage/objects/${encodeURIComponent(objectPath)}`;
+      const imageUrl = servingUrl ?? `${BASE_URL}/storage/objects/${encodeURIComponent(objectPath)}`;
       await sendReply(undefined, imageUrl);
     } catch (e: any) {
       Alert.alert("Upload Failed", e.message ?? "Could not upload image.");
@@ -174,7 +175,13 @@ function TicketChat({
       {ticket.imageUrl ? (
         <View style={[chat.attachedImageWrap, { borderBottomColor: colors.border }]}>
           <Text style={[chat.attachedImageLabel, { color: colors.mutedForeground }]}>Attached photo</Text>
-          <Image source={{ uri: ticket.imageUrl }} style={chat.attachedImage} resizeMode="cover" />
+          <Pressable onPress={() => Linking.openURL(ticket.imageUrl!)} style={{ position: "relative" }}>
+            <Image source={{ uri: ticket.imageUrl }} style={chat.attachedImage} resizeMode="cover" />
+            <View style={chat.imageTapHint}>
+              <Feather name="external-link" size={10} color="#fff" />
+              <Text style={chat.imageTapHintText}>Tap to open</Text>
+            </View>
+          </Pressable>
         </View>
       ) : null}
       <ScrollView
@@ -202,7 +209,13 @@ function TicketChat({
                 </Text>
                 {!!n.note && <Text style={[chat.bubbleText, { color: colors.text }]}>{n.note}</Text>}
                 {!!n.imageUrl && (
-                  <Image source={{ uri: n.imageUrl }} style={chat.bubbleImage} resizeMode="cover" />
+                  <Pressable onPress={() => Linking.openURL(n.imageUrl!)}>
+                    <Image source={{ uri: n.imageUrl }} style={chat.bubbleImage} resizeMode="cover" />
+                    <View style={chat.imageTapHint}>
+                      <Feather name="external-link" size={10} color="#fff" />
+                      <Text style={chat.imageTapHintText}>Tap to open</Text>
+                    </View>
+                  </Pressable>
                 )}
               </View>
             ))}
@@ -275,6 +288,8 @@ const chat = StyleSheet.create({
   attachedImageWrap: { padding: 12, borderBottomWidth: 1, gap: 6 },
   attachedImageLabel: { fontSize: 11, fontFamily: "DMSans_500Medium" },
   attachedImage: { width: "100%", height: 160, borderRadius: 10 },
+  imageTapHint: { position: "absolute", bottom: 6, right: 6, flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "rgba(0,0,0,0.55)", paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8 },
+  imageTapHintText: { color: "#fff", fontSize: 10, fontFamily: "DMSans_500Medium" },
 });
 
 export default function SupportTicketScreen() {
@@ -374,7 +389,7 @@ export default function SupportTicketScreen() {
         }),
       });
       if (!urlRes.ok) throw new Error("Upload URL failed");
-      const { uploadURL, objectPath } = await urlRes.json();
+      const { uploadURL, objectPath, servingUrl } = await urlRes.json();
       const blob = await (await fetch(asset.uri)).blob();
       const uploadRes = await fetch(uploadURL, {
         method: "PUT",
@@ -382,7 +397,7 @@ export default function SupportTicketScreen() {
         headers: { "Content-Type": asset.mimeType ?? "image/jpeg" },
       });
       if (!uploadRes.ok) throw new Error("Upload failed");
-      const url = `${BASE_URL}/storage/objects/${encodeURIComponent(objectPath)}`;
+      const url = servingUrl ?? `${BASE_URL}/storage/objects/${encodeURIComponent(objectPath)}`;
       setFormImageUrl(url);
     } catch (e: any) {
       Alert.alert("Upload Failed", e.message ?? "Could not upload image.");

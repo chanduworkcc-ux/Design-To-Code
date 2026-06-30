@@ -84,8 +84,9 @@ router.post("/storage/uploads/request-url", authMiddleware, async (req: Request,
         : "http://localhost:5000";
       const uploadURL = `${baseUrl}/api/storage/uploads/local/${token}`;
       const objectPath = filename;
+      const servingUrl = `${baseUrl}/api/storage/objects/${encodeURIComponent(filename)}`;
 
-      res.json({ uploadURL, objectPath, metadata: { name, size, contentType } });
+      res.json({ uploadURL, objectPath, servingUrl, metadata: { name, size, contentType } });
     } catch (error) {
       console.error("Error generating local upload URL", error);
       res.status(500).json({ error: "Failed to generate upload URL" });

@@ -7,6 +7,7 @@ export const reviewsTable = pgTable("reviews", {
   orderId: text("order_id").notNull().unique(),
   rating: integer("rating").notNull(),
   comment: text("comment"),
+  imageUrl: text("image_url"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
