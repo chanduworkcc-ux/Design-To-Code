@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -40,12 +41,13 @@ interface MenuItemProps {
   onPress?: () => void;
   badge?: number;
   value?: string;
+  loading?: boolean;
 }
 
-function MenuItem({ icon, label, onPress, badge, value }: MenuItemProps) {
+function MenuItem({ icon, label, onPress, badge, value, loading }: MenuItemProps) {
   const colors = useColors();
   return (
-    <Pressable style={styles.menuItem} onPress={onPress}>
+    <Pressable style={styles.menuItem} onPress={loading ? undefined : onPress} disabled={loading}>
       <View style={[styles.menuIcon, { backgroundColor: colors.accent }]}>
         <Feather name={icon as any} size={18} color={colors.primary} />
       </View>
@@ -56,7 +58,10 @@ function MenuItem({ icon, label, onPress, badge, value }: MenuItemProps) {
           <Text style={styles.badgeText}>{badge}</Text>
         </View>
       )}
-      <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+      {loading
+        ? <ActivityIndicator size="small" color={colors.primary} />
+        : <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+      }
     </Pressable>
   );
 }
@@ -77,6 +82,8 @@ export default function ProfileScreen() {
   const [referralBaseUrl, setReferralBaseUrl] = useState<string>("");
   const [recentOrder, setRecentOrder] = useState<{ id: string; orderNumber: string | null; status: string; total: number; productName: string | null; createdAt: string } | null | "loading">("loading");
   const [orderCount, setOrderCount] = useState<number>(0);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateModal, setUpdateModal] = useState<{ title: string; message: string; isUpdate: boolean } | null>(null);
 
   useEffect(() => {
     AsyncStorage.getItem("@xc_avatar_uri").then((uri) => {
@@ -152,22 +159,32 @@ export default function ProfileScreen() {
   }
 
   async function handleCheckUpdates() {
+    if (checkingUpdate) return;
+    setCheckingUpdate(true);
     try {
-  
       const res = await fetch(`${BASE_URL}/config/public`);
-      if (!res.ok) { Alert.alert("Error", "Could not reach the server. Please try again."); return; }
+      if (!res.ok) {
+        setUpdateModal({ title: "Connection Error", message: "Could not reach the server. Please check your connection and try again.", isUpdate: false });
+        return;
+      }
       const d = await res.json();
       if (d?.force_update === "true") {
-        Alert.alert(
-          "Update Required",
-          `A new version (${d.update_version ?? "latest"}) is available. Please update the app to continue.\n\n${d.update_notes ?? ""}`,
-          [{ text: "OK" }]
-        );
+        setUpdateModal({
+          title: "Update Available",
+          message: `A new version (${d.update_version ?? "latest"}) is available.\n\n${d.update_notes ?? "Please update the app to continue using XyloCart."}`,
+          isUpdate: true,
+        });
       } else {
-        Alert.alert("You're up to date!", `XyloCart v${appVersion} is running the latest version.`, [{ text: "Great" }]);
+        setUpdateModal({
+          title: "You're up to date!",
+          message: `XyloCart v${appVersion} is the latest version. No updates are needed right now.`,
+          isUpdate: false,
+        });
       }
     } catch {
-      Alert.alert("Error", "Could not check for updates. Please check your connection.");
+      setUpdateModal({ title: "Error", message: "Could not check for updates. Please check your connection.", isUpdate: false });
+    } finally {
+      setCheckingUpdate(false);
     }
   }
 
@@ -384,7 +401,7 @@ export default function ProfileScreen() {
         <FloatIn delay={500} distance={14}>
           <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("app").toUpperCase()}</Text>
           <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <MenuItem icon="download-cloud" label={t("checkForUpdates")} onPress={handleCheckUpdates} />
+            <MenuItem icon="download-cloud" label={t("checkForUpdates")} onPress={handleCheckUpdates} loading={checkingUpdate} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <MenuItem icon="info"           label={t("appVersion")}       value={`v${appVersion}`} onPress={() => Alert.alert(t("appVersion"), `XyloCart v${appVersion}\n\nBuilt with React Native & Expo.\n© 2025 XyloCart. All rights reserved.`)} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -433,6 +450,22 @@ export default function ProfileScreen() {
 
         <GlobalFooter />
       </ScrollView>
+
+      {/* Check for Updates result modal */}
+      <Modal visible={!!updateModal} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setUpdateModal(null)}>
+        <Pressable style={styles.modalBackdrop} onPress={() => setUpdateModal(null)}>
+          <Pressable style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={(e) => e.stopPropagation()}>
+            <View style={[styles.modalIconWrap, { backgroundColor: updateModal?.isUpdate ? "#FEF3C7" : "#D1FAE5" }]}>
+              <Feather name={updateModal?.isUpdate ? "download-cloud" : "check-circle"} size={28} color={updateModal?.isUpdate ? "#D97706" : "#059669"} />
+            </View>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{updateModal?.title}</Text>
+            <Text style={[styles.modalMessage, { color: colors.mutedForeground }]}>{updateModal?.message}</Text>
+            <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary }]} onPress={() => setUpdateModal(null)}>
+              <Text style={styles.modalBtnText}>{updateModal?.isUpdate ? "OK" : "Great!"}</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -490,4 +523,11 @@ const styles = StyleSheet.create({
   recentOrderProduct: { fontSize: 12, fontFamily: "DMSans_400Regular", marginTop: 2 },
   recentOrderTotal: { fontSize: 13, fontFamily: "DMSans_700Bold" },
   recentOrderStatusText: { fontSize: 11, fontFamily: "DMSans_500Medium", marginTop: 2 },
+  modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)", alignItems: "center", justifyContent: "center", padding: 32 },
+  modalCard: { width: "100%", borderRadius: 20, borderWidth: 1, padding: 28, alignItems: "center", gap: 12 },
+  modalIconWrap: { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center", marginBottom: 4 },
+  modalTitle: { fontSize: 20, fontFamily: "DMSans_700Bold", textAlign: "center" },
+  modalMessage: { fontSize: 14, fontFamily: "DMSans_400Regular", textAlign: "center", lineHeight: 22 },
+  modalBtn: { marginTop: 8, paddingHorizontal: 36, paddingVertical: 13, borderRadius: 12 },
+  modalBtnText: { color: "#fff", fontSize: 15, fontFamily: "DMSans_600SemiBold" },
 });
