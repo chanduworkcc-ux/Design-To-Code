@@ -1,9 +1,11 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -49,7 +51,44 @@ export default function BannersScreen() {
   const [editBanner, setEditBanner] = useState<Banner | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
   const [saving, setSaving] = useState(false);
+  const [uploadingBannerImage, setUploadingBannerImage] = useState(false);
   const topPadding = Platform.OS === "web" ? 0 : insets.top;
+
+  async function pickBannerImage() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Permission Required", "Please allow access to your photo library.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.8,
+      allowsEditing: true,
+      aspect: [16, 7],
+    });
+    if (result.canceled || !result.assets[0]) return;
+    const asset = result.assets[0];
+    setUploadingBannerImage(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", {
+        uri: asset.uri,
+        name: asset.fileName ?? `banner-${Date.now()}.jpg`,
+        type: asset.mimeType ?? "image/jpeg",
+      } as any);
+      const res = await apiRequest("/storage/uploads/image", {
+        method: "POST",
+        body: formData,
+        headers: {},
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      const data = await res.json();
+      setForm((prev) => ({ ...prev, imageUrl: data.imageUrl ?? "" }));
+    } catch (e: any) {
+      Alert.alert("Upload Failed", e.message ?? "Could not upload image.");
+    }
+    setUploadingBannerImage(false);
+  }
 
   useEffect(() => { fetchBanners(); }, []);
 
@@ -232,8 +271,38 @@ export default function BannersScreen() {
               <TextInput style={styles.fieldInput} value={form.ctaText} onChangeText={(v) => setForm({ ...form, ctaText: v })} placeholder="Shop Now" placeholderTextColor="#9CA3AF" />
             </View>
             <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>Image URL (optional)</Text>
-              <TextInput style={styles.fieldInput} value={form.imageUrl} onChangeText={(v) => setForm({ ...form, imageUrl: v })} placeholder="https://..." placeholderTextColor="#9CA3AF" />
+              <Text style={styles.fieldLabel}>Banner Image (optional)</Text>
+              {!!form.imageUrl && (
+                <View style={{ position: "relative", marginBottom: 8 }}>
+                  <Image source={{ uri: form.imageUrl }} style={styles.bannerImagePreview} resizeMode="cover" />
+                  <Pressable
+                    style={styles.removeImageBtn}
+                    onPress={() => setForm({ ...form, imageUrl: "" })}
+                  >
+                    <Feather name="x" size={14} color="#fff" />
+                  </Pressable>
+                </View>
+              )}
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <Pressable
+                  style={[styles.galleryBtn, { opacity: uploadingBannerImage ? 0.6 : 1 }]}
+                  onPress={pickBannerImage}
+                  disabled={uploadingBannerImage}
+                >
+                  {uploadingBannerImage
+                    ? <ActivityIndicator size="small" color="#2563EB" />
+                    : <><Feather name="image" size={15} color="#2563EB" /><Text style={styles.galleryBtnText}>Pick from Gallery</Text></>
+                  }
+                </Pressable>
+              </View>
+              <Text style={styles.orText}>— or paste a URL —</Text>
+              <TextInput
+                style={styles.fieldInput}
+                value={form.imageUrl}
+                onChangeText={(v) => setForm({ ...form, imageUrl: v })}
+                placeholder="https://..."
+                placeholderTextColor="#9CA3AF"
+              />
             </View>
 
             <View style={styles.fieldGroup}>
@@ -320,4 +389,9 @@ const styles = StyleSheet.create({
   toggleThumb: { width: 22, height: 22, borderRadius: 11, backgroundColor: "#fff" },
   saveBtn: { backgroundColor: "#2563EB", borderRadius: 14, paddingVertical: 16, alignItems: "center", marginTop: 8 },
   saveBtnText: { color: "#fff", fontSize: 16, fontFamily: "DMSans_600SemiBold" },
+  bannerImagePreview: { width: "100%", height: 110, borderRadius: 10 },
+  removeImageBtn: { position: "absolute", top: 8, right: 8, backgroundColor: "rgba(0,0,0,0.55)", borderRadius: 16, width: 28, height: 28, alignItems: "center", justifyContent: "center" },
+  galleryBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 11, borderRadius: 10, borderWidth: 1.5, borderColor: "#2563EB", borderStyle: "dashed" },
+  galleryBtnText: { color: "#2563EB", fontSize: 13, fontFamily: "DMSans_600SemiBold" },
+  orText: { textAlign: "center", fontSize: 12, fontFamily: "DMSans_400Regular", color: "#9CA3AF", marginVertical: 6 },
 });

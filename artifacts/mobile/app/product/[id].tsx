@@ -8,6 +8,8 @@ import {
   Animated,
   Dimensions,
   Image,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
   Platform,
   Pressable,
   ScrollView,
@@ -36,6 +38,7 @@ interface Product {
   rating: number;
   description?: string;
   imageUrl?: string;
+  imageUrls?: string[];
   stock: number;
   isActive: boolean;
 }
@@ -73,6 +76,7 @@ export default function ProductDetailScreen() {
   const [addedAnim] = useState(new Animated.Value(1));
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [config, setConfig] = useState<Record<string, any>>({});
+  const [activeImage, setActiveImage] = useState(0);
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const headerBg = scrollY.interpolate({ inputRange: [IMAGE_HEIGHT - 80, IMAGE_HEIGHT - 40], outputRange: [0, 1], extrapolate: "clamp" });
@@ -219,30 +223,71 @@ export default function ProductDetailScreen() {
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
         scrollEventThrottle={16}
       >
-        {/* Hero image */}
-        <View style={[styles.heroContainer, { backgroundColor: colors.secondary }]}>
-          {(product as any).image || product.imageUrl ? (
-            <Image
-              source={(product as any).image ? (product as any).image : { uri: product.imageUrl! }}
-              style={styles.heroImage}
-              resizeMode="cover"
-            />
-          ) : (
-            <View style={styles.heroPlaceholder}>
-              <Feather name="package" size={64} color={colors.mutedForeground} />
+        {/* Hero image gallery */}
+        {(() => {
+          const staticImg = (product as any).image;
+          const galleryUris: string[] = [
+            ...(product.imageUrl ? [product.imageUrl] : []),
+            ...((product.imageUrls ?? []) as string[]),
+          ].filter(Boolean);
+          return (
+            <View style={[styles.heroContainer, { backgroundColor: colors.secondary }]}>
+              {staticImg ? (
+                <Image source={staticImg} style={styles.heroImage} resizeMode="cover" />
+              ) : galleryUris.length > 0 ? (
+                <>
+                  <ScrollView
+                    horizontal
+                    pagingEnabled
+                    showsHorizontalScrollIndicator={false}
+                    onScroll={(e: NativeSyntheticEvent<NativeScrollEvent>) => {
+                      const idx = Math.round(e.nativeEvent.contentOffset.x / width);
+                      setActiveImage(idx);
+                    }}
+                    scrollEventThrottle={16}
+                    style={{ width, height: IMAGE_HEIGHT }}
+                  >
+                    {galleryUris.map((uri, i) => (
+                      <Image
+                        key={i}
+                        source={{ uri }}
+                        style={{ width, height: IMAGE_HEIGHT }}
+                        resizeMode="cover"
+                      />
+                    ))}
+                  </ScrollView>
+                  {galleryUris.length > 1 && (
+                    <View style={styles.dotRow}>
+                      {galleryUris.map((_, i) => (
+                        <View
+                          key={i}
+                          style={[
+                            styles.dot,
+                            i === activeImage ? styles.dotActive : null,
+                          ]}
+                        />
+                      ))}
+                    </View>
+                  )}
+                </>
+              ) : (
+                <View style={styles.heroPlaceholder}>
+                  <Feather name="package" size={64} color={colors.mutedForeground} />
+                </View>
+              )}
+              {isOutOfStock && (
+                <View style={styles.outOfStockOverlay}>
+                  <Text style={styles.outOfStockText}>Out of Stock</Text>
+                </View>
+              )}
+              {!isOutOfStock && !!product.discount && product.discount > 0 && (
+                <View style={[styles.discountBadge, { backgroundColor: "#EF4444" }]}>
+                  <Text style={styles.discountText}>-{product.discount}% OFF</Text>
+                </View>
+              )}
             </View>
-          )}
-          {isOutOfStock && (
-            <View style={styles.outOfStockOverlay}>
-              <Text style={styles.outOfStockText}>Out of Stock</Text>
-            </View>
-          )}
-          {!isOutOfStock && !!product.discount && product.discount > 0 && (
-            <View style={[styles.discountBadge, { backgroundColor: "#EF4444" }]}>
-              <Text style={styles.discountText}>-{product.discount}% OFF</Text>
-            </View>
-          )}
-        </View>
+          );
+        })()}
 
         {/* Content */}
         <View style={[styles.content, { backgroundColor: colors.background }]}>
@@ -473,9 +518,12 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 3,
   },
-  heroContainer: { width, height: IMAGE_HEIGHT, position: "relative" },
+  heroContainer: { width, height: IMAGE_HEIGHT, position: "relative", overflow: "hidden" },
   heroImage: { width: "100%", height: "100%" },
   heroPlaceholder: { flex: 1, alignItems: "center", justifyContent: "center" },
+  dotRow: { position: "absolute", bottom: 12, left: 0, right: 0, flexDirection: "row", justifyContent: "center", gap: 6 },
+  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "rgba(255,255,255,0.5)" },
+  dotActive: { width: 20, backgroundColor: "#fff" },
   outOfStockOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.45)",
