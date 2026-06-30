@@ -79,7 +79,7 @@ router.post("/auth/register", async (req, res) => {
 
       if (sameIpUsers.length > 0) {
         const existingUser = sameIpUsers[0];
-        const multiAccountReason = `Multiple accounts detected: IP address ${clientIp} was used to register multiple accounts. All associated accounts have been automatically suspended.`;
+        const multiAccountReason = `Illegal activity detected: IP address ${clientIp} was used to register multiple accounts. Your account has been permanently banned. Please contact admin at xylocart26@gmail.com`;
 
         // Ban ALL existing accounts on this IP
         for (const su of sameIpUsers) {
@@ -145,8 +145,8 @@ router.post("/auth/register", async (req, res) => {
         // Block the new registration attempt
         res.status(403).json({
           error: "multi_account",
-          message: "Your account has been blocked because multiple accounts were detected from the same IP address. Please contact support.",
-          supportEmail: "support@xylocart.com",
+          message: "You are using illegal activities in this application, so you could not enter into this application. Please contact the admin at xylocart26@gmail.com",
+          supportEmail: "xylocart26@gmail.com",
         });
         return;
       }

@@ -139,8 +139,8 @@ function BannedContent({ banReason, onLogout }: Props) {
 
       <Text style={styles.title}>Access Denied</Text>
       <Text style={styles.subtitle}>
-        Your account has been permanently removed from XyloCart.{"\n"}
-        This action cannot be reversed.
+        You are using illegal activities in this application,{"\n"}
+        so you could not enter into this application.
       </Text>
 
       {/* Ban reason card */}
@@ -154,9 +154,9 @@ function BannedContent({ banReason, onLogout }: Props) {
       {/* Disclaimer */}
       <View style={styles.disclaimer}>
         <Text style={styles.disclaimerText}>
-          If you believe this is an error, contact{" "}
-          <Text style={{ color: "#EF4444" }}>support@xyloPcart.com</Text>{" "}
-          with your registered email address and account details.
+          Please contact the admin at{"\n"}
+          <Text style={{ color: "#EF4444" }}>xylocart26@gmail.com</Text>
+          {"\n"}with your registered email address and account details.
         </Text>
       </View>
 

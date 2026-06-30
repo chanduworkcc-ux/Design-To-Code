@@ -309,8 +309,20 @@ export default function OrdersScreen() {
       const res = await apiRequest(`/orders/${orderId}/invoice`);
       if (!res.ok) { setDownloadingId(null); return; }
       const html = await res.text();
-      const { uri } = await Print.printToFileAsync({ html, base64: false });
-      await Sharing.shareAsync(uri, { mimeType: "application/pdf", dialogTitle: "Save Invoice" });
+      if (Platform.OS === "web") {
+        const blob = new Blob([html], { type: "text/html" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `invoice-${orderId.slice(0, 8).toUpperCase()}.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+      } else {
+        const { uri } = await Print.printToFileAsync({ html, base64: false });
+        await Sharing.shareAsync(uri, { mimeType: "application/pdf", dialogTitle: "Save Invoice" });
+      }
     } catch {}
     setDownloadingId(null);
   }
