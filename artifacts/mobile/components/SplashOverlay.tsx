@@ -11,7 +11,7 @@ import {
 
 const { width, height } = Dimensions.get("window");
 
-const SPLASH_DURATION = 12000;
+const SPLASH_DURATION = 13000;
 const FADE_OUT_DURATION = 800;
 
 interface Props {
@@ -49,19 +49,23 @@ function Dot({ delay }: { delay: number }) {
 
 export default function SplashOverlay({ onDone }: Props) {
   const fadeAnim = useRef(new Animated.Value(1)).current;
-  const logoScale = useRef(new Animated.Value(0.8)).current;
+  const logoScale = useRef(new Animated.Value(0.75)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const tagOpacity = useRef(new Animated.Value(0)).current;
+  const dotsOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.sequence([
-      Animated.delay(200),
+      Animated.delay(300),
       Animated.parallel([
-        Animated.spring(logoScale, { toValue: 1, damping: 14, stiffness: 160, useNativeDriver: true }),
-        Animated.timing(logoOpacity, { toValue: 1, duration: 500, useNativeDriver: true }),
+        Animated.spring(logoScale, { toValue: 1, damping: 12, stiffness: 140, useNativeDriver: true }),
+        Animated.timing(logoOpacity, { toValue: 1, duration: 600, useNativeDriver: true }),
       ]),
       Animated.delay(400),
-      Animated.timing(tagOpacity, { toValue: 1, duration: 600, useNativeDriver: true }),
+      Animated.parallel([
+        Animated.timing(tagOpacity, { toValue: 1, duration: 600, useNativeDriver: true }),
+        Animated.timing(dotsOpacity, { toValue: 1, duration: 600, useNativeDriver: true }),
+      ]),
     ]).start();
 
     const timer = setTimeout(() => {
@@ -88,11 +92,11 @@ export default function SplashOverlay({ onDone }: Props) {
           />
         </Animated.View>
 
-        <View style={styles.dotsRow}>
+        <Animated.View style={[styles.dotsRow, { opacity: dotsOpacity }]}>
           <Dot delay={0} />
           <Dot delay={200} />
           <Dot delay={400} />
-        </View>
+        </Animated.View>
       </View>
 
       <Animated.View style={[styles.footer, { opacity: tagOpacity }]}>
@@ -115,21 +119,15 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 32,
+    gap: 40,
   },
   logoWrap: {
     alignItems: "center",
     gap: 10,
   },
   logo: {
-    width: 90,
-    height: 90,
-  },
-  brandName: {
-    fontSize: 26,
-    fontFamily: Platform.OS === "web" ? "sans-serif" : "DMSans_700Bold",
-    color: "#1E293B",
-    letterSpacing: 0.5,
+    width: 220,
+    height: 220,
   },
   dotsRow: {
     flexDirection: "row",
@@ -140,7 +138,7 @@ const styles = StyleSheet.create({
     width: 9,
     height: 9,
     borderRadius: 5,
-    backgroundColor: "#3B82F6",
+    backgroundColor: "#1E40AF",
   },
   footer: {
     paddingBottom: Platform.OS === "web" ? 40 : 60,
