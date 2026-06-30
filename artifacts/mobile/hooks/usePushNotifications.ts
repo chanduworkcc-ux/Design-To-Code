@@ -2,6 +2,7 @@ import { BASE_URL } from "@/lib/api";
 import { useEffect, useRef } from "react";
 import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 
 Notifications.setNotificationHandler({
@@ -27,9 +28,11 @@ async function registerPushToken(authToken: string): Promise<void> {
 
   if (finalStatus !== "granted") return;
 
-  const tokenData = await Notifications.getExpoPushTokenAsync({
-    projectId: process.env.EXPO_PUBLIC_REPL_ID,
-  });
+  const projectId =
+    Constants.expoConfig?.extra?.eas?.projectId ??
+    "a20b7485-1eed-4b26-9ca0-41165ceb9b03";
+
+  const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
 
   const pushToken = tokenData.data;
   if (!pushToken) return;
