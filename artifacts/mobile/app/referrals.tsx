@@ -1,9 +1,10 @@
 import { BASE_URL } from "@/lib/api";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
   Image,
   Platform,
   Pressable,
