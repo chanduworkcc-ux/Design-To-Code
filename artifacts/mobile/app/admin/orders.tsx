@@ -406,7 +406,10 @@ export default function OrdersScreen() {
                                 style={[styles.cancelFormConfirm, { backgroundColor: "#16A34A", opacity: savingShipping ? 0.6 : 1 }]}
                                 disabled={savingShipping}
                                 onPress={async () => {
-                                  if (!shippingInput.courierPartner.trim() || !shippingInput.trackingLink.trim() || !shippingInput.estimatedDelivery.trim()) return;
+                                  if (!shippingInput.courierPartner.trim() || !shippingInput.trackingLink.trim() || !shippingInput.estimatedDelivery.trim()) {
+                                    Alert.alert("Missing Fields", "Please fill in all shipping fields.");
+                                    return;
+                                  }
                                   setSavingShipping(true);
                                   try {
                                     const res = await apiRequest(`/admin/orders/${order.id}/shipping`, {
@@ -421,8 +424,13 @@ export default function OrdersScreen() {
                                       const data = await res.json();
                                       setOrders((prev) => prev.map((o) => o.id === order.id ? { ...o, ...data.order } : o));
                                       setShippingFormId(null);
+                                    } else {
+                                      const err = await res.json().catch(() => ({}));
+                                      Alert.alert("Save Failed", err.error ?? "Could not save shipping info. Please try again.");
                                     }
-                                  } catch {}
+                                  } catch {
+                                    Alert.alert("Save Failed", "Network error. Please try again.");
+                                  }
                                   setSavingShipping(false);
                                 }}
                               >

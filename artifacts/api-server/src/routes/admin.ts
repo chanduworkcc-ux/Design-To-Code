@@ -318,7 +318,7 @@ router.get("/admin/orders", authMiddleware, adminMiddleware, async (req, res) =>
 });
 
 async function handleOrderStatusUpdate(orderId: string, newStatus: string, res: any) {
-  const allowed = ["pending", "confirmed", "shipped", "delivered", "cancelled"];
+  const allowed = ["pending", "confirmed", "packed", "shipped", "delivered", "cancelled"];
   if (!allowed.includes(newStatus)) { res.status(400).json({ error: "Invalid status" }); return; }
 
   const [updated] = await db
@@ -690,7 +690,7 @@ router.put("/admin/config", authMiddleware, adminMiddleware, async (req: AuthReq
 
 const shippingUpdateSchema = z.object({
   courierPartner: z.string().min(1),
-  trackingLink: z.string().url("Must be a valid URL"),
+  trackingLink: z.string().min(1),
   estimatedDelivery: z.string().min(1),
 });
 
