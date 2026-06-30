@@ -1,7 +1,7 @@
 import { BASE_URL } from "@/lib/api";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -185,7 +185,7 @@ export default function CheckoutScreen() {
 
   // Success animation state
   const [showSuccessAnim, setShowSuccessAnim] = useState(false);
-  const [successOrder, setSuccessOrder] = useState<{ orderNumber: string; total: number } | null>(null);
+  const [successOrder, setSuccessOrder] = useState<{ orderId: string; orderNumber: string; total: number } | null>(null);
 
   // Error messages for form validation (must be here, not after early return)
   const [errorMessages, setErrorMessages] = useState<Partial<Record<keyof ShippingForm, string>>>({});
@@ -465,7 +465,8 @@ export default function CheckoutScreen() {
         await clearCart();
         const total = data.breakdown?.total ?? computedTotal;
         const orderNum = data.order?.orderNumber ?? "";
-        setSuccessOrder({ orderNumber: orderNum, total });
+        const orderId = data.order?.id ?? "";
+        setSuccessOrder({ orderId, orderNumber: orderNum, total });
         setShowSuccessAnim(true);
       } else if (data.error === "purchase_limit_exceeded") {
         setAlreadyPurchased(true);
@@ -492,6 +493,19 @@ export default function CheckoutScreen() {
   const visiblePaymentOption = ALL_PAYMENT_OPTIONS.find((o) => o.key === activeGateway) ?? ALL_PAYMENT_OPTIONS[0];
   const isLoading = placing || checkingStock || gatewayLoading;
   const canOrder = !alreadyPurchased && !checkingLimit;
+
+  // Stable reference so PurchaseSuccessAnimation's 4200ms timer never resets on re-renders
+  const handleAnimationComplete = useCallback(() => {
+    setShowSuccessAnim(false);
+    const trackId = successOrder?.orderId
+      ? successOrder.orderId.slice(0, 8).toUpperCase()
+      : successOrder?.orderNumber ?? "";
+    if (trackId) {
+      router.replace((`/track-order?orderId=${trackId}`) as any);
+    } else {
+      router.replace("/orders" as any);
+    }
+  }, [successOrder, router]);
 
   return (
     <>
@@ -916,20 +930,12 @@ export default function CheckoutScreen() {
         </View>
       </KeyboardAvoidingView>
 
-      {/* 3D Purchase Success Animation */}
+      {/* 3D Purchase Success Animation → redirects to order tracking on complete */}
       <PurchaseSuccessAnimation
         visible={showSuccessAnim}
         orderNumber={successOrder?.orderNumber}
         total={successOrder?.total}
-        onComplete={() => {
-          setShowSuccessAnim(false);
-          const orderNum = successOrder?.orderNumber ?? "";
-          if (orderNum) {
-            router.replace((`/track-order?orderId=${orderNum}`) as any);
-          } else {
-            router.replace("/orders" as any);
-          }
-        }}
+        onComplete={handleAnimationComplete}
       />
     </>
   );
