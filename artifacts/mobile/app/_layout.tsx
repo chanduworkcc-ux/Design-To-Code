@@ -134,8 +134,9 @@ function UserStatusGuard({ children }: { children: React.ReactNode }) {
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     DMSans_400Regular, DMSans_500Medium, DMSans_600SemiBold, DMSans_700Bold,
-    ...Ionicons.font,
-    ...Feather.font,
+    Feather: require("../assets/fonts/Feather.ttf"),
+    Ionicons: require("../assets/fonts/Ionicons.ttf"),
+    FontAwesome: require("../assets/fonts/FontAwesome.ttf"),
   });
   const [showSplash, setShowSplash] = useState(true);
   const [maintenance, setMaintenance] = useState<{ active: boolean; message?: string }>({ active: false });
