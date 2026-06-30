@@ -142,18 +142,10 @@ export default function OrdersScreen() {
       const html = await res.text();
 
       if (Platform.OS === "web") {
-        // Web: force download the HTML invoice file
-        const blob = new Blob([html], { type: "text/html" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `invoice-${orderId.slice(0, 8).toUpperCase()}.html`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 5000);
+        // Web: Print.printAsync opens the browser's native print dialog → Save as PDF
+        await Print.printAsync({ html });
       } else {
-        // Native: render to PDF then share/save
+        // Native: render to PDF file then share/save
         const { uri } = await Print.printToFileAsync({ html, base64: false });
         await Sharing.shareAsync(uri, { mimeType: "application/pdf", dialogTitle: "Save Invoice" });
       }

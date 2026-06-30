@@ -310,15 +310,8 @@ export default function OrdersScreen() {
       if (!res.ok) { setDownloadingId(null); return; }
       const html = await res.text();
       if (Platform.OS === "web") {
-        const blob = new Blob([html], { type: "text/html" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `invoice-${orderId.slice(0, 8).toUpperCase()}.html`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 5000);
+        // Web: Print.printAsync opens the browser's native print dialog → Save as PDF
+        await Print.printAsync({ html });
       } else {
         const { uri } = await Print.printToFileAsync({ html, base64: false });
         await Sharing.shareAsync(uri, { mimeType: "application/pdf", dialogTitle: "Save Invoice" });
