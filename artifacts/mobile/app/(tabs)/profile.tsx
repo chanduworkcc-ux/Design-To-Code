@@ -72,7 +72,7 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { cart, wishlist } = useApp();
-  const { user, logout, loading } = useAuth();
+  const { user, logout, loading, apiRequest } = useAuth();
   const { t, language } = useLanguage();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
@@ -110,9 +110,7 @@ export default function ProfileScreen() {
   const fetchRecentOrder = useCallback(async () => {
     if (!user) return;
     try {
-  
-      const token = await AsyncStorage.getItem("@xc_token");
-      const res = await fetch(`${BASE_URL}/orders`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      const res = await apiRequest("/orders");
       if (res.ok) {
         const d = await res.json();
         const orders = d.orders ?? [];
@@ -124,7 +122,7 @@ export default function ProfileScreen() {
     } catch {
       setRecentOrder(null);
     }
-  }, [user]);
+  }, [user, apiRequest]);
 
   useEffect(() => { fetchRecentOrder(); }, [fetchRecentOrder]);
 
