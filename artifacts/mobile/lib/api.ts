@@ -7,5 +7,5 @@ export const BASE_URL: string =
 
 export const SOCKET_URL: string =
   Platform.OS === "web"
-    ? ""
+    ? (typeof window !== "undefined" ? window.location.origin : "")
     : `https://${process.env.EXPO_PUBLIC_DOMAIN}`;

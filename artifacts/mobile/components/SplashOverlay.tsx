@@ -11,7 +11,7 @@ import {
 
 const { width, height } = Dimensions.get("window");
 
-const SPLASH_DURATION = 13000;
+const SPLASH_DURATION = 2500;
 const FADE_OUT_DURATION = 800;
 
 interface Props {
