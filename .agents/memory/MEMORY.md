@@ -12,3 +12,4 @@
 - [Asset proxy port default](asset-proxy-port.md) — api-server/src/app.ts MOBILE_PROXY_PORT must default to 18115 not 3000; without MOBILE_PORT env var the /assets/ and /_expo/ font proxy fails → vector icons show as □ boxes
 - [Splash screen timing](splash-timing.md) — SPLASH_DURATION was 13 000 ms; reduced to 2 500 ms; FADE_OUT_DURATION (800 ms) must stay ≤ SPLASH_DURATION
 - [Socket.io web origin](socketio-web-origin.md) — SOCKET_URL on web must use window.location.origin (not ""); empty string hits the mobile proxy port instead of the API server
+- [Artifact PORT constraint](artifact-port-constraint.md) — api-server artifact runtime injects PORT=8080 and waits for it; overriding to another port causes workflow timeout; .replit maps 8080→80 for preview
