@@ -63,9 +63,10 @@ function startMetro() {
     REACT_NATIVE_PACKAGER_HOSTNAME: process.env.REPLIT_DEV_DOMAIN || "localhost",
   };
 
+  const expoBin = path.resolve(projectRoot, "node_modules/.bin/expo");
   const metro = spawn(
-    "pnpm",
-    ["exec", "expo", "start", "--localhost", "--port", String(METRO_PORT)],
+    expoBin,
+    ["start", "--localhost", "--port", String(METRO_PORT)],
     { cwd: projectRoot, env, stdio: "inherit" }
   );
 
