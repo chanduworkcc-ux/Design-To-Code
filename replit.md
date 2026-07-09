@@ -58,7 +58,7 @@ _Populate as you build — explicit user instructions worth remembering across s
 - `@workspace/api-zod` is listed in api-server deps but may be unused; safe to remove if causing issues
 - API base URL is centralised in `artifacts/mobile/lib/api.ts` — uses relative `/api` on web (avoids CORS), absolute URL on native
 - Admin credentials: `admin@xylocart.com` / `admin123` (seeded via `scripts/src/seed.ts` and `artifacts/api-server/src/lib/config.ts`)
-- Splash screen duration is 12 seconds (by design in `SplashOverlay.tsx`)
+- Splash screen duration is 2.5 seconds (`SPLASH_DURATION` in `artifacts/mobile/components/SplashOverlay.tsx`)
 
 ## Pointers
 
