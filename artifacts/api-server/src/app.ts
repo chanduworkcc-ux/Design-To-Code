@@ -49,7 +49,7 @@ const registerLimiter = rateLimit({
 });
 
 app.get("/", (_req, res) => {
-  res.json({ status: "ok", message: "API server is running" });
+  res.redirect("/mobile/");
 });
 
 app.get("/health", (_req, res) => {
