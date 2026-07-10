@@ -1,13 +1,8 @@
 {
   "version": 2,
-  "installCommand": "pnpm install",
-  "buildCommand": "pnpm run vercel-build",
+  "buildCommand": "pnpm --filter @workspace/mobile run build:vercel && pnpm --filter @workspace/api-server run build",
   "outputDirectory": "artifacts/mobile/dist",
   "framework": "react",
-  "env": [
-    "NODE_ENV"
-  ],
-  "regions": ["sfo1"],
   "functions": {
     "api/**/*.ts": {
       "maxDuration": 60,
