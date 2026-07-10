@@ -3,27 +3,9 @@
   "buildCommand": "pnpm run vercel-build",
   "outputDirectory": "artifacts/mobile/dist",
   "framework": null,
-  "builds": [
-    {
-      "src": "artifacts/api-server/dist/index.mjs",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": ["artifacts/api-server/dist/**"]
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/artifacts/api-server/dist/index.mjs"
-    },
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/server" },
+    { "source": "/((?!_expo|assets|favicon\\.ico).*)", "destination": "/index.html" }
   ],
   "headers": [
     {
