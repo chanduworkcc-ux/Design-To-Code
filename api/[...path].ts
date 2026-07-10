@@ -11,7 +11,7 @@
  * deployment instead.
  */
 import { createServer } from "http";
-import app from "../artifacts/api-server/src/app";
+import app from "../artifacts/api-server/src/index";
 import { initSocket } from "../artifacts/api-server/src/lib/socket";
 
 // Runs once per cold start. The httpServer is never .listen()-ed;
