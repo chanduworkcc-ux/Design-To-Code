@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "framework": "expo",
+  "buildCommand": "pnpm --filter @workspace/mobile run build:vercel",
+  "outputDirectory": "artifacts/mobile/dist",
+  "functions": {
+    "api/**/*.ts": {
+      "runtime": "nodejs18.x",
+      "maxDuration": 60,
+      "memory": 1024
+    }
+  }
+}
