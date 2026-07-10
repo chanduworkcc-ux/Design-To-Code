@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node server/dev-proxy.js",
     "build": "node scripts/build.js",
+    "build:vercel": "expo export --platform web",
     "serve": "node server/serve.js",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
