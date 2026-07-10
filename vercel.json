@@ -2,12 +2,36 @@
   "version": 2,
   "installCommand": "pnpm install",
   "buildCommand": "pnpm run vercel-build",
-  "outputDirectory": "artifacts/mobile/dist",
-  "framework": null,
-  "rewrites": [
+  "builds": [
     {
-      "source": "/((?!api|_expo|assets|favicon\\.ico).*)",
-      "destination": "/index.html"
+      "src": "api/**/*.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "artifacts/mobile/dist/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/[...path]"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "/_expo/(.*)",
+      "dest": "/_expo/$1"
+    },
+    {
+      "src": "/((?!api|_expo|assets|favicon\\.ico).*)",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/favicon.ico",
+      "dest": "/favicon.ico"
     }
   ],
   "headers": [
