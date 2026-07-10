@@ -1,0 +1,36 @@
+Railway deployment failed — Build Error
+
+Regenerate the pnpm-lock.yaml file by running "pnpm install --no-frozen-lockfile" locally and committing the result. The build fails because pnpm-lock.yaml is out of sync with pnpm-workspace.yaml: the workspace catalog includes "@replit/vite-plugin-dev-banner" but the lockfile does not, causing the frozen install to reject the mismatch. This same error has occurred across multiple deployments, so the lockfile needs to be updated and committed.
+
+Repository: https://github.com/chanduworkcc-ux/Design-To-Code
+Branch: main · Commit: 6e36439 — Update mobile build script and add static assets with fonts and images
+
+Replit-Commit-Author: Agent
+Deployment ID: 493c96e2-bb77-40ea-a664-893367bb1931
+Service ID: 4587f411-408b-46e2-9efb-b80512e5e379
+Environment ID: 6458a774-b0ea-4a02-b3b1-b61c1271a6c0
+
+---
+
+## Problem
+Service @workspace/mobile, builder RAILPACK (no railway/railpack config file present), failure stage BUILD_IMAGE.
+Build log error: `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH  Cannot proceed with the frozen installation. The current "overrides" configuration doesn't match the value found in the lockfile` followed by `process "pnpm install --frozen-lockfile --prefer-offline" did not complete successfully: exit code: 1`.
+SNAPSHOT_CODE succeeded; BUILD_IMAGE failed at the dependency install step before any build command ran.
+There is no railway.json, railway.toml, or railpack.json; the install command is Railpack's default frozen install for a pnpm repo and cannot be changed via a Railway config file.
+The same error occurred in the previous deployment (2e7f99f2, commit bec5e20), confirming this is pre-existing lockfile drift, not caused by the latest commit.
+
+## Diagnosis
+pnpm 9 stores overrides and catalog entries in pnpm-workspace.yaml and serializes the resolved values into pnpm-lock.yaml. A frozen install fails if those serialized values no longer match the workspace config.
+Comparing the two files on branch HEAD: pnpm-workspace.yaml catalog includes `'@replit/vite-plugin-dev-banner': ^0.1.1`, but the lockfile's `catalogs.default` section does not contain `@replit/vite-plugin-dev-banner`. This confirms pnpm-lock.yaml was not regenerated after pnpm-workspace.yaml was edited.
+The error names "overrides" because pnpm validates the entire workspace-level config block (overrides + catalogs) as a unit under frozen install. The lockfile is stale and must be regenerated so its overrides and catalogs sections match pnpm-workspace.yaml.
+The branch HEAD is unchanged since the failed deployment (branch-HEAD diff is empty), so the issue is still present.
+
+## Fix
+1. On a local checkout of branch `main`, run: `pnpm install --no-frozen-lockfile`
+2. This updates the root `pnpm-lock.yaml` so its `catalogs.default` and `overrides` sections match the current `pnpm-workspace.yaml` (adding the missing `@replit/vite-plugin-dev-banner` catalog entry and reconciling any other drift).
+3. Commit only the regenerated `pnpm-lock.yaml` and push to `main`.
+4. This resolves the failure because Railpack's `pnpm install --frozen-lockfile` will then find a lockfile whose overrides/catalog configuration matches `pnpm-workspace.yaml`, allowing the frozen install to proceed.
+
+Do not disable --frozen-lockfile in CI/Railpack as a workaround — that defeats the lockfile integrity check. The correct fix is committing an in-sync lockfile.
+
+Note: this cannot be auto-applied by the code agent because it requires running pnpm to regenerate the lockfile; hand-editing pnpm-lock.yaml is not reliable.
