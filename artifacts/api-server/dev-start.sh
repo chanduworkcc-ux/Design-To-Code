@@ -23,14 +23,23 @@ cleanup() {
 trap cleanup EXIT SIGTERM SIGINT
 
 # ── 1. Ensure dependencies are installed ──────────────────────────────────────
+# Use --filter to install only api-server and its workspace dependencies,
+# skipping the mobile workspace whose @expo/cli pulls in `tar` which is
+# blocked by the Replit package firewall.
 if [ ! -d "$WORKSPACE_ROOT/node_modules" ] || [ ! -f "$WORKSPACE_ROOT/node_modules/.modules.yaml" ]; then
-  log "node_modules missing — running pnpm install..."
-  cd "$WORKSPACE_ROOT" && pnpm install
+  log "node_modules missing — running pnpm install (api-server only)..."
+  cd "$WORKSPACE_ROOT" && pnpm install --filter "@workspace/api-server..."
   cd "$API_DIR"
 fi
 
 # ── 2. Database restore (idempotent, safe) ────────────────────────────────────
 bash "$WORKSPACE_ROOT/scripts/db-restore.sh"
+
+# ── 2b. Push schema (idempotent — drizzle-kit push is a no-op when up to date) ─
+log "Pushing database schema..."
+cd "$WORKSPACE_ROOT"
+pnpm --filter @workspace/db run push || log "Schema push failed — continuing (DB may already be up to date)"
+cd "$API_DIR"
 
 # ── 3. Database watch / auto-backup (background) ─────────────────────────────
 bash "$WORKSPACE_ROOT/scripts/db-watch.sh" &
@@ -45,7 +54,7 @@ log "Building API server..."
 cd "$API_DIR"
 if ! pnpm run build; then
   log "Build failed — retrying after pnpm install..."
-  cd "$WORKSPACE_ROOT" && pnpm install && cd "$API_DIR"
+  cd "$WORKSPACE_ROOT" && pnpm install --filter "@workspace/api-server..." && cd "$API_DIR"
   if ! pnpm run build; then
     log "Build failed after retry — aborting."
     exit 1

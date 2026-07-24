@@ -53,7 +53,20 @@ function rewriteHtml(html) {
     </script></head>`);
 }
 
+let metroAvailable = false;
+
 function startMetro() {
+  const expoBin = path.resolve(projectRoot, "node_modules/.bin/expo");
+  const fs = require("fs");
+  if (!fs.existsSync(expoBin)) {
+    console.warn("[proxy] expo binary not found at", expoBin);
+    console.warn("[proxy] Running in degraded mode — Metro unavailable.");
+    console.warn("[proxy] To enable Metro, install mobile dependencies:");
+    console.warn("[proxy]   pnpm install --filter @workspace/mobile...");
+    return null;
+  }
+
+  metroAvailable = true;
   const env = {
     ...process.env,
     PORT: String(METRO_PORT),
@@ -63,7 +76,6 @@ function startMetro() {
     REACT_NATIVE_PACKAGER_HOSTNAME: process.env.REPLIT_DEV_DOMAIN || "localhost",
   };
 
-  const expoBin = path.resolve(projectRoot, "node_modules/.bin/expo");
   const metro = spawn(
     expoBin,
     ["start", "--localhost", "--port", String(METRO_PORT)],
@@ -101,7 +113,23 @@ function proxyRequest(req, res) {
   // as reachable even before Metro has fully warmed up.
   if (targetPath === "/status") {
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ status: "ok" }));
+    res.end(JSON.stringify({ status: metroAvailable ? "ok" : "degraded" }));
+    return;
+  }
+
+  // Degraded mode: expo binary missing (e.g. install blocked by package firewall).
+  // Serve a plain informational page instead of crashing.
+  if (!metroAvailable) {
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>XyloCart Mobile</title>
+<style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f8f9fa}
+.card{max-width:480px;padding:2rem;background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.1);text-align:center}
+h1{color:#1a1a2e;font-size:1.4rem}p{color:#555;line-height:1.6}code{background:#f0f0f0;padding:2px 6px;border-radius:4px;font-size:.875rem}</style>
+</head><body><div class="card">
+<h1>📱 XyloCart Mobile</h1>
+<p>The Expo/Metro dev server is unavailable because <code>expo</code> dependencies could not be installed.</p>
+<p>The mobile app requires a physical device or simulator running <strong>Expo Go</strong>. The API server is running and fully functional.</p>
+</div></body></html>`);
     return;
   }
 
