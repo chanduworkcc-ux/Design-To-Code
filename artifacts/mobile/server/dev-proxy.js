@@ -55,14 +55,50 @@ function rewriteHtml(html) {
 
 let metroAvailable = false;
 
+/**
+ * Install mobile dependencies using the public npm registry, bypassing the
+ * Replit package firewall which blocks `tar` (a transitive dep of @expo/cli).
+ * This runs synchronously so Metro only starts once deps are ready.
+ */
+function installDeps() {
+  const { execFileSync } = require("child_process");
+  const workspaceRoot = path.resolve(projectRoot, "../..");
+  console.log("[proxy] Installing mobile dependencies (bypassing package firewall for tar)...");
+  try {
+    execFileSync(
+      "pnpm",
+      ["install", "--filter", "@workspace/mobile..."],
+      {
+        cwd: workspaceRoot,
+        stdio: "inherit",
+        env: {
+          ...process.env,
+          // Override the Replit package firewall registry so that `tar`
+          // (blocked by the firewall) is fetched from the public registry.
+          npm_config_registry: "https://registry.npmjs.org/",
+          NPM_CONFIG_REGISTRY: "https://registry.npmjs.org/",
+          YARN_NPM_REGISTRY_SERVER: "https://registry.npmjs.org/",
+        },
+      }
+    );
+    console.log("[proxy] Mobile dependencies installed.");
+  } catch (err) {
+    console.error("[proxy] Dependency install failed:", err.message);
+  }
+}
+
 function startMetro() {
-  const expoBin = path.resolve(projectRoot, "node_modules/.bin/expo");
   const fs = require("fs");
+  const expoBin = path.resolve(projectRoot, "node_modules/.bin/expo");
+
   if (!fs.existsSync(expoBin)) {
-    console.warn("[proxy] expo binary not found at", expoBin);
-    console.warn("[proxy] Running in degraded mode — Metro unavailable.");
-    console.warn("[proxy] To enable Metro, install mobile dependencies:");
-    console.warn("[proxy]   pnpm install --filter @workspace/mobile...");
+    console.warn("[proxy] expo binary not found — running pnpm install...");
+    installDeps();
+  }
+
+  if (!fs.existsSync(expoBin)) {
+    console.warn("[proxy] expo still missing after install — running in degraded mode.");
+    console.warn("[proxy] Mobile preview will show a placeholder page.");
     return null;
   }
 
