@@ -25,6 +25,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { FloatingOrb, FloatingParticle, PulsingRing, FloatIn, TiltCard3D } from "@/components/ThreeD";
 
 
 const { width: W, height: H } = Dimensions.get("window");
@@ -316,6 +317,12 @@ export default function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       {/* 3D Floating background orbs */}
+      <FloatingOrb color="#2563EB" size={220} style={{ top: -60, right: -80 }} delay={0} amplitude={22} duration={3800} />
+      <FloatingOrb color="#818CF8" size={160} style={{ top: 180, left: -60 }} delay={600} amplitude={18} duration={4200} />
+      <FloatingOrb color="#2563EB" size={100} style={{ bottom: 120, right: 20 }} delay={1200} amplitude={14} duration={3400} />
+      <FloatingParticle x={40}  startY={300} color="#2563EB" delay={0}    size={5} duration={4000} />
+      <FloatingParticle x={W - 60} startY={400} color="#818CF8" delay={800}  size={4} duration={4600} />
+      <FloatingParticle x={W / 2}  startY={500} color="#2563EB" delay={400}  size={3} duration={3800} />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 32 }]}
@@ -323,12 +330,17 @@ export default function LoginScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Logo with float-in */}
-        <View style={styles.logoArea}>
-          <Image source={require("@/assets/logo-nobg.png")} style={styles.logoImg} resizeMode="contain" />
-          <Text style={[styles.tagline, { color: colors.mutedForeground }]}>Shop smarter, live better</Text>
-        </View>
+        <FloatIn delay={0} distance={30}>
+          <View style={styles.logoArea}>
+            <GlowPulse color="#2563EB" size={140}>
+              <Image source={require("@/assets/logo-nobg.png")} style={styles.logoImg} resizeMode="contain" />
+            </GlowPulse>
+            <Text style={[styles.tagline, { color: colors.mutedForeground }]}>Shop smarter, live better</Text>
+          </View>
+        </FloatIn>
 
         {/* 3D tilt-in card */}
+        <TiltCard3D delay={150}>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>Welcome back</Text>
           <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>Sign in to your account</Text>
@@ -403,6 +415,7 @@ export default function LoginScreen() {
             </>
           )}
         </View>
+        </TiltCard3D>
       </ScrollView>
     </KeyboardAvoidingView>
   );

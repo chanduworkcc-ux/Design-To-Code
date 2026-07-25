@@ -135,6 +135,19 @@ seedDefaultConfig().catch((err) => logger.error({ err }, "Failed to seed config"
 seedAdminUser().catch((err) => logger.error({ err }, "Failed to seed admin user"));
 seedDefaultFaqs().catch((err) => logger.error({ err }, "Failed to seed default FAQs"));
 
+// Keep-alive: ping our own health endpoint every 4 minutes so Replit never
+// puts the project to sleep. Fires only after the server port is bound.
+const KEEP_ALIVE_MS = 4 * 60 * 1000; // 4 minutes
+setInterval(() => {
+  const port = process.env.PORT || 5000;
+  const req = http.get(`http://127.0.0.1:${port}/health`, (res) => {
+    res.resume(); // drain body so socket can be reused
+    logger.debug({ status: res.statusCode }, "keep-alive ping");
+  });
+  req.on("error", (err) => logger.warn({ err }, "keep-alive ping failed"));
+  req.end();
+}, KEEP_ALIVE_MS);
+
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   logger.error({ err }, "Unhandled error");
   res.status(500).json({ error: err.message ?? "Internal server error" });

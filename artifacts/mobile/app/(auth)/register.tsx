@@ -24,8 +24,23 @@ import Animated, {
 import { useLocalSearchParams } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { FloatingOrb, FloatingParticle, PulsingRing, FloatIn, TiltCard3D } from "@/components/ThreeD";
 
 const { width: W, height: H } = Dimensions.get("window");
+
+function RegisterBackground({ colors }: { colors: any }) {
+  return (
+    <>
+      <FloatingOrb color="#2563EB" size={200} style={{ top: -50, right: -70 }} delay={0}    amplitude={20} duration={3600} />
+      <FloatingOrb color="#818CF8" size={140} style={{ top: 200, left: -50 }} delay={700}   amplitude={16} duration={4400} />
+      <FloatingOrb color="#2563EB" size={90}  style={{ bottom: 140, right: 10 }} delay={1100} amplitude={12} duration={3200} />
+      <FloatingOrb color="#60A5FA" size={60}  style={{ bottom: 280, left: 30 }} delay={400}  amplitude={10} duration={2800} />
+      <FloatingParticle x={30}     startY={260} color="#2563EB" delay={0}    size={5} duration={4000} />
+      <FloatingParticle x={W - 50} startY={380} color="#818CF8" delay={900}  size={4} duration={4800} />
+      <FloatingParticle x={W / 2}  startY={480} color="#2563EB" delay={450}  size={3} duration={3600} />
+    </>
+  );
+}
 
 function Btn3D({ onPress, loading, label }: { onPress: () => void; loading: boolean; label: string }) {
   const scale = useSharedValue(1);
@@ -142,17 +157,21 @@ export default function RegisterScreen() {
       style={[styles.root, { backgroundColor: colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
+      <RegisterBackground colors={colors} />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 32 }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.logoArea}>
-          <Image source={require("@/assets/logo-nobg.png")} style={styles.logoImg} resizeMode="contain" />
-          <Text style={[styles.tagline, { color: colors.mutedForeground }]}>Join millions of smart shoppers</Text>
-        </View>
+        <FloatIn delay={0} distance={28}>
+          <View style={styles.logoArea}>
+            <Image source={require("@/assets/logo-nobg.png")} style={styles.logoImg} resizeMode="contain" />
+            <Text style={[styles.tagline, { color: colors.mutedForeground }]}>Join millions of smart shoppers</Text>
+          </View>
+        </FloatIn>
 
+        <TiltCard3D delay={120}>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>Create Account</Text>
           <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>Start your XyloCart journey</Text>
@@ -293,6 +312,7 @@ export default function RegisterScreen() {
             <Text style={[styles.switchLink, { color: colors.primary }]}>Sign In</Text>
           </Pressable>
         </View>
+        </TiltCard3D>
       </ScrollView>
     </KeyboardAvoidingView>
   );

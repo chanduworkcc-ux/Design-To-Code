@@ -24,6 +24,7 @@ import { products as staticProducts } from "@/data/products";
 import LoadingScreen from "@/components/LoadingScreen";
 import PolicyBadges from "@/components/PolicyBadges";
 import { useColors } from "@/hooks/useColors";
+import { FloatingOrb, FloatIn, GlowPulse } from "@/components/ThreeD";
 
 const { width } = Dimensions.get("window");
 const IMAGE_HEIGHT = width * 0.82;
@@ -190,6 +191,11 @@ export default function ProductDetailScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
+      {/* 3D background orbs */}
+      <FloatingOrb color="#2563EB" size={180} style={{ top: -40, right: -60, zIndex: 0 }} delay={0}    amplitude={20} duration={3800} />
+      <FloatingOrb color="#818CF8" size={120} style={{ top: 300, left: -50, zIndex: 0 }} delay={700}   amplitude={15} duration={4200} />
+      <FloatingOrb color="#60A5FA" size={80}  style={{ bottom: 200, right: 10, zIndex: 0 }} delay={400} amplitude={12} duration={3400} />
+
       {/* Floating header — appears when scrolled past image */}
       <Animated.View
         style={[

@@ -23,6 +23,7 @@ import { useColors } from "@/hooks/useColors";
 import { usePageTracker } from "@/hooks/usePageTracker";
 import PurchaseSuccessAnimation from "@/components/PurchaseSuccessAnimation";
 import PolicyBadges from "@/components/PolicyBadges";
+import { FloatingOrb, FloatIn } from "@/components/ThreeD";
 
 
 type PaymentMethod = "cod" | "razorpay" | "phonepe";
@@ -511,6 +512,11 @@ export default function CheckoutScreen() {
     <>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={[styles.root, { backgroundColor: colors.background }]}>
+          {/* 3D background orbs */}
+          <FloatingOrb color="#2563EB" size={160} style={{ top: -30, right: -50, zIndex: 0 }} delay={0}   amplitude={18} duration={3600} />
+          <FloatingOrb color="#818CF8" size={100} style={{ top: 400, left: -40, zIndex: 0 }} delay={800}  amplitude={14} duration={4200} />
+          <FloatingOrb color="#60A5FA" size={70}  style={{ bottom: 250, right: 20, zIndex: 0 }} delay={400} amplitude={10} duration={3000} />
+
           {/* Header */}
           <View style={[styles.header, { paddingTop: topPadding + 12, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
             <Pressable style={[styles.backBtn, { borderColor: colors.border }]} onPress={() => router.back()}>
@@ -539,13 +545,16 @@ export default function CheckoutScreen() {
             )}
 
             {/* Order Summary */}
-            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>ORDER SUMMARY</Text>
-            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.productName, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>
-              <Text style={[styles.productCat, { color: colors.mutedForeground }]}>{product.category} · Qty: 1</Text>
-            </View>
+            <FloatIn delay={0} distance={24}>
+              <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>ORDER SUMMARY</Text>
+              <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Text style={[styles.productName, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>
+                <Text style={[styles.productCat, { color: colors.mutedForeground }]}>{product.category} · Qty: 1</Text>
+              </View>
+            </FloatIn>
 
             {/* Billing Breakdown */}
+            <FloatIn delay={80} distance={20}>
             <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>BILLING BREAKDOWN</Text>
             <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <BillingRow label="Item Price" value={fmt(subtotal)} />
@@ -571,8 +580,10 @@ export default function CheckoutScreen() {
                 dividerAbove
               />
             </View>
+            </FloatIn>
 
             {/* Shipping Address */}
+            <FloatIn delay={160} distance={18}>
             <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>SHIPPING DETAILS</Text>
 
             {/* Saved address cards */}
@@ -728,8 +739,10 @@ export default function CheckoutScreen() {
                 </View>
               </View>
             </View>
+            </FloatIn>
 
             {/* Payment Method */}
+            <FloatIn delay={240} distance={16}>
             <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>PAYMENT METHOD</Text>
             {gatewayLoading ? (
               <View style={[styles.paymentGroup, { backgroundColor: colors.card, borderColor: colors.border, alignItems: "center", justifyContent: "center", padding: 20 }]}>
@@ -751,8 +764,10 @@ export default function CheckoutScreen() {
                 </View>
               </View>
             )}
+            </FloatIn>
 
             {/* Coupon */}
+            <FloatIn delay={320} distance={14}>
             <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>COUPON CODE (OPTIONAL)</Text>
             <View style={[styles.couponRow, { backgroundColor: colors.card, borderColor: couponValid === true ? "#10B981" : couponValid === false ? "#EF4444" : colors.border }]}>
               <Feather name="tag" size={16} color={couponValid === true ? "#10B981" : colors.mutedForeground} />
@@ -793,7 +808,10 @@ export default function CheckoutScreen() {
               </Text>
             )}
 
+            </FloatIn>
+
             {/* Policy — visual image-style badges */}
+            <FloatIn delay={400} distance={12}>
             <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>STORE POLICY</Text>
             <PolicyBadges />
 
@@ -804,6 +822,7 @@ export default function CheckoutScreen() {
                 Each product can only be purchased <Text style={{ fontFamily: "DMSans_700Bold" }}>once per account</Text>. This policy ensures fair access for all customers.
               </Text>
             </View>
+            </FloatIn>
           </ScrollView>
 
           {/* Saved Address Picker */}
