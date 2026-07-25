@@ -56,65 +56,81 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-// Forward /mobile/* to the mobile dev proxy (port 18115).
-// Replit routes all root paths through the API server (paths=["/api","/"]),
-// so we must explicitly proxy mobile traffic here.
+// In production the Expo web app is pre-built to artifacts/mobile/dist/.
+// In development we proxy to the Metro dev server on MOBILE_PORT (18115).
+const IS_PROD = process.env.NODE_ENV === "production";
+const MOBILE_DIST = path.join(__dirname, "../../mobile/dist");
 const MOBILE_PROXY_PORT = parseInt(process.env.MOBILE_PORT || "18115", 10);
-app.use("/mobile", (req: Request, res: Response) => {
-  const targetPath = "/mobile" + (req.url || "/");
-  const fwdHeaders: Record<string, any> = { ...req.headers, host: `localhost:${MOBILE_PROXY_PORT}` };
-  delete fwdHeaders["origin"];
-  delete fwdHeaders["referer"];
-  const options = {
-    hostname: "127.0.0.1",
-    port: MOBILE_PROXY_PORT,
-    path: targetPath,
-    method: req.method,
-    headers: fwdHeaders,
-  };
-  const proxyReq = http.request(options, (proxyRes) => {
-    const headers = { ...proxyRes.headers };
-    res.writeHead(proxyRes.statusCode || 200, headers);
-    proxyRes.pipe(res, { end: true });
-  });
-  proxyReq.on("error", (err) => {
-    logger.warn({ err }, "Mobile proxy error");
-    if (!res.headersSent) {
-      res.status(502).send("Mobile service unavailable");
-    }
-  });
-  req.pipe(proxyReq, { end: true });
-});
 
-// Forward /assets, /_expo, /node_modules, /packages to the mobile Metro server.
-// The Expo web bundle uses absolute asset paths without the /mobile prefix,
-// so we must proxy them here to avoid 404s.
-function proxyToMobile(req: Request, res: Response) {
-  const targetPath = req.originalUrl;
-  const fwdHeaders: Record<string, any> = { ...req.headers, host: `localhost:${MOBILE_PROXY_PORT}` };
-  delete fwdHeaders["origin"];
-  delete fwdHeaders["referer"];
-  const options = {
-    hostname: "127.0.0.1",
-    port: MOBILE_PROXY_PORT,
-    path: targetPath,
-    method: req.method,
-    headers: fwdHeaders,
-  };
-  const proxyReq = http.request(options, (proxyRes) => {
-    const headers = { ...proxyRes.headers };
-    res.writeHead(proxyRes.statusCode || 200, headers);
-    proxyRes.pipe(res, { end: true });
+if (IS_PROD) {
+  // --- PRODUCTION: serve the pre-built Expo web static output ---
+  // Assets and _expo chunks come from the build output with long-lived caches.
+  app.use("/assets", express.static(path.join(MOBILE_DIST, "assets"), {
+    maxAge: "365d", immutable: true,
+    setHeaders: (res) => { res.setHeader("Access-Control-Allow-Origin", "*"); },
+  }));
+  app.use("/_expo", express.static(path.join(MOBILE_DIST, "_expo"), {
+    maxAge: "365d", immutable: true,
+    setHeaders: (res) => { res.setHeader("Access-Control-Allow-Origin", "*"); },
+  }));
+  // /mobile/* → serve from dist/, falling back to index.html for SPA routing.
+  app.use("/mobile", express.static(MOBILE_DIST, { index: "index.html" }));
+  app.use("/mobile", (_req: Request, res: Response) => {
+    res.sendFile(path.join(MOBILE_DIST, "index.html"));
   });
-  proxyReq.on("error", (err) => {
-    logger.warn({ err }, "Asset proxy error");
-    if (!res.headersSent) res.status(502).send("Asset unavailable");
+} else {
+  // --- DEVELOPMENT: proxy to the Metro dev server ---
+  app.use("/mobile", (req: Request, res: Response) => {
+    const targetPath = "/mobile" + (req.url || "/");
+    const fwdHeaders: Record<string, any> = { ...req.headers, host: `localhost:${MOBILE_PROXY_PORT}` };
+    delete fwdHeaders["origin"];
+    delete fwdHeaders["referer"];
+    const options = {
+      hostname: "127.0.0.1",
+      port: MOBILE_PROXY_PORT,
+      path: targetPath,
+      method: req.method,
+      headers: fwdHeaders,
+    };
+    const proxyReq = http.request(options, (proxyRes) => {
+      const headers = { ...proxyRes.headers };
+      res.writeHead(proxyRes.statusCode || 200, headers);
+      proxyRes.pipe(res, { end: true });
+    });
+    proxyReq.on("error", (err) => {
+      logger.warn({ err }, "Mobile proxy error");
+      if (!res.headersSent) res.status(502).send("Mobile service unavailable");
+    });
+    req.pipe(proxyReq, { end: true });
   });
-  req.pipe(proxyReq, { end: true });
+
+  function proxyToMobile(req: Request, res: Response) {
+    const targetPath = req.originalUrl;
+    const fwdHeaders: Record<string, any> = { ...req.headers, host: `localhost:${MOBILE_PROXY_PORT}` };
+    delete fwdHeaders["origin"];
+    delete fwdHeaders["referer"];
+    const options = {
+      hostname: "127.0.0.1",
+      port: MOBILE_PROXY_PORT,
+      path: targetPath,
+      method: req.method,
+      headers: fwdHeaders,
+    };
+    const proxyReq = http.request(options, (proxyRes) => {
+      const headers = { ...proxyRes.headers };
+      res.writeHead(proxyRes.statusCode || 200, headers);
+      proxyRes.pipe(res, { end: true });
+    });
+    proxyReq.on("error", (err) => {
+      logger.warn({ err }, "Asset proxy error");
+      if (!res.headersSent) res.status(502).send("Asset unavailable");
+    });
+    req.pipe(proxyReq, { end: true });
+  }
+
+  app.use("/assets", proxyToMobile);
+  app.use("/_expo", proxyToMobile);
 }
-
-app.use("/assets", proxyToMobile);
-app.use("/_expo", proxyToMobile);
 
 // Serve icon font TTF files at stable URLs that survive Metro restarts.
 // On web, useFonts() uses these instead of Metro's dynamic hashed asset URLs.
