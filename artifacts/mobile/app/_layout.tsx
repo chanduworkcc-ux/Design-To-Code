@@ -161,6 +161,21 @@ export default function RootLayout() {
     if (fontsLoaded || fontError) SplashScreen.hideAsync();
   }, [fontsLoaded, fontError]);
 
+  // On web, font assets get new URLs when Metro restarts (after a few hours).
+  // If fonts fail to load, reload the page once to pick up the fresh URLs.
+  useEffect(() => {
+    if (fontError && Platform.OS === "web" && typeof window !== "undefined") {
+      const reloadKey = "font_reload_attempt";
+      const last = sessionStorage.getItem(reloadKey);
+      const now = Date.now();
+      // Only auto-reload once per 60 seconds to avoid infinite loops.
+      if (!last || now - parseInt(last, 10) > 60_000) {
+        sessionStorage.setItem(reloadKey, String(now));
+        window.location.reload();
+      }
+    }
+  }, [fontError]);
+
   useEffect(() => {
     if (!fontsLoaded && !fontError) return;
     fetch(`${BASE_URL}/config/public`)
