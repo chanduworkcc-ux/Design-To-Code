@@ -25,7 +25,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
-import { FloatingOrb, FloatingParticle, PulsingRing, FloatIn, TiltCard3D } from "@/components/ThreeD";
+import { FloatingOrb, FloatingParticle, PulsingRing, FloatIn, TiltCard3D, GlowPulse } from "@/components/ThreeD";
 
 
 const { width: W, height: H } = Dimensions.get("window");
