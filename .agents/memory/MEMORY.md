@@ -1,3 +1,4 @@
+- [Icon font stable URL fix](icon-font-stable-url.md) — serve TTFs from /fonts/ on API server; Metro hashes change on restart → icons break on web after hours
 - [tar firewall block](tar-firewall-block.md) — Replit firewall security-blocks ALL tar versions; use filtered installs to skip mobile workspace
 - [Zod import in api-server](zod-import.md) — use `"zod"` not `"zod/v4"`: esbuild can't resolve v4 exports map
 - [Admin access pattern](admin-access.md) — admin login calls real /auth/login, checks role client-side; _layout.tsx guards routes; API uses authMiddleware+adminMiddleware

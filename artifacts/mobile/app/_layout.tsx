@@ -146,11 +146,22 @@ function UserStatusGuard({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
+  // On web, use stable API-server URLs for icon fonts so they survive Metro restarts.
+  // On native, use the bundled require() as normal.
+  const iconFonts = Platform.OS === "web"
+    ? {
+        Feather: "/fonts/Feather.ttf",
+        Ionicons: "/fonts/Ionicons.ttf",
+        FontAwesome: "/fonts/FontAwesome.ttf",
+      }
+    : {
+        Feather: require("../assets/fonts/Feather.ttf"),
+        Ionicons: require("../assets/fonts/Ionicons.ttf"),
+        FontAwesome: require("../assets/fonts/FontAwesome.ttf"),
+      };
   const [fontsLoaded, fontError] = useFonts({
     DMSans_400Regular, DMSans_500Medium, DMSans_600SemiBold, DMSans_700Bold,
-    Feather: require("../assets/fonts/Feather.ttf"),
-    Ionicons: require("../assets/fonts/Ionicons.ttf"),
-    FontAwesome: require("../assets/fonts/FontAwesome.ttf"),
+    ...iconFonts,
   });
   const [showSplash, setShowSplash] = useState(true);
   const [maintenance, setMaintenance] = useState<{ active: boolean; message?: string }>({ active: false });
@@ -161,20 +172,6 @@ export default function RootLayout() {
     if (fontsLoaded || fontError) SplashScreen.hideAsync();
   }, [fontsLoaded, fontError]);
 
-  // On web, font assets get new URLs when Metro restarts (after a few hours).
-  // If fonts fail to load, reload the page once to pick up the fresh URLs.
-  useEffect(() => {
-    if (fontError && Platform.OS === "web" && typeof window !== "undefined") {
-      const reloadKey = "font_reload_attempt";
-      const last = sessionStorage.getItem(reloadKey);
-      const now = Date.now();
-      // Only auto-reload once per 60 seconds to avoid infinite loops.
-      if (!last || now - parseInt(last, 10) > 60_000) {
-        sessionStorage.setItem(reloadKey, String(now));
-        window.location.reload();
-      }
-    }
-  }, [fontError]);
 
   useEffect(() => {
     if (!fontsLoaded && !fontError) return;

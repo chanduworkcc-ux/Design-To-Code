@@ -116,6 +116,14 @@ function proxyToMobile(req: Request, res: Response) {
 app.use("/assets", proxyToMobile);
 app.use("/_expo", proxyToMobile);
 
+// Serve icon font TTF files at stable URLs that survive Metro restarts.
+// On web, useFonts() uses these instead of Metro's dynamic hashed asset URLs.
+app.use("/fonts", express.static(path.join(__dirname, "../../mobile/assets/fonts"), {
+  maxAge: "365d",
+  immutable: true,
+  setHeaders: (res) => { res.setHeader("Access-Control-Allow-Origin", "*"); },
+}));
+
 app.get(/^\/(?!api\/|mobile|assets\/|_expo\/)(.+)$/, (req: Request, res: Response) => {
   const path = (req.params as any)[0] ?? "";
   res.redirect(302, `/mobile/${path}`);
