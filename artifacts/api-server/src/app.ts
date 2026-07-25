@@ -135,18 +135,45 @@ seedDefaultConfig().catch((err) => logger.error({ err }, "Failed to seed config"
 seedAdminUser().catch((err) => logger.error({ err }, "Failed to seed admin user"));
 seedDefaultFaqs().catch((err) => logger.error({ err }, "Failed to seed default FAQs"));
 
-// Keep-alive: ping our own health endpoint every 4 minutes so Replit never
-// puts the project to sleep. Fires only after the server port is bound.
+// Keep-alive: ping the EXTERNAL public URL every 4 minutes so Replit's
+// activity tracker registers real traffic and never hibernates the project.
+// Falls back to an internal localhost ping when running offline/locally.
+import https from "https";
+
 const KEEP_ALIVE_MS = 4 * 60 * 1000; // 4 minutes
-setInterval(() => {
-  const port = process.env.PORT || 5000;
-  const req = http.get(`http://127.0.0.1:${port}/health`, (res) => {
-    res.resume(); // drain body so socket can be reused
-    logger.debug({ status: res.statusCode }, "keep-alive ping");
-  });
-  req.on("error", (err) => logger.warn({ err }, "keep-alive ping failed"));
-  req.end();
-}, KEEP_ALIVE_MS);
+
+function keepAlivePing() {
+  const externalDomain = process.env.REPLIT_DEV_DOMAIN;
+  if (externalDomain) {
+    // Ping via public HTTPS — counts as real activity to Replit's scheduler
+    const req = https.get(`https://${externalDomain}/health`, (res) => {
+      res.resume();
+      logger.debug({ status: res.statusCode }, "keep-alive ping (external)");
+    });
+    req.on("error", (err) => {
+      logger.warn({ msg: err.message }, "keep-alive external ping failed, trying local");
+      // Fallback to localhost on network error
+      const port = process.env.PORT || 5000;
+      const r = http.get(`http://127.0.0.1:${port}/health`, (res2) => { res2.resume(); });
+      r.on("error", () => {});
+      r.end();
+    });
+    req.end();
+  } else {
+    // Local dev without REPLIT_DEV_DOMAIN — ping localhost
+    const port = process.env.PORT || 5000;
+    const req = http.get(`http://127.0.0.1:${port}/health`, (res) => {
+      res.resume();
+      logger.debug({ status: res.statusCode }, "keep-alive ping (local)");
+    });
+    req.on("error", (err) => logger.warn({ msg: err.message }, "keep-alive local ping failed"));
+    req.end();
+  }
+}
+
+setInterval(keepAlivePing, KEEP_ALIVE_MS);
+// Fire once at startup (after a short delay so the port is bound)
+setTimeout(keepAlivePing, 10_000);
 
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   logger.error({ err }, "Unhandled error");

@@ -38,6 +38,20 @@ import SuspendedScreen from "./suspended";
 import BannedScreen from "./banned";
 
 
+// Client-side keep-alive: ping the API health endpoint every 3 minutes from
+// the browser so any open tab keeps the Replit project from hibernating.
+function KeepAlive() {
+  useEffect(() => {
+    const ping = () => {
+      fetch(`${BASE_URL}/health`, { cache: "no-store" }).catch(() => {});
+    };
+    ping(); // immediate first ping
+    const id = setInterval(ping, 3 * 60 * 1000); // every 3 minutes
+    return () => clearInterval(id);
+  }, []);
+  return null;
+}
+
 function PushNotificationInit() {
   const { token } = useAuth();
   usePushNotifications(token);
@@ -201,6 +215,7 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <AuthGuard />
+            <KeepAlive />
             <PushNotificationInit />
             <AppProvider>
               <LanguageProvider>
