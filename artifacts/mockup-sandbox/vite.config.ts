@@ -25,7 +25,7 @@ export default defineConfig({
     tailwindcss(),
     ...(process.env.REPL_ID !== undefined
       ? [
-          await import("@replit/vite-plugin-runtime-error-modal").then(
+          await import(/* @vite-ignore */ "@replit/vite-plugin-runtime-error-modal").then(
             (m) => m.default(),
           ),
         ]
@@ -33,7 +33,7 @@ export default defineConfig({
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [
-          await import("@replit/vite-plugin-cartographer").then((m) =>
+          await import(/* @vite-ignore */ "@replit/vite-plugin-cartographer").then((m) =>
             m.cartographer({
               root: path.resolve(import.meta.dirname, ".."),
             }),
