@@ -1,11 +1,12 @@
 {
   "version": 2,
   "framework": "expo",
-  "buildCommand": "pnpm --filter @workspace/mobile run build:vercel",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm run vercel-build",
   "outputDirectory": "artifacts/mobile/dist",
   "functions": {
-    "api/**/*.ts": {
-      "runtime": "nodejs18.x",
+    "api/[...path].ts": {
+      "runtime": "nodejs22.x",
       "maxDuration": 60,
       "memory": 1024
     }
