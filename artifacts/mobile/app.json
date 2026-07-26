@@ -48,8 +48,7 @@
     ],
     "experiments": {
       "typedRoutes": true,
-      "reactCompiler": true,
-      "baseUrl": "/mobile"
+      "reactCompiler": true
     },
     "extra": {}
   }
