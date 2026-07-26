@@ -60,7 +60,7 @@ app.get("/health", (_req, res) => {
 // In development we proxy to the Metro dev server on MOBILE_PORT (18115).
 const IS_PROD = process.env.NODE_ENV === "production";
 const MOBILE_DIST = path.join(__dirname, "../../mobile/dist");
-const MOBILE_PROXY_PORT = parseInt(process.env.MOBILE_PORT || "18115", 10);
+const MOBILE_PROXY_PORT = parseInt(process.env.MOBILE_PORT || "8081", 10);
 
 if (IS_PROD) {
   // --- PRODUCTION: serve the pre-built Expo web static output ---
