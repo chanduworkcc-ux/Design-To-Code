@@ -4,7 +4,9 @@
     "slug": "mobile",
     "version": "1.0.0",
     "updates": {
-      "enabled": false
+      "enabled": false,
+      "checkAutomatically": "NEVER",
+      "fallbackToCacheTimeout": 0
     },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -49,10 +51,6 @@
       "reactCompiler": true,
       "baseUrl": "/mobile"
     },
-    "extra": {
-      "eas": {
-        "projectId": "a20b7485-1eed-4b26-9ca0-41165ceb9b03"
-      }
-    }
+    "extra": {}
   }
 }
