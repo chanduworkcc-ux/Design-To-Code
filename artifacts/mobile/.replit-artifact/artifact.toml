@@ -3,7 +3,7 @@ previewPath = "/mobile/"
 title = "XyloCart"
 version = "1.0.0"
 id = "artifacts/mobile"
-router = "path"
+router = "expo-domain"
 
 [[integratedSkills]]
 name = "expo"
@@ -12,7 +12,7 @@ version = "1.0.0"
 [[services]]
 ensurePreviewReachable = "/status"
 name = "expo"
-paths = [ "/mobile/" ]
+paths = [ "/" ]
 localPort = 18115
 
 [services.development]
