@@ -17,7 +17,7 @@ npm_config_registry=https://registry.npmjs.org/ \
   pnpm --filter "@workspace/mobile..." install --frozen-lockfile
 
 echo "[deploy] Building API server..."
-pnpm --filter @workspace/api-server run build
+pnpm --filter @workspace/api-server run build:vercel
 
 echo "[deploy] Exporting Expo web app..."
 cd artifacts/mobile
