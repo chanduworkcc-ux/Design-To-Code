@@ -5,10 +5,10 @@
   "packageManager": "pnpm@10.26.1",
   "scripts": {
     "preinstall": "node -e \"const fs = require('fs'); const path = require('path'); const files = ['package-lock.json', 'yarn.lock']; files.forEach(f => { try { fs.unlinkSync(path.join(process.cwd(), f)); } catch(e) {} }); const agent = process.env.npm_config_user_agent || ''; if (!agent.startsWith('pnpm/')) { console.error('Use pnpm instead'); process.exit(1); }\"",
-    "build": "pnpm --filter @workspace/mobile run build:vercel",
+    "build": "pnpm --filter @workspace/api-server run build:vercel && pnpm --filter @workspace/mobile run build:vercel",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
-    "vercel-build": "pnpm --filter @workspace/mobile run build:vercel"
+    "vercel-build": "pnpm --filter @workspace/api-server run build:vercel && pnpm --filter @workspace/mobile run build:vercel"
   },
   "private": true,
   "devDependencies": {

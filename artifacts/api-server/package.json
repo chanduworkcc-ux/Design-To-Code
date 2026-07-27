@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "bash ./dev-start.sh",
     "build": "tsc -p tsconfig.json --noEmit && node ./build.mjs",
+    "build:vercel": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

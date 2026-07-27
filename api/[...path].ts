@@ -1,17 +1,15 @@
 /**
- * Vercel Serverless Function - API Catch-All Handler
- * 
- * This is a minimal handler that re-exports the default export from
- * the API server's built output. We cannot use dynamic imports here
- * since Vercel needs to understand the dependency graph at build time.
+ * Vercel Serverless Function — Full XyloCart API
+ *
+ * Imports the Express app from the pre-built esbuild output.
+ * The build step (pnpm run build:vercel in @workspace/api-server) runs
+ * before this function is deployed, so dist/index.mjs is always present.
+ *
+ * Socket.io real-time features are unavailable in serverless (stateless),
+ * but all REST endpoints work normally.
  */
 
-// For now, we'll serve a simple JSON response to verify the API is working
-export default function handler(req: any, res: any) {
-  res.status(200).json({
-    message: "XyloCart API is operational",
-    path: req.url,
-    method: req.method,
-    timestamp: new Date().toISOString(),
-  });
-}
+// @ts-ignore — importing a pre-built ESM bundle; no .d.ts needed
+import app from "../artifacts/api-server/dist/index.mjs";
+
+export default app;
