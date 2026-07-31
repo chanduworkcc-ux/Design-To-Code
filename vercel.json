@@ -2,7 +2,7 @@
   "version": 2,
   "framework": null,
   "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm -w run vercel-build",
+  "buildCommand": "bash scripts/vercel-build.sh",
   "outputDirectory": "dist",
   "functions": {
     "api/[...path].ts": {
